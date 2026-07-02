@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { TOKEN_COOKIE } from '@/lib/auth'
 
 const BACKEND = process.env.API_URL ?? ''
+const TIMEOUT_MS = 25_000
 
 async function handler(
   request: NextRequest,
@@ -22,11 +23,28 @@ async function handler(
   const isBodyless = ['GET', 'HEAD', 'DELETE'].includes(request.method)
   const body = isBodyless ? undefined : await request.text()
 
-  const upstream = await fetch(backendUrl, {
-    method: request.method,
-    headers: outHeaders,
-    body: body || undefined,
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS)
+
+  let upstream: Response
+  try {
+    upstream = await fetch(backendUrl, {
+      method: request.method,
+      headers: outHeaders,
+      body: body || undefined,
+      signal: controller.signal,
+    })
+  } catch (err) {
+    clearTimeout(timeoutId)
+    const isTimeout = err instanceof Error && err.name === 'AbortError'
+    return new NextResponse(
+      isTimeout
+        ? 'Le serveur démarre, réessayez dans quelques secondes.'
+        : 'Impossible de joindre le serveur.',
+      { status: 503, headers: { 'Content-Type': 'text/plain' } },
+    )
+  }
+  clearTimeout(timeoutId)
 
   const responseText = await upstream.text()
 
