@@ -1,16 +1,31 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ShieldCheck, ArrowDownToLine, Trash2 } from 'lucide-react'
+import { ShieldCheck, ArrowDownToLine, Trash2, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { ArticleSelect } from '@/components/forms/article-select'
 import {
   useGetStocks,
   useGetStocksLibres,
@@ -19,9 +34,20 @@ import {
   useDeleteStock,
   useValiderStock,
   useReserverStock,
+  useCreateStock,
+  useGetStockEmplacements,
 } from '@/hooks/use-stocks'
 import { TYPE_STOCK } from '@/types/stock'
 import type { Stock, AlerteStock } from '@/types/stock'
+import type { Article } from '@/types/article'
+
+const EMPTY_STOCK_FORM = {
+  articleId: null as number | null,
+  article: null as Article | null,
+  quantite: '',
+  typeStock: '0',
+  emplacementPhysique: '',
+}
 
 // ── Dialog Valider ──────────────────────────────────────────────
 type ValiderDialogState = { stockId: number } | null
@@ -137,15 +163,38 @@ function ReserverDialog({
 export default function StockPage() {
   const [validerDialog, setValiderDialog] = useState<ValiderDialogState>(null)
   const [reserverDialog, setReserverDialog] = useState<ReserverDialogState>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createForm, setCreateForm] = useState(EMPTY_STOCK_FORM)
 
   const { data: allStocks,      isLoading: loadingAll      } = useGetStocks()
   const { data: libresStocks,   isLoading: loadingLibres   } = useGetStocksLibres()
   const { data: reservesStocks, isLoading: loadingReserves } = useGetStocksReserves()
   const { data: alertes,        isLoading: loadingAlertes  } = useGetStocksAlertes()
+  const { data: emplacements } = useGetStockEmplacements()
 
   const deleteMutation   = useDeleteStock()
   const validerMutation  = useValiderStock()
   const reserverMutation = useReserverStock()
+  const createMutation   = useCreateStock()
+
+  function openCreateDialog() {
+    setCreateForm(EMPTY_STOCK_FORM)
+    setCreateOpen(true)
+  }
+
+  function handleCreateSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!createForm.articleId) return
+    createMutation.mutate(
+      {
+        articleId: createForm.articleId,
+        quantite: Number(createForm.quantite) || 0,
+        typeStock: Number(createForm.typeStock),
+        emplacementPhysique: createForm.emplacementPhysique.trim() || null,
+      } as Partial<Stock>,
+      { onSuccess: () => setCreateOpen(false) },
+    )
+  }
 
   function confirmValider(validePar: string) {
     if (!validerDialog) return
@@ -315,7 +364,17 @@ export default function StockPage() {
 
   return (
     <div>
-      <PageHeader title="Stock" />
+      <PageHeader
+        title="Stock"
+        action={
+          <PermissionGate module="stock" mode="write">
+            <Button size="sm" onClick={openCreateDialog}>
+              <Plus className="mr-1.5 size-4" />
+              Nouveau stock
+            </Button>
+          </PermissionGate>
+        }
+      />
 
       <Tabs defaultValue="tous">
         <div className="mb-4 overflow-x-auto">
@@ -387,6 +446,88 @@ export default function StockPage() {
         onConfirm={confirmReserver}
         isPending={reserverMutation.isPending}
       />
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nouvelle entrée de stock</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Article *</Label>
+              <ArticleSelect
+                value={createForm.articleId}
+                selectedArticle={createForm.article}
+                onChange={(id, article) =>
+                  setCreateForm((f) => ({ ...f, articleId: id, article: article ?? null }))
+                }
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-quantite">Quantité *</Label>
+                <Input
+                  id="new-quantite"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={createForm.quantite}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, quantite: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="new-type">Type</Label>
+                <Select
+                  value={createForm.typeStock}
+                  onValueChange={(v) => setCreateForm((f) => ({ ...f, typeStock: v }))}
+                >
+                  <SelectTrigger id="new-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Libre</SelectItem>
+                    <SelectItem value="1">Réservé</SelectItem>
+                    <SelectItem value="2">Importé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-emplacement">Emplacement physique</Label>
+              <Input
+                id="new-emplacement"
+                list="emplacements-list"
+                placeholder="Ex : Étagère A3, Entrepôt 2…"
+                value={createForm.emplacementPhysique}
+                onChange={(e) =>
+                  setCreateForm((f) => ({ ...f, emplacementPhysique: e.target.value }))
+                }
+                autoComplete="off"
+              />
+              <datalist id="emplacements-list">
+                {emplacements?.map((e) => <option key={e} value={e} />)}
+              </datalist>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateOpen(false)}
+                disabled={createMutation.isPending}
+              >
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                disabled={!createForm.articleId || createMutation.isPending}
+              >
+                {createMutation.isPending ? 'Création…' : 'Créer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

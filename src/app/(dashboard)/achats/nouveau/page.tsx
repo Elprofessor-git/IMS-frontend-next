@@ -277,7 +277,7 @@ export default function NouvelAchatPage() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="creePar">Créé par</Label>
+                <Label htmlFor="creePar">Commandé par</Label>
                 <Input id="creePar" {...register('creePar')} />
               </div>
             </CardContent>

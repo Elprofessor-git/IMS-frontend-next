@@ -2,8 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Pencil, Trash2, UserCheck, UserX } from 'lucide-react'
+import { Pencil, Plus, Trash2, UserCheck, UserX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -29,8 +38,17 @@ import {
   useToggleUserActif,
   useDeleteUser,
   useAssignRole,
+  useRegisterUser,
 } from '@/hooks/use-users'
 import { useGetRoles } from '@/hooks/use-roles'
+
+const EMPTY_FORM = {
+  nom: '',
+  prenom: '',
+  email: '',
+  password: '',
+  role: 'User',
+}
 
 export default function UtilisateursPage() {
   const { data: users, isLoading } = useGetUsers()
@@ -38,11 +56,49 @@ export default function UtilisateursPage() {
   const toggleMutation = useToggleUserActif()
   const deleteMutation = useDeleteUser()
   const assignRoleMutation = useAssignRole()
+  const registerMutation = useRegisterUser()
   const [pendingRoleId, setPendingRoleId] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [form, setForm] = useState(EMPTY_FORM)
+
+  function handleField(field: keyof typeof EMPTY_FORM, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function handleOpenDialog() {
+    setForm(EMPTY_FORM)
+    setDialogOpen(true)
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    registerMutation.mutate(
+      {
+        nom: form.nom,
+        prenom: form.prenom || undefined,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+      },
+      {
+        onSuccess: () => setDialogOpen(false),
+      },
+    )
+  }
 
   return (
     <div>
-      <PageHeader title="Utilisateurs" />
+      <PageHeader
+        title="Utilisateurs"
+        action={
+          <PermissionGate module="utilisateurs" mode="write">
+            <Button size="sm" onClick={handleOpenDialog}>
+              <Plus className="mr-1.5 size-4" />
+              Ajouter un utilisateur
+            </Button>
+          </PermissionGate>
+        }
+      />
 
       <div className="rounded-lg border bg-card">
         <Table>
@@ -175,6 +231,85 @@ export default function UtilisateursPage() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ajouter un utilisateur</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="nom">Nom *</Label>
+                <Input
+                  id="nom"
+                  value={form.nom}
+                  onChange={(e) => handleField('nom', e.target.value)}
+                  required
+                  autoComplete="off"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="prenom">Prénom</Label>
+                <Input
+                  id="prenom"
+                  value={form.prenom}
+                  onChange={(e) => handleField('prenom', e.target.value)}
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => handleField('email', e.target.value)}
+                required
+                autoComplete="off"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Mot de passe temporaire *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={form.password}
+                onChange={(e) => handleField('password', e.target.value)}
+                required
+                minLength={6}
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="role">Rôle système *</Label>
+              <Select value={form.role} onValueChange={(v) => handleField('role', v)}>
+                <SelectTrigger id="role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="User">Utilisateur</SelectItem>
+                  <SelectItem value="Admin">Administrateur</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                disabled={registerMutation.isPending}
+              >
+                Annuler
+              </Button>
+              <Button type="submit" disabled={registerMutation.isPending}>
+                {registerMutation.isPending ? 'Création…' : 'Créer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

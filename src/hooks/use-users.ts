@@ -88,3 +88,21 @@ export function useDeleteUser() {
     onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de supprimer'),
   })
 }
+
+export function useRegisterUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: {
+      nom: string
+      prenom?: string
+      email: string
+      password: string
+      role: string
+    }) => apiClient.post<void>('/api/Auth/register', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEY })
+      toast.success('Utilisateur créé avec succès')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la création'),
+  })
+}

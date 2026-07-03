@@ -11,6 +11,8 @@ export type LigneImportation = {
   importationId: number
   articleId: number
   commandeClientId: number | null
+  clientId: number | null
+  plateformeId: number | null
   designation: string | null
   couleur: string | null
   codeCouleur: string | null
@@ -22,6 +24,8 @@ export type LigneImportation = {
   devise: string | null
   notes: string | null
   estAffecteStock: boolean
+  typeOrigine: 'Fournisseur' | 'ClientCMT'
+  typeDestination: 'Commande' | 'Marque' | 'Plateforme' | 'StockLibre'
   dateCreation: string
   article: LigneImportationArticle | null
   commandeClient: { id: number } | null
@@ -46,7 +50,7 @@ export type ImportationFournisseur = {
 export type Importation = {
   id: number
   referenceImportation: string
-  fournisseurId: number
+  fournisseurId: number | null
   statut: number // 0=Brouillon 1=Soumise 2=Validee 3=Recue 4=Annulee
   dateImportation: string
   dateReceptionPrevue: string | null

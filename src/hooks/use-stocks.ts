@@ -52,6 +52,13 @@ export function useGetStocksAlertes() {
   })
 }
 
+export function useGetStockEmplacements() {
+  return useQuery<string[]>({
+    queryKey: [...KEY, 'emplacements'],
+    queryFn: () => apiClient.get<string[]>('/api/Stock/Emplacements'),
+  })
+}
+
 export function useCreateStock() {
   const qc = useQueryClient()
   return useMutation({
