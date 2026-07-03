@@ -17,11 +17,15 @@ async function handler(
   const token = cookieStore.get(TOKEN_COOKIE)?.value
 
   const outHeaders = new Headers()
-  outHeaders.set('Content-Type', 'application/json')
   if (token) outHeaders.set('Authorization', `Bearer ${token}`)
+  // Forward the original Content-Type (needed for multipart/form-data boundary;
+  // omitting it for GET/HEAD/DELETE is correct — no body to describe)
+  const contentType = request.headers.get('Content-Type')
+  if (contentType) outHeaders.set('Content-Type', contentType)
 
   const isBodyless = ['GET', 'HEAD', 'DELETE'].includes(request.method)
-  const body = isBodyless ? undefined : await request.text()
+  // Use arrayBuffer to preserve binary data (multipart uploads, etc.)
+  const body = isBodyless ? undefined : await request.arrayBuffer()
 
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS)
@@ -31,7 +35,7 @@ async function handler(
     upstream = await fetch(backendUrl, {
       method: request.method,
       headers: outHeaders,
-      body: body || undefined,
+      body: body !== undefined && body.byteLength > 0 ? body : undefined,
       signal: controller.signal,
     })
   } catch (err) {
@@ -46,14 +50,19 @@ async function handler(
   }
   clearTimeout(timeoutId)
 
-  const responseText = await upstream.text()
+  // Read as binary to support file downloads (text() would corrupt binary content)
+  const responseBuffer = await upstream.arrayBuffer()
 
-  return new NextResponse(responseText || null, {
+  const responseHeaders: Record<string, string> = {
+    'Content-Type': upstream.headers.get('Content-Type') ?? 'application/json',
+  }
+  // Forward Content-Disposition so browsers receive the correct filename on download
+  const cd = upstream.headers.get('Content-Disposition')
+  if (cd) responseHeaders['Content-Disposition'] = cd
+
+  return new NextResponse(responseBuffer.byteLength > 0 ? responseBuffer : null, {
     status: upstream.status,
-    headers: {
-      'Content-Type':
-        upstream.headers.get('Content-Type') ?? 'application/json',
-    },
+    headers: responseHeaders,
   })
 }
 
