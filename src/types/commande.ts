@@ -97,7 +97,7 @@ export type CommandeClient = {
   dateMiseAJour: string | null
   creePar: string | null
   modifiePar: string | null
-  client: { id: number; nom: string; plateforme?: { nom: string } | null } | null
+  client: { id: number; nom: string; plateforme?: { id: number; nom: string } | null } | null
   marque: Marque | null
   besoins: BesoinCommande[]
   configTailles: ConfigTaille[]
