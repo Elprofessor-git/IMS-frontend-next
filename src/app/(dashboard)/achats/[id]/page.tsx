@@ -25,6 +25,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { DocumentSection } from '@/components/documents/document-section'
 import {
   useGetAchat,
   useUpdateAchat,
@@ -203,6 +204,7 @@ export default function AchatDetailPage({
   const confirmerM = useConfirmerAchat()
   const livrerM = useLivrerAchat()
 
+  const [activeTab, setActiveTab] = useState('info')
   const [notes, setNotes] = useState('')
   const [dateLivraison, setDateLivraison] = useState('')
 
@@ -288,7 +290,29 @@ export default function AchatDetailPage({
         }
       />
 
-      <Tabs defaultValue="info" className="max-w-4xl">
+      {achat.statut === 0 && achat.lignesAchat.length === 0 && (
+        <div className="mb-4 max-w-4xl rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+            Ajoutez maintenant les articles de cet achat
+          </p>
+          <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
+            L&apos;achat a été créé — ajoutez au moins une ligne avant de le soumettre.
+          </p>
+          <Button
+            size="sm"
+            className="mt-3"
+            onClick={() => {
+              setActiveTab('lignes')
+              setLigneDialogOpen(true)
+            }}
+          >
+            <Plus className="mr-1.5 size-4" />
+            Ajouter une ligne
+          </Button>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
         <TabsList className="mb-4">
           <TabsTrigger value="info">Informations</TabsTrigger>
           <TabsTrigger value="lignes">
@@ -299,6 +323,7 @@ export default function AchatDetailPage({
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}
@@ -490,6 +515,10 @@ export default function AchatDetailPage({
               </div>
             )}
           </div>
+        </TabsContent>
+        {/* ── Onglet Documents ── */}
+        <TabsContent value="documents">
+          <DocumentSection scope="achat" parentId={achatId} />
         </TabsContent>
       </Tabs>
 

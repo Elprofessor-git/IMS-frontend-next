@@ -26,6 +26,17 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { DocumentSection } from '@/components/documents/document-section'
+import { CommandeSelect } from '@/components/forms/commande-select'
+import { useGetCommandes } from '@/hooks/use-commandes'
+import { useGetPlateformes } from '@/hooks/use-plateformes'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   useGetImportation,
   useUpdateImportation,
@@ -110,12 +121,17 @@ function AjouterLigneDialog({
   onClose: () => void
 }) {
   const ajouterMutation = useAjouterLigneImportation()
+  const { data: commandes } = useGetCommandes()
+  const { data: plateformes } = useGetPlateformes()
+  const [plateformeFilter, setPlateformeFilter] = useState<number | null>(null)
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<LigneImportationSchema>({
     resolver: zodResolver(ligneImportationSchema),
@@ -134,6 +150,22 @@ function AjouterLigneDialog({
     },
   })
 
+  const currentCommandeId = watch('commandeClientId')
+
+  const filteredCommandes = plateformeFilter
+    ? (commandes ?? []).filter((c) => c.client?.plateforme?.id === plateformeFilter)
+    : (commandes ?? [])
+
+  function handlePlateformeFilterChange(pid: number | null) {
+    setPlateformeFilter(pid)
+    if (currentCommandeId && pid) {
+      const stillValid = (commandes ?? []).find(
+        (c) => c.id === currentCommandeId && c.client?.plateforme?.id === pid,
+      )
+      if (!stillValid) setValue('commandeClientId', null)
+    }
+  }
+
   if (!open) return null
 
   const onSubmit = async (data: LigneImportationSchema) => {
@@ -142,6 +174,7 @@ function AjouterLigneDialog({
       data: toLigneImportationPayload(data) as Record<string, unknown>,
     })
     reset()
+    setPlateformeFilter(null)
     onClose()
   }
 
@@ -223,12 +256,38 @@ function AjouterLigneDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="imp-commande">ID Commande client (pour affectation)</Label>
-            <Input
-              id="imp-commande"
-              type="number"
-              min="1"
-              {...register('commandeClientId', { valueAsNumber: true, setValueAs: (v) => v === '' ? null : Number(v) })}
+            <Label>Filtrer par plateforme</Label>
+            <Select
+              value={plateformeFilter ? String(plateformeFilter) : '0'}
+              onValueChange={(v) => handlePlateformeFilterChange(v === '0' ? null : Number(v))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">Toutes les plateformes</SelectItem>
+                {plateformes?.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Commande client (affectation, optionnel)</Label>
+            <Controller
+              name="commandeClientId"
+              control={control}
+              render={({ field }) => (
+                <CommandeSelect
+                  value={field.value ?? null}
+                  onChange={(id) => field.onChange(id)}
+                  commandes={filteredCommandes}
+                  placeholder="Aucune affectation"
+                />
+              )}
             />
           </div>
 
@@ -260,6 +319,7 @@ export default function ImportationDetailPage({
   const { id } = use(params)
   const importationId = Number(id)
   const router = useRouter()
+  const [activeTab, setActiveTab] = useState('info')
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false)
   const [validerDialogOpen, setValiderDialogOpen] = useState(false)
   const [notes, setNotes] = useState('')
@@ -380,7 +440,29 @@ export default function ImportationDetailPage({
         }
       />
 
-      <Tabs defaultValue="info" className="max-w-4xl">
+      {importation.statut === 0 && importation.lignesImportation.length === 0 && (
+        <div className="mb-4 max-w-4xl rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
+          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+            Ajoutez maintenant les articles de cette importation
+          </p>
+          <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
+            L&apos;importation a été créée — ajoutez au moins une ligne avant de la soumettre.
+          </p>
+          <Button
+            size="sm"
+            className="mt-3"
+            onClick={() => {
+              setActiveTab('lignes')
+              setLigneDialogOpen(true)
+            }}
+          >
+            <Plus className="mr-1.5 size-4" />
+            Ajouter une ligne
+          </Button>
+        </div>
+      )}
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
         <TabsList className="mb-4">
           <TabsTrigger value="info">Informations</TabsTrigger>
           <TabsTrigger value="lignes">
@@ -391,6 +473,7 @@ export default function ImportationDetailPage({
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}
@@ -584,6 +667,10 @@ export default function ImportationDetailPage({
               </div>
             )}
           </div>
+        </TabsContent>
+        {/* ── Onglet Documents ── */}
+        <TabsContent value="documents">
+          <DocumentSection scope="importation" parentId={importationId} />
         </TabsContent>
       </Tabs>
 

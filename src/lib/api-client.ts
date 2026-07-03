@@ -1,7 +1,8 @@
 import type { ApiError, ValidationProblemDetails } from '@/types'
 
-// Toutes les requêtes client passent par le proxy Next.js (contourne le CORS en dev,
-// inutile en prod Vercel où l'origine est whitelistée côté backend).
+// Toutes les requêtes client passent par le proxy Next.js (/api/proxy/[...path]).
+// Le proxy tourne côté serveur Vercel → l'appel vers le backend est serveur-à-serveur,
+// CORS ne s'applique pas. Le token JWT reste dans un cookie httpOnly, jamais exposé au JS.
 const PROXY_BASE = '/api/proxy'
 
 async function parseError(response: Response): Promise<ApiError> {
