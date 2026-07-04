@@ -35,6 +35,7 @@ import { useGetFournisseurs } from '@/hooks/use-fournisseurs'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
+import { PermissionGate } from '@/components/auth/permission-gate'
 import type { Achat } from '@/types/achat'
 import type { ApiError } from '@/types'
 
@@ -186,8 +187,17 @@ export default function NouvelAchatPage() {
     <div>
       <PageHeader title="Nouvel achat" backHref="/achats" />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid max-w-4xl gap-6">
+      <PermissionGate
+        module="achats"
+        mode="write"
+        fallback={
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les droits pour créer un élément dans ce module.
+          </p>
+        }
+      >
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="grid max-w-4xl gap-6">
           {/* ── Informations générales ── */}
           <Card>
             <CardHeader>
@@ -594,7 +604,8 @@ export default function NouvelAchatPage() {
             </Button>
           </div>
         </div>
-      </form>
+        </form>
+      </PermissionGate>
     </div>
   )
 }

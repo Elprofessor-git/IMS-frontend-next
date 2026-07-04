@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/shared/page-header'
 import { articleSchema, toArticlePayload, type ArticleSchema } from '@/lib/validations/article'
 import { useCreateArticle } from '@/hooks/use-articles'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 export default function NouvelArticlePage() {
   const router = useRouter()
@@ -45,8 +46,17 @@ export default function NouvelArticlePage() {
     <div>
       <PageHeader title="Nouvel article" backHref="/articles" />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid max-w-4xl gap-6">
+      <PermissionGate
+        module="articles"
+        mode="write"
+        fallback={
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les droits pour créer un élément dans ce module.
+          </p>
+        }
+      >
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="grid max-w-4xl gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Identification</CardTitle>
@@ -68,8 +78,13 @@ export default function NouvelArticlePage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="reference">Référence</Label>
-                  <Input id="reference" {...register('reference')} />
+                  <Label>Référence</Label>
+                  <Input
+                    value="Générée automatiquement (ARTyyyyMMNNNN)"
+                    readOnly
+                    disabled
+                    className="bg-muted text-muted-foreground cursor-not-allowed"
+                  />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="marque">Marque</Label>
@@ -153,7 +168,8 @@ export default function NouvelArticlePage() {
             </Button>
           </div>
         </div>
-      </form>
+        </form>
+      </PermissionGate>
     </div>
   )
 }

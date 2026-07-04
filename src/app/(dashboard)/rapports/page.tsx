@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { BarChart3, ShoppingCart } from 'lucide-react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/shared/page-header'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 const CARDS = [
   {
@@ -20,23 +21,33 @@ const CARDS = [
 
 export default function RapportsHubPage() {
   return (
-    <div className="space-y-6">
-      <PageHeader title="Rapports" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        {CARDS.map(({ href, icon: Icon, title, description }) => (
-          <Link key={href} href={href}>
-            <Card className="h-full cursor-pointer transition-colors hover:bg-accent">
-              <CardHeader>
-                <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Icon className="size-5 text-primary" />
-                </div>
-                <CardTitle className="text-base">{title}</CardTitle>
-                <CardDescription>{description}</CardDescription>
-              </CardHeader>
-            </Card>
-          </Link>
-        ))}
+    <PermissionGate
+      module="rapports"
+      mode="read"
+      fallback={
+        <p className="text-sm text-muted-foreground">
+          Vous n&apos;avez pas les droits pour accéder à ce module.
+        </p>
+      }
+    >
+      <div className="space-y-6">
+        <PageHeader title="Rapports" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {CARDS.map(({ href, icon: Icon, title, description }) => (
+            <Link key={href} href={href}>
+              <Card className="h-full cursor-pointer transition-colors hover:bg-accent">
+                <CardHeader>
+                  <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Icon className="size-5 text-primary" />
+                  </div>
+                  <CardTitle className="text-base">{title}</CardTitle>
+                  <CardDescription>{description}</CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </div>
-    </div>
+    </PermissionGate>
   )
 }

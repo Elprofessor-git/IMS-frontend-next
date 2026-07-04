@@ -22,6 +22,7 @@ import { useGetMouvements } from '@/hooks/use-mouvements'
 import { useGetTachesDashboard } from '@/hooks/use-taches'
 import { STATUT_ACHAT } from '@/types/fournisseur'
 import { TYPE_MOUVEMENT } from '@/types/mouvement'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -175,8 +176,17 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+    <PermissionGate
+      module="dashboard"
+      mode="read"
+      fallback={
+        <p className="text-sm text-muted-foreground">
+          Vous n&apos;avez pas les droits pour accéder à ce module.
+        </p>
+      }
+    >
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -420,7 +430,8 @@ export default function DashboardPage() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
-    </div>
+    </PermissionGate>
   )
 }

@@ -20,6 +20,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { clientSchema, toClientPayload, type ClientSchema } from '@/lib/validations/client'
 import { useCreateClient } from '@/hooks/use-clients'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 export default function NouveauClient() {
   const router = useRouter()
@@ -58,8 +59,17 @@ export default function NouveauClient() {
     <div>
       <PageHeader title="Nouveau client" backHref="/partenaires/clients" />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid max-w-4xl gap-6">
+      <PermissionGate
+        module="clients"
+        mode="write"
+        fallback={
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les droits pour créer un élément dans ce module.
+          </p>
+        }
+      >
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="grid max-w-4xl gap-6">
           {/* Identité */}
           <Card>
             <CardHeader>
@@ -202,7 +212,8 @@ export default function NouveauClient() {
             </Button>
           </div>
         </div>
-      </form>
+        </form>
+      </PermissionGate>
     </div>
   )
 }

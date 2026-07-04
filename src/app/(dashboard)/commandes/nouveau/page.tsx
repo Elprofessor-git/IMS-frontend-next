@@ -31,6 +31,7 @@ import {
   useSetBom,
 } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 // Schéma combiné pour le formulaire de création
 const createSchema = commandeSchema.extend({
@@ -112,8 +113,17 @@ export default function NouvelleCommandePage() {
     <div>
       <PageHeader title="Nouvel ordre de fabrication" backHref="/commandes" />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid max-w-3xl gap-6">
+      <PermissionGate
+        module="commandes"
+        mode="write"
+        fallback={
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les droits pour créer un élément dans ce module.
+          </p>
+        }
+      >
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="grid max-w-3xl gap-6">
 
           {/* ── Carte 1 : Infos générales ── */}
           <Card>
@@ -371,7 +381,8 @@ export default function NouvelleCommandePage() {
             </Button>
           </div>
         </div>
-      </form>
+        </form>
+      </PermissionGate>
     </div>
   )
 }

@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { useGetPlateformes, useDeletePlateforme } from '@/hooks/use-plateformes'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 export default function PlateformesPage() {
   const { data: plateformes, isLoading } = useGetPlateformes()
@@ -26,12 +27,14 @@ export default function PlateformesPage() {
       <PageHeader
         title="Plateformes"
         action={
-          <Button asChild>
-            <Link href="/partenaires/plateformes/nouveau">
-              <Plus className="size-4" />
-              Nouvelle plateforme
-            </Link>
-          </Button>
+          <PermissionGate module="plateformes" mode="write">
+            <Button asChild>
+              <Link href="/partenaires/plateformes/nouveau">
+                <Plus className="size-4" />
+                Nouvelle plateforme
+              </Link>
+            </Button>
+          </PermissionGate>
         }
       />
 
@@ -105,30 +108,32 @@ export default function PlateformesPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon-sm" asChild>
-                      <Link href={`/partenaires/plateformes/${p.id}`}>
-                        <Pencil className="size-3.5" />
-                      </Link>
-                    </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-destructive hover:text-destructive"
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      }
-                      title={`Supprimer « ${p.nom} » ?`}
-                      description={
-                        p.clients.length > 0
-                          ? `Cette plateforme a ${p.clients.length} client(s) associé(s). La suppression sera bloquée par le serveur.`
-                          : 'Cette action est irréversible.'
-                      }
-                      onConfirm={() => deleteMutation.mutate(p.id)}
-                    />
+                    <PermissionGate module="plateformes" mode="write">
+                      <Button variant="ghost" size="icon-sm" asChild>
+                        <Link href={`/partenaires/plateformes/${p.id}`}>
+                          <Pencil className="size-3.5" />
+                        </Link>
+                      </Button>
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        }
+                        title={`Supprimer « ${p.nom} » ?`}
+                        description={
+                          p.clients.length > 0
+                            ? `Cette plateforme a ${p.clients.length} client(s) associé(s). La suppression sera bloquée par le serveur.`
+                            : 'Cette action est irréversible.'
+                        }
+                        onConfirm={() => deleteMutation.mutate(p.id)}
+                      />
+                    </PermissionGate>
                   </div>
                 </TableCell>
               </TableRow>

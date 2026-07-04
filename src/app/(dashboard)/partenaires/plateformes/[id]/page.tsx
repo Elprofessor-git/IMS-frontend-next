@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/page-header'
 import { plateformeSchema, toApiPayload, type PlateformeSchema } from '@/lib/validations/plateforme'
 import { useGetPlateforme, useUpdatePlateforme } from '@/hooks/use-plateformes'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 export default function EditPlateforme({
   params,
@@ -117,9 +118,11 @@ export default function EditPlateforme({
             </div>
 
             <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
-              </Button>
+              <PermissionGate module="plateformes" mode="write">
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? 'Enregistrement…' : 'Enregistrer'}
+                </Button>
+              </PermissionGate>
               <Button
                 type="button"
                 variant="outline"

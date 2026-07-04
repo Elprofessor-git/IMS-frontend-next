@@ -24,6 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { PageHeader } from '@/components/shared/page-header'
+import { PermissionGate } from '@/components/auth/permission-gate'
 import { useGetAchats } from '@/hooks/use-achats'
 import { STATUT_ACHAT } from '@/types/fournisseur'
 
@@ -208,8 +209,17 @@ export default function RapportAchatsPage() {
   const hasFilter = dateDebut || dateFin || statutFilter !== 'tous'
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <PermissionGate
+      module="rapports"
+      mode="read"
+      fallback={
+        <p className="text-sm text-muted-foreground">
+          Vous n&apos;avez pas les droits pour accéder à ce module.
+        </p>
+      }
+    >
+      <div className="space-y-6">
+        <PageHeader
         title="Rapport — Achats"
         backHref="/dashboard"
         action={
@@ -503,7 +513,8 @@ export default function RapportAchatsPage() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
-    </div>
+    </PermissionGate>
   )
 }

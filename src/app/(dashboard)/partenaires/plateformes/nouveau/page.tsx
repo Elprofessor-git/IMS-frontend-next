@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/shared/page-header'
 import { plateformeSchema, toApiPayload, type PlateformeSchema } from '@/lib/validations/plateforme'
 import { useCreatePlateforme } from '@/hooks/use-plateformes'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 export default function NouvellePlateforme() {
   const router = useRouter()
@@ -40,7 +41,16 @@ export default function NouvellePlateforme() {
     <div>
       <PageHeader title="Nouvelle plateforme" backHref="/partenaires/plateformes" />
 
-      <Card className="max-w-2xl">
+      <PermissionGate
+        module="plateformes"
+        mode="write"
+        fallback={
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les droits pour créer un élément dans ce module.
+          </p>
+        }
+      >
+        <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle className="text-base">Informations</CardTitle>
         </CardHeader>
@@ -91,7 +101,8 @@ export default function NouvellePlateforme() {
             </div>
           </form>
         </CardContent>
-      </Card>
+        </Card>
+      </PermissionGate>
     </div>
   )
 }

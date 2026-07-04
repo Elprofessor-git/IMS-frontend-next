@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { Clock, RotateCcw, AlertTriangle, CheckSquare, ShoppingCart, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PermissionGate } from '@/components/auth/permission-gate'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useGetAchats } from '@/hooks/use-achats'
 import { useMouvementStatistiques } from '@/hooks/use-mouvements'
@@ -129,22 +130,29 @@ export default function AnalyticsPage() {
     })
   }, [achats])
 
-  if (loading) {
-    return (
-      <div className="p-6 space-y-6">
-        <Skeleton className="h-8 w-40" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-28" />
-          ))}
-        </div>
-        <Skeleton className="h-72" />
+  const loadingFallback = (
+    <div className="p-6 space-y-6">
+      <Skeleton className="h-8 w-40" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-28" />
+        ))}
       </div>
-    )
-  }
+      <Skeleton className="h-72" />
+    </div>
+  )
 
   return (
-    <div className="p-6 space-y-8">
+    <PermissionGate
+      module="rapports"
+      mode="read"
+      fallback={
+        <p className="text-sm text-muted-foreground">
+          Vous n&apos;avez pas les droits pour accéder à ce module.
+        </p>
+      }
+    >
+      {loading ? loadingFallback : <div className="p-6 space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -260,6 +268,7 @@ export default function AnalyticsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </div>}
+    </PermissionGate>
   )
 }

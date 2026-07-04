@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageHeader } from '@/components/shared/page-header'
 import { fournisseurSchema, toFournisseurPayload, type FournisseurSchema } from '@/lib/validations/fournisseur'
 import { useCreateFournisseur } from '@/hooks/use-fournisseurs'
+import { PermissionGate } from '@/components/auth/permission-gate'
 
 export default function NouveauFournisseurPage() {
   const router = useRouter()
@@ -47,8 +48,17 @@ export default function NouveauFournisseurPage() {
     <div>
       <PageHeader title="Nouveau fournisseur" backHref="/partenaires/fournisseurs" />
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="grid max-w-4xl gap-6">
+      <PermissionGate
+        module="fournisseurs"
+        mode="write"
+        fallback={
+          <p className="text-sm text-muted-foreground">
+            Vous n&apos;avez pas les droits pour créer un élément dans ce module.
+          </p>
+        }
+      >
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="grid max-w-4xl gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Informations générales</CardTitle>
@@ -171,7 +181,8 @@ export default function NouveauFournisseurPage() {
             </Button>
           </div>
         </div>
-      </form>
+        </form>
+      </PermissionGate>
     </div>
   )
 }
