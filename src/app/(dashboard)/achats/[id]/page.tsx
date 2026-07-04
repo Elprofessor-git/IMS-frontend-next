@@ -12,6 +12,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Table,
   TableBody,
   TableCell,
@@ -25,6 +32,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { CommandeSelect } from '@/components/forms/commande-select'
 import { DocumentSection } from '@/components/documents/document-section'
 import {
   useGetAchat,
@@ -35,12 +43,16 @@ import {
   useConfirmerAchat,
   useLivrerAchat,
 } from '@/hooks/use-achats'
+import { useGetCommandes } from '@/hooks/use-commandes'
+import { useGetClients } from '@/hooks/use-clients'
+import { useGetPlateformes } from '@/hooks/use-plateformes'
 import {
   ligneAchatSchema,
   toLigneAchatPayload,
   type LigneAchatSchema,
 } from '@/lib/validations/achat'
 import type { WorkflowStatutConfig, WorkflowTransition } from '@/components/ui/statut-workflow'
+import type { LigneAchat } from '@/types/achat'
 
 const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
@@ -48,6 +60,21 @@ const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   2: { label: 'Confirmé', badgeVariant: 'default' },
   3: { label: 'Livré', badgeClassName: 'border-green-200 bg-green-100 text-green-800' },
   4: { label: 'Annulé', badgeVariant: 'destructive' },
+}
+
+const DESTINATION_LABELS: Record<LigneAchat['typeDestination'], string> = {
+  Commande: 'Commande',
+  Marque: 'Marque',
+  Plateforme: 'Plateforme',
+  StockLibre: 'Libre',
+}
+
+function destinationLabel(l: LigneAchat): string {
+  const base = DESTINATION_LABELS[l.typeDestination] ?? l.typeDestination
+  if (l.typeDestination === 'Commande' && l.commandeClientId) return `Cde #${l.commandeClientId}`
+  if (l.typeDestination === 'Marque' && l.clientId) return `Client #${l.clientId}`
+  if (l.typeDestination === 'Plateforme' && l.plateformeId) return `Plf #${l.plateformeId}`
+  return base
 }
 
 // ── Dialog Ajouter une ligne ────────────────────────────────────
@@ -61,6 +88,9 @@ function AjouterLigneDialog({
   onClose: () => void
 }) {
   const ajouterMutation = useAjouterLigneAchat()
+  const { data: commandes } = useGetCommandes()
+  const { data: clients } = useGetClients()
+  const { data: plateformes } = useGetPlateformes()
 
   const {
     register,
@@ -68,6 +98,7 @@ function AjouterLigneDialog({
     control,
     reset,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<LigneAchatSchema>({
     resolver: zodResolver(ligneAchatSchema),
@@ -75,6 +106,10 @@ function AjouterLigneDialog({
       articleId: 0,
       quantite: 0,
       prixUnitaire: 0,
+      typeDestination: 'StockLibre',
+      commandeClientId: null,
+      clientId: null,
+      plateformeId: null,
       couleur: null,
       codeCouleur: null,
       taille: null,
@@ -84,6 +119,8 @@ function AjouterLigneDialog({
       notes: null,
     },
   })
+
+  const typeDestination = watch('typeDestination')
 
   if (!open) return null
 
@@ -98,7 +135,7 @@ function AjouterLigneDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="max-h-[90vh] w-[500px] overflow-y-auto rounded-lg bg-background p-6 shadow-xl">
+      <div className="max-h-[90vh] w-[540px] overflow-y-auto rounded-lg bg-background p-6 shadow-xl">
         <h3 className="mb-4 text-lg font-semibold">Ajouter une ligne</h3>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="grid gap-2">
@@ -166,6 +203,117 @@ function AjouterLigneDialog({
               <Input id="devise" {...register('devise')} maxLength={10} />
             </div>
           </div>
+
+          {/* Destination */}
+          <div className="grid gap-2">
+            <Label>Destination</Label>
+            <Controller
+              name="typeDestination"
+              control={control}
+              render={({ field: f }) => (
+                <Select
+                  value={f.value ?? 'StockLibre'}
+                  onValueChange={(v) => {
+                    f.onChange(v)
+                    if (v !== 'Commande') setValue('commandeClientId', null)
+                    if (v !== 'Marque') setValue('clientId', null)
+                    if (v !== 'Plateforme') setValue('plateformeId', null)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Commande">Commande</SelectItem>
+                    <SelectItem value="Marque">Marque (client)</SelectItem>
+                    <SelectItem value="Plateforme">Plateforme</SelectItem>
+                    <SelectItem value="StockLibre">Stock libre</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          {typeDestination === 'Commande' && (
+            <div className="grid gap-2">
+              <Label>Commande client <span className="text-destructive">*</span></Label>
+              <Controller
+                name="commandeClientId"
+                control={control}
+                render={({ field: f }) => (
+                  <CommandeSelect
+                    value={f.value ?? null}
+                    onChange={(id) => f.onChange(id)}
+                    commandes={commandes ?? []}
+                    placeholder="Sélectionner…"
+                  />
+                )}
+              />
+              {errors.commandeClientId && (
+                <p className="text-sm text-destructive">{errors.commandeClientId.message}</p>
+              )}
+            </div>
+          )}
+          {typeDestination === 'Marque' && (
+            <div className="grid gap-2">
+              <Label>Client <span className="text-destructive">*</span></Label>
+              <Controller
+                name="clientId"
+                control={control}
+                render={({ field: f }) => (
+                  <Select
+                    value={f.value ? String(f.value) : '0'}
+                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sélectionner…</SelectItem>
+                      {clients?.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.nomEntreprise ?? `${c.nom} ${c.prenom ?? ''}`.trim()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.clientId && (
+                <p className="text-sm text-destructive">{errors.clientId.message}</p>
+              )}
+            </div>
+          )}
+          {typeDestination === 'Plateforme' && (
+            <div className="grid gap-2">
+              <Label>Plateforme <span className="text-destructive">*</span></Label>
+              <Controller
+                name="plateformeId"
+                control={control}
+                render={({ field: f }) => (
+                  <Select
+                    value={f.value ? String(f.value) : '0'}
+                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sélectionner…</SelectItem>
+                      {plateformes?.map((p) => (
+                        <SelectItem key={p.id} value={String(p.id)}>
+                          {p.nom}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.plateformeId && (
+                <p className="text-sm text-destructive">{errors.plateformeId.message}</p>
+              )}
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="descriptionSpecifique">Description spécifique</Label>
@@ -337,11 +485,13 @@ export default function AchatDetailPage({
                     <dd className="font-medium">{achat.fournisseur?.nomEntreprise ?? `#${achat.fournisseurId}`}</dd>
                   </div>
                   <div>
-                    <dt className="text-muted-foreground">Commande client</dt>
+                    <dt className="text-muted-foreground">Commande client (en-tête)</dt>
                     <dd className="font-medium">
                       {achat.commandeClient
-                        ? achat.commandeClient.numeroCommande ?? `#${achat.commandeClientId}`
-                        : `#${achat.commandeClientId}`}
+                        ? (achat.commandeClient.numeroCommande ?? `#${achat.commandeClientId}`)
+                        : achat.commandeClientId
+                          ? `#${achat.commandeClientId}`
+                          : '—'}
                       {achat.commandeClient?.client && (
                         <span className="ml-1 text-muted-foreground">
                           ({achat.commandeClient.client.nom})
@@ -462,11 +612,11 @@ export default function AchatDetailPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Article</TableHead>
+                    <TableHead>Destination</TableHead>
                     <TableHead className="text-right">Qté</TableHead>
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
-                    <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -485,6 +635,9 @@ export default function AchatDetailPage({
                           <p className="font-mono text-xs text-muted-foreground">{l.article.reference}</p>
                         )}
                       </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {destinationLabel(l)}
+                      </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
                       <TableCell className="text-right font-mono">
                         {Number(l.prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
@@ -495,9 +648,6 @@ export default function AchatDetailPage({
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {[l.couleur, l.taille, l.dimension].filter(Boolean).join(' / ') || '—'}
-                      </TableCell>
-                      <TableCell className="max-w-[160px] truncate text-sm text-muted-foreground">
-                        {l.descriptionSpecifique ?? l.notes ?? '—'}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -516,6 +666,7 @@ export default function AchatDetailPage({
             )}
           </div>
         </TabsContent>
+
         {/* ── Onglet Documents ── */}
         <TabsContent value="documents">
           <DocumentSection scope="achat" parentId={achatId} />

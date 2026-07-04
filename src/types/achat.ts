@@ -11,6 +11,10 @@ export type LigneAchat = {
   id: number
   achatId: number
   articleId: number
+  typeDestination: 'Commande' | 'Marque' | 'Plateforme' | 'StockLibre'
+  commandeClientId: number | null
+  clientId: number | null
+  plateformeId: number | null
   couleur: string | null
   codeCouleur: string | null
   taille: string | null
@@ -44,7 +48,7 @@ export type Achat = {
   id: number
   numeroAchat: string
   fournisseurId: number
-  commandeClientId: number
+  commandeClientId: number | null
   statut: number // 0=Brouillon 1=Soumis 2=Confirme 3=Livre 4=Annule
   dateAchat: string
   dateLivraisonPrevue: string | null

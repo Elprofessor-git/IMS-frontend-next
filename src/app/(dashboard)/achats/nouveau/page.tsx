@@ -33,11 +33,11 @@ import {
 } from '@/lib/validations/achat'
 import { useGetFournisseurs } from '@/hooks/use-fournisseurs'
 import { useGetCommandes } from '@/hooks/use-commandes'
+import { useGetClients } from '@/hooks/use-clients'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
 import type { Achat } from '@/types/achat'
 import type { ApiError } from '@/types'
 
-// Extends the header schema with an optional array of lines
 const creationSchema = achatSchema.extend({
   lignes: z.array(ligneAchatSchema),
 })
@@ -47,6 +47,10 @@ const LIGNE_DEFAULTS = {
   articleId: 0,
   quantite: 1,
   prixUnitaire: 0,
+  typeDestination: 'StockLibre' as const,
+  commandeClientId: null,
+  clientId: null,
+  plateformeId: null,
   couleur: null,
   codeCouleur: null,
   taille: null,
@@ -54,13 +58,14 @@ const LIGNE_DEFAULTS = {
   devise: null,
   descriptionSpecifique: null,
   notes: null,
-} as const
+}
 
 export default function NouvelAchatPage() {
   const router = useRouter()
   const qc = useQueryClient()
   const { data: fournisseurs } = useGetFournisseurs()
   const { data: commandes, isLoading: loadingCommandes } = useGetCommandes()
+  const { data: clients } = useGetClients()
   const { data: plateformes } = useGetPlateformes()
 
   const [plateformeFilter, setPlateformeFilter] = useState<number | null>(null)
@@ -80,7 +85,7 @@ export default function NouvelAchatPage() {
     resolver: zodResolver(creationSchema),
     defaultValues: {
       fournisseurId: 0,
-      commandeClientId: 0,
+      commandeClientId: null,
       dateLivraisonPrevue: null,
       devise: 'EUR',
       conditionsPaiement: null,
@@ -92,7 +97,6 @@ export default function NouvelAchatPage() {
 
   const { fields, append, remove } = useFieldArray({ control, name: 'lignes' })
 
-  const currentCommandeId = watch('commandeClientId')
   const watchedLignes = watch('lignes')
   const parentDevise = watch('devise')
 
@@ -102,11 +106,18 @@ export default function NouvelAchatPage() {
 
   function handlePlateformeFilterChange(pid: number | null) {
     setPlateformeFilter(pid)
-    if (currentCommandeId > 0 && pid) {
-      const stillValid = (commandes ?? []).find(
-        (c) => c.id === currentCommandeId && c.client?.plateforme?.id === pid,
+    if (pid) {
+      const validIds = new Set(
+        (commandes ?? [])
+          .filter((c) => c.client?.plateforme?.id === pid)
+          .map((c) => c.id),
       )
-      if (!stillValid) setValue('commandeClientId', 0)
+      const current = watchedLignes ?? []
+      current.forEach((l, i) => {
+        if (l.commandeClientId && !validIds.has(l.commandeClientId)) {
+          setValue(`lignes.${i}.commandeClientId`, null)
+        }
+      })
     }
   }
 
@@ -130,11 +141,9 @@ export default function NouvelAchatPage() {
     setIsSubmitting(true)
     setSubmitProgress(null)
     try {
-      // 1. Create the Achat header (backend does not accept lines in this POST)
       const { lignes, ...headerData } = data
       const achat = await apiClient.post<Achat>('/api/Achat', toAchatPayload(headerData))
 
-      // 2. Create each line sequentially — preserve order, stop cleanly on failure
       let successCount = 0
       for (let i = 0; i < lignes.length; i++) {
         setSubmitProgress({ current: i + 1, total: lignes.length })
@@ -215,52 +224,6 @@ export default function NouvelAchatPage() {
                 )}
               </div>
 
-              <div className="grid gap-2">
-                <Label>Filtrer par plateforme</Label>
-                <Select
-                  value={plateformeFilter ? String(plateformeFilter) : '0'}
-                  onValueChange={(v) =>
-                    handlePlateformeFilterChange(v === '0' ? null : Number(v))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Toutes les plateformes</SelectItem>
-                    {plateformes?.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>
-                  Commande client <span className="text-destructive">*</span>
-                </Label>
-                {loadingCommandes ? (
-                  <Skeleton className="h-9 w-full" />
-                ) : (
-                  <Controller
-                    name="commandeClientId"
-                    control={control}
-                    render={({ field }) => (
-                      <CommandeSelect
-                        value={field.value > 0 ? field.value : null}
-                        onChange={(id) => field.onChange(id ?? 0)}
-                        commandes={filteredCommandes}
-                      />
-                    )}
-                  />
-                )}
-                {errors.commandeClientId && (
-                  <p className="text-sm text-destructive">{errors.commandeClientId.message}</p>
-                )}
-              </div>
-
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="grid gap-2">
                   <Label htmlFor="dateLivraisonPrevue">Livraison prévue</Label>
@@ -300,6 +263,35 @@ export default function NouvelAchatPage() {
               </Button>
             </CardHeader>
             <CardContent>
+              {/* Plateforme filter — filters commande selects on all lines */}
+              {fields.length > 0 && (
+                <div className="mb-4 grid gap-2">
+                  <Label>Filtrer commandes par plateforme</Label>
+                  {loadingCommandes ? (
+                    <Skeleton className="h-9 max-w-xs" />
+                  ) : (
+                    <Select
+                      value={plateformeFilter ? String(plateformeFilter) : '0'}
+                      onValueChange={(v) =>
+                        handlePlateformeFilterChange(v === '0' ? null : Number(v))
+                      }
+                    >
+                      <SelectTrigger className="max-w-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Toutes les plateformes</SelectItem>
+                        {plateformes?.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
+
               {fields.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Aucune ligne — vous pourrez en ajouter depuis la page détail après la création.
@@ -412,6 +404,130 @@ export default function NouvelAchatPage() {
                               <Input {...register(`lignes.${i}.taille`)} />
                             </div>
                           </div>
+
+                          {/* Destination */}
+                          <div className="grid gap-2">
+                            <Label>Destination</Label>
+                            <Controller
+                              name={`lignes.${i}.typeDestination`}
+                              control={control}
+                              render={({ field: f }) => (
+                                <Select
+                                  value={f.value ?? 'StockLibre'}
+                                  onValueChange={(v) => {
+                                    f.onChange(v)
+                                    if (v !== 'Commande') setValue(`lignes.${i}.commandeClientId`, null)
+                                    if (v !== 'Marque') setValue(`lignes.${i}.clientId`, null)
+                                    if (v !== 'Plateforme') setValue(`lignes.${i}.plateformeId`, null)
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Commande">Commande</SelectItem>
+                                    <SelectItem value="Marque">Marque (client)</SelectItem>
+                                    <SelectItem value="Plateforme">Plateforme</SelectItem>
+                                    <SelectItem value="StockLibre">Stock libre</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </div>
+
+                          {/* Champ conditionnel selon TypeDestination */}
+                          {watchedLignes?.[i]?.typeDestination === 'Commande' && (
+                            <div className="grid gap-2">
+                              <Label>
+                                Commande client <span className="text-destructive">*</span>
+                              </Label>
+                              <Controller
+                                name={`lignes.${i}.commandeClientId`}
+                                control={control}
+                                render={({ field: f }) => (
+                                  <CommandeSelect
+                                    value={f.value ?? null}
+                                    onChange={(id) => f.onChange(id)}
+                                    commandes={filteredCommandes}
+                                    placeholder="Sélectionner…"
+                                  />
+                                )}
+                              />
+                              {errors.lignes?.[i]?.commandeClientId && (
+                                <p className="text-xs text-destructive">
+                                  {errors.lignes[i].commandeClientId?.message}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {watchedLignes?.[i]?.typeDestination === 'Marque' && (
+                            <div className="grid gap-2">
+                              <Label>
+                                Client <span className="text-destructive">*</span>
+                              </Label>
+                              <Controller
+                                name={`lignes.${i}.clientId`}
+                                control={control}
+                                render={({ field: f }) => (
+                                  <Select
+                                    value={f.value ? String(f.value) : '0'}
+                                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Sélectionner…" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="0">Sélectionner…</SelectItem>
+                                      {clients?.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                          {c.nomEntreprise ?? `${c.nom} ${c.prenom ?? ''}`.trim()}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                              {errors.lignes?.[i]?.clientId && (
+                                <p className="text-xs text-destructive">
+                                  {errors.lignes[i].clientId?.message}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          {watchedLignes?.[i]?.typeDestination === 'Plateforme' && (
+                            <div className="grid gap-2">
+                              <Label>
+                                Plateforme <span className="text-destructive">*</span>
+                              </Label>
+                              <Controller
+                                name={`lignes.${i}.plateformeId`}
+                                control={control}
+                                render={({ field: f }) => (
+                                  <Select
+                                    value={f.value ? String(f.value) : '0'}
+                                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Sélectionner…" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="0">Sélectionner…</SelectItem>
+                                      {plateformes?.map((p) => (
+                                        <SelectItem key={p.id} value={String(p.id)}>
+                                          {p.nom}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              />
+                              {errors.lignes?.[i]?.plateformeId && (
+                                <p className="text-xs text-destructive">
+                                  {errors.lignes[i].plateformeId?.message}
+                                </p>
+                              )}
+                            </div>
+                          )}
 
                           {/* Montant ligne */}
                           {montant !== null && (
