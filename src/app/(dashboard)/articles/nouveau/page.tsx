@@ -76,20 +76,9 @@ export default function NouvelArticlePage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="grid gap-2">
-                  <Label>Référence</Label>
-                  <Input
-                    value="Générée automatiquement (ARTyyyyMMNNNN)"
-                    readOnly
-                    disabled
-                    className="bg-muted text-muted-foreground cursor-not-allowed"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="marque">Marque</Label>
-                  <Input id="marque" {...register('marque')} />
-                </div>
+              <div className="grid gap-2">
+                <Label htmlFor="marque">Marque</Label>
+                <Input id="marque" {...register('marque')} />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

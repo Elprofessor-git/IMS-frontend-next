@@ -191,7 +191,15 @@ export default function EditArticlePage({
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="grid gap-2">
                       <Label htmlFor="reference">Référence</Label>
-                      <Input id="reference" {...register('reference')} />
+                      <Input
+                        id="reference"
+                        {...register('reference')}
+                        disabled
+                        className="bg-muted cursor-not-allowed"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Générée automatiquement à la création, non modifiable.
+                      </p>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="marque">Marque</Label>
