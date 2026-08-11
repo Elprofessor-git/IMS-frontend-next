@@ -32,7 +32,21 @@ async function parseError(response: Response): Promise<ApiError> {
 
   try {
     const text = await response.text()
-    return { status, message: text || `Erreur ${status}` }
+
+    // Corps JSON du type { error, message, details, title } : on extrait le message lisible.
+    try {
+      const data = JSON.parse(text) as {
+        error?: string
+        message?: string
+        details?: string
+        title?: string
+      }
+      const message =
+        data.details ?? data.message ?? data.error ?? data.title ?? `Erreur ${status}`
+      return { status, message }
+    } catch {
+      return { status, message: text || `Erreur ${status}` }
+    }
   } catch {
     return { status, message: `Erreur ${status}` }
   }

@@ -72,8 +72,11 @@ export function ChatbotWidget() {
         },
       ])
     } catch (err: unknown) {
+      // ApiError de api-client est un objet { status, message } (pas une instance d'Error).
       const msg =
-        err instanceof Error && err.message
+        typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
+          ? ((err as { message: string }).message)
+          : err instanceof Error && err.message
           ? err.message
           : 'Erreur de communication avec le service IA.'
       setMessages((prev) => [
