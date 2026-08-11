@@ -201,26 +201,37 @@ export default function RapportAchatsPage() {
     return [...map.values()].sort((a, b) => b.montant - a.montant)
   }, [filtered, plateformes])
 
-  // ── Export CSV ────────────────────────────────────────────────────────────────
+  // ── Export CSV (par ligne, colonnes Excel) ─────────────────────────────────
   const handleExport = () => {
-    const rows = filtered.map((a) => {
-      const lignes = a.lignesAchat ?? []
-      const plateformesAchat = [...new Set(
-        lignes
-          .filter((l) => l.typeDestination === 2 && l.plateformeId)
-          .map((l) => plateformes?.find((p) => p.id === l.plateformeId)?.nom ?? `Plf #${l.plateformeId}`)
-      )].join(' + ')
-      return {
-        'N° Achat': a.numeroAchat,
-        Fournisseur: a.fournisseur?.nomEntreprise ?? '',
-        'Marque / Client': a.commandeClient?.client?.nom ?? '',
-        Plateforme: plateformesAchat || (a.commandeClient?.client?.plateforme?.nom ?? ''),
-        Statut: STATUT_ACHAT[a.statut] ?? String(a.statut),
-        'Date achat': a.dateAchat ? fmtDate(a.dateAchat) : '',
-        'Montant total': a.montantTotal ?? 0,
-        Devise: a.devise ?? 'EUR',
+    const rows: Record<string, string | number | null | undefined>[] = []
+    for (const a of filtered) {
+      const lignes = a.lignesAchat?.length ? a.lignesAchat : [null]
+      for (const l of lignes) {
+        const plateforme = l
+          ? (plateformes?.find((p) => p.id === l.plateformeId)?.nom ??
+            (l.typeDestination === 2 ? `Plf #${l.plateformeId}` : (a.commandeClient?.client?.plateforme?.nom ?? '')))
+          : (a.commandeClient?.client?.plateforme?.nom ?? '')
+        rows.push({
+          'N° Achat': a.numeroAchat,
+          'Date achat': a.dateAchat ? fmtDate(a.dateAchat) : '',
+          'Date livraison': a.dateLivraisonPrevue ? fmtDate(a.dateLivraisonPrevue) : '',
+          Fournisseur: a.fournisseur?.nomEntreprise ?? '',
+          Article: l?.article?.designation ?? '',
+          'Désignation / Réf.': l?.article?.reference ?? '',
+          Couleur: l?.couleur ?? '',
+          Taille: l?.taille ?? '',
+          Dimension: l?.dimension ?? '',
+          Quantité: l?.quantite ?? 0,
+          'Prix unitaire': l?.prixUnitaire ?? 0,
+          'Montant ligne': l?.montantLigne ?? 0,
+          Devise: l?.devise ?? a.devise ?? 'EUR',
+          Plateforme: plateforme,
+          'Commande destinée': a.commandeClient?.numeroCommande ?? '',
+          'Commandé par': a.creePar ?? '',
+          Statut: STATUT_ACHAT[a.statut] ?? String(a.statut),
+        })
       }
-    })
+    }
     const suffix =
       dateDebut || dateFin
         ? `_${dateDebut || 'debut'}_${dateFin || 'fin'}`

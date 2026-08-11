@@ -1,18 +1,30 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Plus, ExternalLink, Trash2 } from 'lucide-react'
+import { Plus, ExternalLink, Trash2, Download, X, Rows3, Table2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useGetAchats, useDeleteAchat } from '@/hooks/use-achats'
+import { useGetFournisseurs } from '@/hooks/use-fournisseurs'
+import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { STATUT_ACHAT } from '@/types/fournisseur'
-import type { Achat } from '@/types/achat'
+import type { Achat, LigneAchat } from '@/types/achat'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
   0: { variant: 'secondary' },
@@ -31,23 +43,174 @@ function StatutBadge({ statut }: { statut: number }) {
   )
 }
 
-const TABS = [
-  { value: 'tous',      label: 'Tous',      filter: () => true },
-  { value: 'brouillon', label: 'Brouillon', filter: (a: Achat) => a.statut === 0 },
-  { value: 'soumis',    label: 'Soumis',    filter: (a: Achat) => a.statut === 1 },
-  { value: 'confirme',  label: 'Confirmé',  filter: (a: Achat) => a.statut === 2 },
-  { value: 'livre',     label: 'Livré',     filter: (a: Achat) => a.statut === 3 },
-]
+// ── Helpers CSV ────────────────────────────────────────────────────────────────
+
+function csvCell(v: string | number | null | undefined): string {
+  if (v === null || v === undefined) return ''
+  const s = String(v)
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return `"${s.replace(/"/g, '""')}"`
+  }
+  return s
+}
+
+function exportCsv(rows: Record<string, string | number | null | undefined>[], filename: string) {
+  if (rows.length === 0) return
+  const headers = Object.keys(rows[0])
+  const lines = [
+    headers.map(csvCell).join(','),
+    ...rows.map((r) => headers.map((h) => csvCell(r[h])).join(',')),
+  ]
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+const fmtDate = (s?: string | null) =>
+  s ? new Date(s).toLocaleDateString('fr-FR') : ''
+
+// ── Filtres (combinables, façon Excel) ────────────────────────────────────────
+
+type Filters = {
+  dateDebut: string
+  dateFin: string
+  statut: string
+  fournisseurId: string
+  plateformeId: string
+  article: string
+}
+
+const EMPTY_FILTERS: Filters = {
+  dateDebut: '',
+  dateFin: '',
+  statut: 'tous',
+  fournisseurId: '',
+  plateformeId: '',
+  article: '',
+}
+
+function plateformeDeLaLigne(l: LigneAchat, plateformes: { id: number; nom: string }[] | undefined) {
+  if (l.typeDestination === 2 && l.plateformeId) {
+    return plateformes?.find((p) => p.id === l.plateformeId)?.nom ?? `Plf #${l.plateformeId}`
+  }
+  return null
+}
+
+function plateformeDeLAchat(a: Achat) {
+  return a.commandeClient?.client?.plateforme?.nom ?? null
+}
+
+function ligneMatchePlateforme(
+  l: LigneAchat,
+  a: Achat,
+  plateformeId: string,
+  plateformes: { id: number; nom: string }[] | undefined,
+): boolean {
+  if (!plateformeId) return true
+  const pid = Number(plateformeId)
+  if (l.typeDestination === 2 && l.plateformeId === pid) return true
+  if (l.typeDestination === 2 && !l.plateformeId) {
+    return plateformes?.find((p) => p.id === pid)?.nom === plateformeDeLaLigne(l, plateformes)
+  }
+  if (a.commandeClient?.client?.plateforme?.id === pid) return true
+  return false
+}
+
+function ligneMatcheArticle(l: LigneAchat, terme: string): boolean {
+  if (!terme.trim()) return true
+  const t = terme.trim().toLowerCase()
+  return (
+    (l.article?.designation?.toLowerCase().includes(t) ?? false) ||
+    (l.article?.reference?.toLowerCase().includes(t) ?? false) ||
+    (l.couleur?.toLowerCase().includes(t) ?? false) ||
+    (l.taille?.toLowerCase().includes(t) ?? false) ||
+    (l.dimension?.toLowerCase().includes(t) ?? false)
+  )
+}
+
+function achatMatcheFiltres(
+  a: Achat,
+  f: Filters,
+  plateformes: { id: number; nom: string }[] | undefined,
+): boolean {
+  const d = a.dateAchat?.slice(0, 10) ?? ''
+  if (f.dateDebut && d < f.dateDebut) return false
+  if (f.dateFin && d > f.dateFin) return false
+  if (f.statut !== 'tous' && a.statut !== Number(f.statut)) return false
+  if (f.fournisseurId && a.fournisseurId !== Number(f.fournisseurId)) return false
+
+  const aUnArticle = a.lignesAchat?.length > 0
+
+  // Plateforme : l'achat est retenu s'il a au moins une ligne (ou son en-tête) qui matche.
+  if (f.plateformeId) {
+    if (!plateformes) return false
+    if (aUnArticle) {
+      if (!a.lignesAchat.some((l) => ligneMatchePlateforme(l, a, f.plateformeId, plateformes)))
+        return false
+    } else if (a.commandeClient?.client?.plateforme?.id !== Number(f.plateformeId)) {
+      return false
+    }
+  }
+
+  // Article : idem, recherche sur les lignes (si l'achat a des lignes).
+  if (f.article.trim()) {
+    if (aUnArticle) {
+      if (!a.lignesAchat.some((l) => ligneMatcheArticle(l, f.article))) return false
+    } else if (
+      !a.numeroAchat.toLowerCase().includes(f.article.trim().toLowerCase()) &&
+      !(a.fournisseur?.nomEntreprise?.toLowerCase().includes(f.article.trim().toLowerCase()) ?? false)
+    ) {
+      return false
+    }
+  }
+
+  return true
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
 
 export default function AchatsPage() {
   const { data: achats, isLoading } = useGetAchats()
   const deleteMutation = useDeleteAchat()
+  const { data: fournisseurs } = useGetFournisseurs()
+  const { data: plateformes } = useGetPlateformes()
 
-  const byTab = useMemo(() => {
-    if (!achats) return {}
-    return Object.fromEntries(TABS.map((t) => [t.value, achats.filter(t.filter)]))
-  }, [achats])
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
 
+  const setFilter = (k: keyof Filters, v: string) =>
+    setFilters((prev) => ({ ...prev, [k]: v }))
+
+  const hasFilter =
+    filters.dateDebut ||
+    filters.dateFin ||
+    filters.statut !== 'tous' ||
+    filters.fournisseurId ||
+    filters.plateformeId ||
+    filters.article.trim()
+
+  const resetFilters = () => setFilters(EMPTY_FILTERS)
+
+  // Achats filtrés (en-têtes)
+  const filtered = useMemo(() => {
+    if (!achats) return []
+    return achats.filter((a) => achatMatcheFiltres(a, filters, plateformes))
+  }, [achats, filters, plateformes])
+
+  // Vue « Lignes » : une ligne = un article acheté, avec colonnes Excel
+  const lignes = useMemo(() => {
+    const rows: { achat: Achat; ligne: LigneAchat | null }[] = []
+    for (const a of filtered) {
+      const ls = a.lignesAchat?.length ? a.lignesAchat : [null]
+      for (const l of ls) rows.push({ achat: a, ligne: l })
+    }
+    return rows
+  }, [filtered])
+
+  // ── Colonnes tableau en-têtes ──
   const columns = useMemo<ColDef<Achat>[]>(
     () => [
       {
@@ -76,6 +239,15 @@ export default function AchatsPage() {
         ),
       },
       {
+        key: 'plateforme',
+        header: 'Plateforme',
+        cell: (a) => (
+          <span className="text-sm text-muted-foreground">
+            {plateformeDeLAchat(a) ?? '—'}
+          </span>
+        ),
+      },
+      {
         key: 'statut',
         header: 'Statut',
         cardPrimary: true,
@@ -98,9 +270,17 @@ export default function AchatsPage() {
         header: 'Livraison prévue',
         cell: (a) => (
           <span className="text-sm text-muted-foreground">
-            {a.dateLivraisonPrevue
-              ? new Date(a.dateLivraisonPrevue).toLocaleDateString('fr-FR')
-              : '—'}
+            {fmtDate(a.dateLivraisonPrevue) || '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'lignes',
+        header: 'Lignes',
+        headerClassName: 'text-right',
+        cell: (a) => (
+          <span className="tabular-nums text-muted-foreground">
+            {a.lignesAchat?.length ?? 0}
           </span>
         ),
       },
@@ -144,49 +324,331 @@ export default function AchatsPage() {
     [deleteMutation],
   )
 
+  // ── Colonnes tableau lignes (façon Excel) ──
+  const ligneColumns = useMemo<ColDef<{ achat: Achat; ligne: LigneAchat | null }>[]>(
+    () => [
+      {
+        key: 'numeroAchat',
+        header: 'N° Achat',
+        cardPrimary: true,
+        cell: ({ achat }) => (
+          <Link href={`/achats/${achat.id}`} className="font-mono font-medium hover:underline">
+            {achat.numeroAchat}
+          </Link>
+        ),
+      },
+      {
+        key: 'dateLivraison',
+        header: 'Date livraison',
+        cardPrimary: true,
+        cell: ({ achat }) => (
+          <span className="text-sm">{fmtDate(achat.dateLivraisonPrevue) || '—'}</span>
+        ),
+      },
+      {
+        key: 'article',
+        header: 'Article',
+        cardPrimary: true,
+        cell: ({ ligne }) => (
+          <span>{ligne?.article?.designation ?? '—'}</span>
+        ),
+      },
+      {
+        key: 'designation',
+        header: 'Désignation / Réf.',
+        cell: ({ ligne }) => (
+          <span className="text-sm text-muted-foreground">
+            {ligne?.article?.reference ?? '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'caracteristiques',
+        header: 'Couleur / Taille / Dim.',
+        cell: ({ ligne }) => (
+          <span className="text-sm text-muted-foreground">
+            {[ligne?.couleur, ligne?.taille, ligne?.dimension].filter(Boolean).join(' · ') || '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'quantite',
+        header: 'Quantité',
+        cardPrimary: true,
+        headerClassName: 'text-right',
+        cell: ({ ligne }) => (
+          <span className="tabular-nums">{Number(ligne?.quantite ?? 0)}</span>
+        ),
+      },
+      {
+        key: 'prixUnitaire',
+        header: 'Prix unitaire',
+        headerClassName: 'text-right',
+        cell: ({ ligne }) => (
+          <span className="tabular-nums">
+            {Number(ligne?.prixUnitaire ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+          </span>
+        ),
+      },
+      {
+        key: 'montantLigne',
+        header: 'Montant',
+        headerClassName: 'text-right',
+        cell: ({ ligne }) => (
+          <span className="tabular-nums">
+            {Number(ligne?.montantLigne ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+          </span>
+        ),
+      },
+      {
+        key: 'plateforme',
+        header: 'Plateforme',
+        cardPrimary: true,
+        cell: ({ achat, ligne }) => (
+          <span className="text-sm">
+            {ligne
+              ? (plateformeDeLaLigne(ligne, plateformes) ?? plateformeDeLAchat(achat) ?? '—')
+              : (plateformeDeLAchat(achat) ?? '—')}
+          </span>
+        ),
+      },
+      {
+        key: 'commandeDestinee',
+        header: 'Commande destinée',
+        cell: ({ achat }) => (
+          <span className="text-sm text-muted-foreground">
+            {achat.commandeClient?.numeroCommande ?? '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'commandePar',
+        header: 'Commandé par',
+        cell: ({ achat }) => (
+          <span className="text-sm text-muted-foreground">
+            {achat.creePar ?? '—'}
+          </span>
+        ),
+      },
+      {
+        key: 'statut',
+        header: 'Statut',
+        cell: ({ achat }) => <StatutBadge statut={achat.statut} />,
+      },
+    ],
+    [plateformes],
+  )
+
+  // ── Export CSV (par ligne, colonnes Excel) ──
+  const handleExport = () => {
+    const rows = lignes.map(({ achat, ligne }) => {
+      const plateforme = ligne
+        ? (plateformeDeLaLigne(ligne, plateformes) ?? plateformeDeLAchat(achat) ?? '')
+        : (plateformeDeLAchat(achat) ?? '')
+      return {
+        'N° Achat': achat.numeroAchat,
+        'Date achat': achat.dateAchat ? fmtDate(achat.dateAchat) : '',
+        'Date livraison': achat.dateLivraisonPrevue ? fmtDate(achat.dateLivraisonPrevue) : '',
+        Fournisseur: achat.fournisseur?.nomEntreprise ?? '',
+        Article: ligne?.article?.designation ?? '',
+        'Désignation / Réf.': ligne?.article?.reference ?? '',
+        Couleur: ligne?.couleur ?? '',
+        Taille: ligne?.taille ?? '',
+        Dimension: ligne?.dimension ?? '',
+        Quantité: ligne?.quantite ?? 0,
+        'Prix unitaire': ligne?.prixUnitaire ?? 0,
+        'Montant ligne': ligne?.montantLigne ?? 0,
+        Devise: ligne?.devise ?? achat.devise ?? 'EUR',
+        Plateforme: plateforme,
+        'Commande destinée': achat.commandeClient?.numeroCommande ?? '',
+        'Commandé par': achat.creePar ?? '',
+        Statut: STATUT_ACHAT[achat.statut] ?? String(achat.statut),
+      }
+    })
+    const suffix =
+      filters.dateDebut || filters.dateFin
+        ? `_${filters.dateDebut || 'debut'}_${filters.dateFin || 'fin'}`
+        : '_tous'
+    exportCsv(rows, `achats${suffix}.csv`)
+  }
+
+  // Totaux (pour la barre résumé)
+  const totalLignes = lignes.reduce((s, r) => s + Number(r.ligne?.quantite ?? 0), 0)
+  const totalMontant = filtered.reduce((s, a) => s + Number(a.montantTotal ?? 0), 0)
+
   return (
     <div>
       <PageHeader
         title="Achats"
         action={
-          <PermissionGate module="achats" mode="write">
-            <Button size="sm" asChild>
-              <Link href="/achats/nouveau">
-                <Plus className="size-4" />
-                Nouvel achat
-              </Link>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={handleExport} disabled={lignes.length === 0}>
+              <Download className="size-4" />
+              Exporter CSV
             </Button>
-          </PermissionGate>
+            <PermissionGate module="achats" mode="write">
+              <Button size="sm" asChild>
+                <Link href="/achats/nouveau">
+                  <Plus className="size-4" />
+                  Nouvel achat
+                </Link>
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 
-      <Tabs defaultValue="tous">
+      {/* ── Filtres combinables ── */}
+      <Card className="mb-4">
+        <div className="flex flex-wrap items-end gap-4 p-4">
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Date début</Label>
+            <Input
+              type="date"
+              value={filters.dateDebut}
+              onChange={(e) => setFilter('dateDebut', e.target.value)}
+              className="w-40"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Date fin</Label>
+            <Input
+              type="date"
+              value={filters.dateFin}
+              onChange={(e) => setFilter('dateFin', e.target.value)}
+              className="w-40"
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Statut</Label>
+            <Select value={filters.statut} onValueChange={(v) => setFilter('statut', v)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Tous les statuts</SelectItem>
+                {Object.entries(STATUT_ACHAT).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Fournisseur</Label>
+            <Select
+              value={filters.fournisseurId}
+              onValueChange={(v) => setFilter('fournisseurId', v)}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Tous les fournisseurs</SelectItem>
+                {fournisseurs?.map((f) => (
+                  <SelectItem key={f.id} value={String(f.id)}>
+                    {f.nomEntreprise}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Plateforme</Label>
+            <Select
+              value={filters.plateformeId}
+              onValueChange={(v) => setFilter('plateformeId', v)}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Toutes les plateformes</SelectItem>
+                {plateformes?.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label className="text-xs">Article / Réf.</Label>
+            <Input
+              placeholder="bobine, bouton…"
+              value={filters.article}
+              onChange={(e) => setFilter('article', e.target.value)}
+              className="w-44"
+            />
+          </div>
+          {hasFilter && (
+            <Button variant="ghost" size="sm" onClick={resetFilters}>
+              <X className="size-3.5" />
+              Réinitialiser
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {/* ── Bandeau résumé ── */}
+      <div className="mb-4 flex flex-wrap items-center gap-6 rounded-lg border bg-muted/40 px-5 py-3 text-sm">
+        <span>
+          <span className="text-2xl font-bold">{filtered.length}</span>
+          <span className="ml-1 text-muted-foreground">achat(s)</span>
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span>
+          <span className="text-2xl font-bold">{lignes.length}</span>
+          <span className="ml-1 text-muted-foreground">ligne(s)</span>
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span>
+          <span className="text-2xl font-bold">{totalLignes}</span>
+          <span className="ml-1 text-muted-foreground">quantité(s)</span>
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span>
+          <span className="text-2xl font-bold">
+            {totalMontant.toLocaleString('fr-FR', { maximumFractionDigits: 2 })}
+          </span>
+          <span className="ml-1 text-muted-foreground">montant total</span>
+        </span>
+      </div>
+
+      <Tabs defaultValue="achats">
         <div className="mb-4 overflow-x-auto">
           <TabsList>
-            {TABS.map((t) => (
-              <TabsTrigger key={t.value} value={t.value}>
-                {t.label}
-                {!isLoading && byTab[t.value] !== undefined && byTab[t.value].length > 0 && (
-                  <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0 text-xs font-medium">
-                    {byTab[t.value].length}
-                  </span>
-                )}
-              </TabsTrigger>
-            ))}
+            <TabsTrigger value="achats">
+              <Table2 className="mr-1.5 size-3.5" />
+              Achats ({filtered.length})
+            </TabsTrigger>
+            <TabsTrigger value="lignes">
+              <Rows3 className="mr-1.5 size-3.5" />
+              Lignes / articles ({lignes.length})
+            </TabsTrigger>
           </TabsList>
         </div>
 
-        {TABS.map((t) => (
-          <TabsContent key={t.value} value={t.value}>
-            <ResponsiveTable
-              columns={columns}
-              data={byTab[t.value] ?? []}
-              keyExtractor={(a) => a.id}
-              isLoading={isLoading}
-              emptyText="Aucun achat trouvé."
-            />
-          </TabsContent>
-        ))}
+        <TabsContent value="achats">
+          <ResponsiveTable
+            columns={columns}
+            data={filtered}
+            keyExtractor={(a) => a.id}
+            isLoading={isLoading}
+            emptyText="Aucun achat trouvé."
+          />
+        </TabsContent>
+
+        <TabsContent value="lignes">
+          <ResponsiveTable
+            columns={ligneColumns}
+            data={lignes}
+            keyExtractor={(r) => (r.ligne ? `l${r.ligne.id}` : `a${r.achat.id}`)}
+            isLoading={isLoading}
+            emptyText="Aucune ligne trouvée."
+          />
+        </TabsContent>
       </Tabs>
     </div>
   )
