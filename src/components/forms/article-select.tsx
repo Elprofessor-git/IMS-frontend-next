@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useSearchArticles } from '@/hooks/use-articles'
+import { useSearchArticles, useGetArticle } from '@/hooks/use-articles'
 import type { Article } from '@/types/article'
 
 export function articleLabel(a: Article): string {
@@ -38,6 +38,9 @@ export function ArticleSelect({
   const isSearching = open && debouncedSearch.length >= 2
   const { data: results, isLoading } = useSearchArticles(debouncedSearch, isSearching)
 
+  const { data: fetchedArticle } = useGetArticle(value ?? 0)
+  const resolvedArticle = selectedArticle ?? fetchedArticle ?? null
+
   useEffect(() => {
     function handleMouseDown(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -49,8 +52,8 @@ export function ArticleSelect({
     return () => document.removeEventListener('mousedown', handleMouseDown)
   }, [])
 
-  const displayLabel = selectedArticle
-    ? articleLabel(selectedArticle)
+  const displayLabel = resolvedArticle
+    ? articleLabel(resolvedArticle)
     : value
     ? `Article #${value}`
     : ''
