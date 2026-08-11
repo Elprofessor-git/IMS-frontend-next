@@ -11,7 +11,7 @@ export type LigneAchat = {
   id: number
   achatId: number
   articleId: number
-  typeDestination: 'Commande' | 'Marque' | 'Plateforme' | 'StockLibre'
+  typeDestination: number // 0=Commande 1=Marque 2=Plateforme 3=StockLibre
   commandeClientId: number | null
   clientId: number | null
   plateformeId: number | null

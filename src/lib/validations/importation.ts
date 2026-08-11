@@ -59,11 +59,25 @@ export const ligneImportationSchema = z.object({
 
 export type LigneImportationSchema = z.infer<typeof ligneImportationSchema>
 
+// Enums backend : TypeOrigineImportation (Fournisseur=0, ClientCMT=1),
+// TypeDestinationImportation (Commande=0, Marque=1, Plateforme=2, StockLibre=3).
+// L'API sérialise les enums en NOMBRES → conversion ici, à la limite API.
+const TYPE_ORIGINE: Record<LigneImportationSchema['typeOrigine'], number> = {
+  Fournisseur: 0,
+  ClientCMT: 1,
+}
+const TYPE_DESTINATION: Record<LigneImportationSchema['typeDestination'], number> = {
+  Commande: 0,
+  Marque: 1,
+  Plateforme: 2,
+  StockLibre: 3,
+}
+
 export function toLigneImportationPayload(data: LigneImportationSchema) {
   return {
     ...data,
-    typeOrigine: data.typeOrigine,
-    typeDestination: data.typeDestination,
+    typeOrigine: TYPE_ORIGINE[data.typeOrigine],
+    typeDestination: TYPE_DESTINATION[data.typeDestination],
     commandeClientId: data.commandeClientId || null,
     clientId: data.clientId || null,
     plateformeId: data.plateformeId || null,

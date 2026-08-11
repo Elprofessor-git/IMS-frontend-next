@@ -62,18 +62,18 @@ const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   4: { label: 'Annulé', badgeVariant: 'destructive' },
 }
 
-const DESTINATION_LABELS: Record<LigneAchat['typeDestination'], string> = {
-  Commande: 'Commande',
-  Marque: 'Marque',
-  Plateforme: 'Plateforme',
-  StockLibre: 'Libre',
+const DESTINATION_LABELS: Record<number, string> = {
+  0: 'Commande',
+  1: 'Marque',
+  2: 'Plateforme',
+  3: 'Libre',
 }
 
 function destinationLabel(l: LigneAchat): string {
-  const base = DESTINATION_LABELS[l.typeDestination] ?? l.typeDestination
-  if (l.typeDestination === 'Commande' && l.commandeClientId) return `Cde #${l.commandeClientId}`
-  if (l.typeDestination === 'Marque' && l.clientId) return `Client #${l.clientId}`
-  if (l.typeDestination === 'Plateforme' && l.plateformeId) return `Plf #${l.plateformeId}`
+  const base = DESTINATION_LABELS[l.typeDestination] ?? `#${l.typeDestination}`
+  if (l.typeDestination === 0 && l.commandeClientId) return `Cde #${l.commandeClientId}`
+  if (l.typeDestination === 1 && l.clientId) return `Client #${l.clientId}`
+  if (l.typeDestination === 2 && l.plateformeId) return `Plf #${l.plateformeId}`
   return base
 }
 

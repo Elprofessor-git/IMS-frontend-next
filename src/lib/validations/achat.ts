@@ -55,10 +55,19 @@ export const ligneAchatSchema = z.object({
 
 export type LigneAchatSchema = z.infer<typeof ligneAchatSchema>
 
+// Enum TypeDestinationAchat (backend) : Commande=0, Marque=1, Plateforme=2, StockLibre=3
+// L'API sérialise les enums en NOMBRES → conversion ici, à la limite API.
+const TYPE_DESTINATION: Record<LigneAchatSchema['typeDestination'], number> = {
+  Commande: 0,
+  Marque: 1,
+  Plateforme: 2,
+  StockLibre: 3,
+}
+
 export function toLigneAchatPayload(data: LigneAchatSchema) {
   return {
     ...data,
-    typeDestination: data.typeDestination,
+    typeDestination: TYPE_DESTINATION[data.typeDestination],
     commandeClientId: data.commandeClientId || null,
     clientId: data.clientId || null,
     plateformeId: data.plateformeId || null,

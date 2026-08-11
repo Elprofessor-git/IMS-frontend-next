@@ -24,8 +24,8 @@ export type LigneImportation = {
   devise: string | null
   notes: string | null
   estAffecteStock: boolean
-  typeOrigine: 'Fournisseur' | 'ClientCMT'
-  typeDestination: 'Commande' | 'Marque' | 'Plateforme' | 'StockLibre'
+  typeOrigine: number // 0=Fournisseur 1=ClientCMT
+  typeDestination: number // 0=Commande 1=Marque 2=Plateforme 3=StockLibre
   dateCreation: string
   article: LigneImportationArticle | null
   commandeClient: { id: number } | null

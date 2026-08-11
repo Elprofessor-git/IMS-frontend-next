@@ -768,8 +768,8 @@ export default function ImportationDetailPage({
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={l.typeOrigine === 'ClientCMT' ? 'outline' : 'secondary'}>
-                          {l.typeOrigine === 'ClientCMT' ? 'CMT' : 'Fourn.'}
+                        <Badge variant={l.typeOrigine === 1 ? 'outline' : 'secondary'}>
+                          {l.typeOrigine === 1 ? 'CMT' : 'Fourn.'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
