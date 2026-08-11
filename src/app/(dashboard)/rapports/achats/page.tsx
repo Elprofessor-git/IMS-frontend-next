@@ -26,6 +26,7 @@ import {
 import { PageHeader } from '@/components/shared/page-header'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { useGetAchats } from '@/hooks/use-achats'
+import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { STATUT_ACHAT } from '@/types/fournisseur'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ function BarCell({ value, max }: { value: number; max: number }) {
 
 export default function RapportAchatsPage() {
   const { data: achats, isLoading } = useGetAchats()
+  const { data: plateformes } = useGetPlateformes()
 
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
@@ -169,30 +171,56 @@ export default function RapportAchatsPage() {
   }, [filtered])
 
   // ── Agrégation par plateforme ─────────────────────────────────────────────────
+  // La plateforme est portée par les LIGNES (typeDestination=2 Plateforme),
+  // pas par la commande client liée → on agrège chaque ligne vers sa plateforme.
   const byPlateforme = useMemo(() => {
     const map = new Map<string, { nom: string; count: number; montant: number }>()
     for (const a of filtered) {
-      const nom = a.commandeClient?.client?.plateforme?.nom ?? 'Sans plateforme'
-      const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
-      row.count++
-      row.montant += a.montantTotal ?? 0
-      map.set(nom, row)
+      const lignes = a.lignesAchat?.length ? a.lignesAchat : []
+      if (lignes.length === 0) {
+        const nom = a.commandeClient?.client?.plateforme?.nom ?? 'Sans plateforme'
+        const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
+        row.count++
+        row.montant += a.montantTotal ?? 0
+        map.set(nom, row)
+        continue
+      }
+      for (const l of lignes) {
+        let nom = 'Sans plateforme'
+        if (l.typeDestination === 2 && l.plateformeId) {
+          nom = plateformes?.find((p) => p.id === l.plateformeId)?.nom ?? `Plf #${l.plateformeId}`
+        } else {
+          nom = 'Sans plateforme'
+        }
+        const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
+        row.count++
+        row.montant += l.montantLigne ?? 0
+        map.set(nom, row)
+      }
     }
     return [...map.values()].sort((a, b) => b.montant - a.montant)
-  }, [filtered])
+  }, [filtered, plateformes])
 
   // ── Export CSV ────────────────────────────────────────────────────────────────
   const handleExport = () => {
-    const rows = filtered.map((a) => ({
-      'N° Achat': a.numeroAchat,
-      Fournisseur: a.fournisseur?.nomEntreprise ?? '',
-      'Marque / Client': a.commandeClient?.client?.nom ?? '',
-      Plateforme: a.commandeClient?.client?.plateforme?.nom ?? '',
-      Statut: STATUT_ACHAT[a.statut] ?? String(a.statut),
-      'Date achat': a.dateAchat ? fmtDate(a.dateAchat) : '',
-      'Montant total': a.montantTotal ?? 0,
-      Devise: a.devise ?? 'EUR',
-    }))
+    const rows = filtered.map((a) => {
+      const lignes = a.lignesAchat ?? []
+      const plateformesAchat = [...new Set(
+        lignes
+          .filter((l) => l.typeDestination === 2 && l.plateformeId)
+          .map((l) => plateformes?.find((p) => p.id === l.plateformeId)?.nom ?? `Plf #${l.plateformeId}`)
+      )].join(' + ')
+      return {
+        'N° Achat': a.numeroAchat,
+        Fournisseur: a.fournisseur?.nomEntreprise ?? '',
+        'Marque / Client': a.commandeClient?.client?.nom ?? '',
+        Plateforme: plateformesAchat || (a.commandeClient?.client?.plateforme?.nom ?? ''),
+        Statut: STATUT_ACHAT[a.statut] ?? String(a.statut),
+        'Date achat': a.dateAchat ? fmtDate(a.dateAchat) : '',
+        'Montant total': a.montantTotal ?? 0,
+        Devise: a.devise ?? 'EUR',
+      }
+    })
     const suffix =
       dateDebut || dateFin
         ? `_${dateDebut || 'debut'}_${dateFin || 'fin'}`
@@ -487,7 +515,7 @@ export default function RapportAchatsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Plateforme</TableHead>
-                    <TableHead className="text-right">Achats</TableHead>
+                    <TableHead className="text-right">Lignes</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead className="text-right">%</TableHead>
                   </TableRow>

@@ -53,6 +53,7 @@ import {
 } from '@/lib/validations/achat'
 import type { WorkflowStatutConfig, WorkflowTransition } from '@/components/ui/statut-workflow'
 import type { LigneAchat } from '@/types/achat'
+import type { Plateforme } from '@/types/plateforme'
 
 const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
@@ -69,11 +70,14 @@ const DESTINATION_LABELS: Record<number, string> = {
   3: 'Libre',
 }
 
-function destinationLabel(l: LigneAchat): string {
+function destinationLabel(l: LigneAchat, plateformes?: Plateforme[]): string {
   const base = DESTINATION_LABELS[l.typeDestination] ?? `#${l.typeDestination}`
   if (l.typeDestination === 0 && l.commandeClientId) return `Cde #${l.commandeClientId}`
   if (l.typeDestination === 1 && l.clientId) return `Client #${l.clientId}`
-  if (l.typeDestination === 2 && l.plateformeId) return `Plf #${l.plateformeId}`
+  if (l.typeDestination === 2 && l.plateformeId) {
+    const nom = plateformes?.find((p) => p.id === l.plateformeId)?.nom
+    return nom ?? `Plf #${l.plateformeId}`
+  }
   return base
 }
 
@@ -346,6 +350,7 @@ export default function AchatDetailPage({
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false)
 
   const { data: achat, isLoading } = useGetAchat(achatId)
+  const { data: plateformes } = useGetPlateformes()
   const updateMutation = useUpdateAchat()
   const deleteMutation = useDeleteAchat()
   const soumettreM = useSoumettreAchat()
@@ -636,7 +641,7 @@ export default function AchatDetailPage({
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {destinationLabel(l)}
+                        {destinationLabel(l, plateformes)}
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
                       <TableCell className="text-right font-mono">
