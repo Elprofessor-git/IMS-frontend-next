@@ -132,20 +132,37 @@ function ligneMatcheArticle(l: LigneAchat, terme: string): boolean {
   )
 }
 
-function achatMatcheFiltres(
-  a: Achat,
-  f: Filters,
-  plateformes: { id: number; nom: string }[] | undefined,
-): boolean {
+// Filtres d'EN-TÊTE uniquement (date, statut, fournisseur) — s'appliquent à l'achat.
+function achatMatcheEnTete(a: Achat, f: Filters): boolean {
   const d = a.dateAchat?.slice(0, 10) ?? ''
   if (f.dateDebut && d < f.dateDebut) return false
   if (f.dateFin && d > f.dateFin) return false
   if (f.statut !== 'tous' && a.statut !== Number(f.statut)) return false
   if (f.fournisseurId && a.fournisseurId !== Number(f.fournisseurId)) return false
+  return true
+}
 
+// Une LIGNE matche-t-elle les filtres plateforme + article ?
+function ligneMatcheFiltres(
+  l: LigneAchat,
+  a: Achat,
+  f: Filters,
+  plateformes: { id: number; nom: string }[] | undefined,
+): boolean {
+  if (f.plateformeId && !ligneMatchePlateforme(l, a, f.plateformeId, plateformes)) return false
+  if (f.article.trim() && !ligneMatcheArticle(l, f.article)) return false
+  return true
+}
+
+// L'achat (vue en-têtes) est retenu s'il a au moins une ligne qui matche plateforme/article,
+// ou (achat sans lignes) si son en-tête matche via la plateforme de la commande liée.
+function achatMatcheLignes(
+  a: Achat,
+  f: Filters,
+  plateformes: { id: number; nom: string }[] | undefined,
+): boolean {
   const aUnArticle = a.lignesAchat?.length > 0
 
-  // Plateforme : l'achat est retenu s'il a au moins une ligne (ou son en-tête) qui matche.
   if (f.plateformeId) {
     if (!plateformes) return false
     if (aUnArticle) {
@@ -156,7 +173,6 @@ function achatMatcheFiltres(
     }
   }
 
-  // Article : idem, recherche sur les lignes (si l'achat a des lignes).
   if (f.article.trim()) {
     if (aUnArticle) {
       if (!a.lignesAchat.some((l) => ligneMatcheArticle(l, f.article))) return false
@@ -194,21 +210,40 @@ export default function AchatsPage() {
 
   const resetFilters = () => setFilters(EMPTY_FILTERS)
 
-  // Achats filtrés (en-têtes)
-  const filtered = useMemo(() => {
+  // Achats retenus par les filtres d'en-tête (date, statut, fournisseur)
+  const achatsEnTete = useMemo(() => {
     if (!achats) return []
-    return achats.filter((a) => achatMatcheFiltres(a, filters, plateformes))
-  }, [achats, filters, plateformes])
+    return achats.filter((a) => achatMatcheEnTete(a, filters))
+  }, [achats, filters])
 
-  // Vue « Lignes » : une ligne = un article acheté, avec colonnes Excel
+  // Vue « Achats » : en-têtes dont au moins une ligne (ou l'en-tête sans lignes) matche plateforme/article
+  const filtered = useMemo(() => {
+    return achatsEnTete.filter((a) => achatMatcheLignes(a, filters, plateformes))
+  }, [achatsEnTete, filters, plateformes])
+
+  // Vue « Lignes » : une ligne = un article acheté. Chaque ligne est filtrée INDIVIDUELLEMENT
+  // (plateforme + article), indépendamment des autres lignes de son achat.
   const lignes = useMemo(() => {
     const rows: { achat: Achat; ligne: LigneAchat | null }[] = []
-    for (const a of filtered) {
-      const ls = a.lignesAchat?.length ? a.lignesAchat : [null]
-      for (const l of ls) rows.push({ achat: a, ligne: l })
+    for (const a of achatsEnTete) {
+      const ls = a.lignesAchat?.length ? a.lignesAchat : []
+      if (ls.length === 0) {
+        // Achat sans lignes : on ne le montre que si les filtres de lignes ne l'excluent pas.
+        if (filters.plateformeId || filters.article.trim()) {
+          if (achatMatcheLignes(a, filters, plateformes)) rows.push({ achat: a, ligne: null })
+        } else {
+          rows.push({ achat: a, ligne: null })
+        }
+        continue
+      }
+      for (const l of ls) {
+        if (ligneMatcheFiltres(l, a, filters, plateformes)) {
+          rows.push({ achat: a, ligne: l })
+        }
+      }
     }
     return rows
-  }, [filtered])
+  }, [achatsEnTete, filters, plateformes])
 
   // ── Colonnes tableau en-têtes ──
   const columns = useMemo<ColDef<Achat>[]>(
