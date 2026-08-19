@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSearchArticles, useGetArticle } from '@/hooks/use-articles'
@@ -28,7 +29,9 @@ export function ArticleSelect({
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300)
@@ -41,9 +44,34 @@ export function ArticleSelect({
   const { data: fetchedArticle } = useGetArticle(value ?? 0)
   const resolvedArticle = selectedArticle ?? fetchedArticle ?? null
 
+  // Position du menu calculée depuis le déclencheur — le menu est porté (portal) hors du
+  // DOM local pour échapper à tout ancêtre `overflow-hidden` (ex. Card) qui le tronquerait.
+  const updateCoords = useCallback(() => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (rect) {
+      setCoords({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!open) return
+    updateCoords()
+    window.addEventListener('scroll', updateCoords, true)
+    window.addEventListener('resize', updateCoords)
+    return () => {
+      window.removeEventListener('scroll', updateCoords, true)
+      window.removeEventListener('resize', updateCoords)
+    }
+  }, [open, updateCoords])
+
   useEffect(() => {
     function handleMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        !dropdownRef.current?.contains(target)
+      ) {
         setOpen(false)
         setSearch('')
       }
@@ -103,40 +131,47 @@ export function ArticleSelect({
         />
       )}
 
-      {open && (
-        <div className="absolute z-50 mt-1 w-full rounded-md border bg-card shadow-md">
-          {debouncedSearch.length < 2 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">
-              Saisissez au moins 2 caractères…
-            </p>
-          ) : isLoading ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">Recherche…</p>
-          ) : !results || results.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-muted-foreground">Aucun article trouvé</p>
-          ) : (
-            <ul className="max-h-60 overflow-auto py-1">
-              {results.map((a) => (
-                <li
-                  key={a.id}
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    handleSelect(a)
-                  }}
-                  className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm hover:bg-accent"
-                >
-                  <Check
-                    className={cn(
-                      'size-4 shrink-0',
-                      value === a.id ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  <span>{articleLabel(a)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      {open &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className="fixed z-50 rounded-md border bg-card shadow-md"
+            style={{ top: coords.top, left: coords.left, width: coords.width }}
+          >
+            {debouncedSearch.length < 2 ? (
+              <p className="px-3 py-2 text-sm text-muted-foreground">
+                Saisissez au moins 2 caractères…
+              </p>
+            ) : isLoading ? (
+              <p className="px-3 py-2 text-sm text-muted-foreground">Recherche…</p>
+            ) : !results || results.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-muted-foreground">Aucun article trouvé</p>
+            ) : (
+              <ul className="max-h-60 overflow-auto py-1">
+                {results.map((a) => (
+                  <li
+                    key={a.id}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      handleSelect(a)
+                    }}
+                    className="flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm hover:bg-accent"
+                  >
+                    <Check
+                      className={cn(
+                        'size-4 shrink-0',
+                        value === a.id ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <span>{articleLabel(a)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

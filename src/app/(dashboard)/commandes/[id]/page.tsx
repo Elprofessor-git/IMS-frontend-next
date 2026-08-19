@@ -233,11 +233,19 @@ function AjouterBesoinDialog({
 }
 
 // ── Formulaire inline Tailles ───────────────────────────────────
-function TaillesForm({ commandeId, onDone }: { commandeId: number; onDone: () => void }) {
+function TaillesForm({
+  commandeId,
+  initial,
+  onDone,
+}: {
+  commandeId: number
+  initial: TailleItem[]
+  onDone: () => void
+}) {
   const setTaillesMutation = useSetTailles()
   const { control, register, handleSubmit, formState: { errors } } = useForm<{ tailles: TailleItem[] }>({
     resolver: zodResolver(z.object({ tailles: z.array(tailleItemSchema) })),
-    defaultValues: { tailles: [{ taille: '', quantite: 0 }] },
+    defaultValues: { tailles: initial.length > 0 ? initial : [{ taille: '', quantite: 0 }] },
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'tailles' })
 
@@ -280,11 +288,19 @@ function TaillesForm({ commandeId, onDone }: { commandeId: number; onDone: () =>
 }
 
 // ── Formulaire inline BOM ───────────────────────────────────────
-function BomForm({ commandeId, onDone }: { commandeId: number; onDone: () => void }) {
+function BomForm({
+  commandeId,
+  initial,
+  onDone,
+}: {
+  commandeId: number
+  initial: BomItem[]
+  onDone: () => void
+}) {
   const setBomMutation = useSetBom()
   const { control, register, handleSubmit, formState: { errors } } = useForm<{ bom: BomItem[] }>({
     resolver: zodResolver(z.object({ bom: z.array(bomItemSchema) })),
-    defaultValues: { bom: [{ articleId: 0, quantiteParPiece: 0, unite: null }] },
+    defaultValues: { bom: initial.length > 0 ? initial : [{ articleId: 0, quantiteParPiece: 0, unite: null }] },
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'bom' })
 
@@ -574,7 +590,11 @@ export default function CommandeDetailPage({
               </CardHeader>
               <CardContent>
                 {editTailles ? (
-                  <TaillesForm commandeId={commandeId} onDone={() => setEditTailles(false)} />
+                  <TaillesForm
+                    commandeId={commandeId}
+                    initial={commande.configTailles.map((t) => ({ taille: t.taille, quantite: t.quantite }))}
+                    onDone={() => setEditTailles(false)}
+                  />
                 ) : commande.configTailles.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Aucune taille configurée.</p>
                 ) : (
@@ -620,7 +640,15 @@ export default function CommandeDetailPage({
               </CardHeader>
               <CardContent>
                 {editBom ? (
-                  <BomForm commandeId={commandeId} onDone={() => setEditBom(false)} />
+                  <BomForm
+                    commandeId={commandeId}
+                    initial={commande.bomLignes.map((b) => ({
+                      articleId: b.articleId,
+                      quantiteParPiece: Number(b.quantiteParPiece),
+                      unite: b.unite,
+                    }))}
+                    onDone={() => setEditBom(false)}
+                  />
                 ) : commande.bomLignes.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Aucune ligne BOM définie.</p>
                 ) : (
