@@ -44,6 +44,7 @@ import {
   useGetResultatCalcul,
   useValiderRessources,
   useGenererTaches,
+  useGenererBesoinsDepuisBom,
 } from '@/hooks/use-commandes'
 import { STATUT_COMMANDE, TYPE_BESOIN } from '@/types/commande'
 import {
@@ -371,6 +372,7 @@ export default function CommandeDetailPage({
   const [marge, setMarge] = useState('5')
   const [notesEdit, setNotesEdit] = useState('')
   const [dateLivraisonEdit, setDateLivraisonEdit] = useState('')
+  const [tab, setTab] = useState('ressources')
 
   const { data: commande, isLoading } = useGetCommande(commandeId)
   const { data: resultats } = useGetResultatCalcul(commandeId)
@@ -379,6 +381,7 @@ export default function CommandeDetailPage({
   const validerMutation = useValiderRessources()
   const calculerMutation = useCalculer()
   const genererMutation = useGenererTaches()
+  const genererBesoinsMutation = useGenererBesoinsDepuisBom()
 
   if (isLoading) {
     return (
@@ -448,7 +451,7 @@ export default function CommandeDetailPage({
         }
       />
 
-      <Tabs defaultValue="ressources" className="max-w-5xl">
+      <Tabs value={tab} onValueChange={setTab} className="max-w-5xl">
         <TabsList className="mb-4">
           <TabsTrigger value="info">Informations</TabsTrigger>
           <TabsTrigger value="bom">Tailles &amp; BOM</TabsTrigger>
@@ -692,12 +695,15 @@ export default function CommandeDetailPage({
                   <span>
                     La marge de sécurité est appliquée ici uniquement — elle n&apos;intervient
                     pas dans la validation des ressources (<code>ValiderRessources</code> n&apos;accepte
-                    aucune marge).
+                    aucune marge). Le tableau ci-dessous est une simulation ; utilisez
+                    «&nbsp;Générer les besoins depuis la BOM&nbsp;» pour transformer cette BOM
+                    en besoins officiels (sans marge), utilisés ensuite par l&apos;onglet
+                    «&nbsp;Besoins &amp; Ressources&nbsp;».
                   </span>
                 </div>
 
                 <PermissionGate module="commandes" mode="write">
-                  <div className="flex items-end gap-4">
+                  <div className="flex flex-wrap items-end gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="marge">Marge de sécurité (0–20%)</Label>
                       <Input
@@ -723,6 +729,36 @@ export default function CommandeDetailPage({
                     >
                       {calculerMutation.isPending ? 'Calcul…' : 'Calculer'}
                     </Button>
+
+                    <ConfirmDialog
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={
+                            genererBesoinsMutation.isPending ||
+                            commande.configTailles.length === 0 ||
+                            commande.bomLignes.length === 0
+                          }
+                          title={
+                            commande.configTailles.length === 0 || commande.bomLignes.length === 0
+                              ? 'Configurez les tailles et la BOM avant de générer les besoins'
+                              : undefined
+                          }
+                        >
+                          {genererBesoinsMutation.isPending ? 'Génération…' : 'Générer les besoins depuis la BOM'}
+                        </Button>
+                      }
+                      title="Générer les besoins depuis la BOM ?"
+                      description="Crée ou met à jour, pour chaque ligne BOM, un besoin officiel (Qté/pièce × total des pièces configurées). Sans marge de sécurité — ces besoins seront ensuite utilisés par « Valider les ressources ». Les besoins ajoutés manuellement ne sont pas affectés."
+                      confirmLabel="Générer"
+                      onConfirm={() =>
+                        genererBesoinsMutation.mutate(commandeId, {
+                          onSuccess: () => setTab('ressources'),
+                        })
+                      }
+                    />
                   </div>
                 </PermissionGate>
 

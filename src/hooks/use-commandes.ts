@@ -151,6 +151,28 @@ export function useCalculer() {
   })
 }
 
+// POST /GenererBesoinsDepuisBom — convertit BOM × total tailles en besoins officiels
+// (idempotent : met à jour les besoins déjà générés, ne touche pas les besoins manuels)
+export function useGenererBesoinsDepuisBom() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (commandeId: number) =>
+      apiClient.post<{ message: string; crees: number; misAJour: number; supprimes: number }>(
+        `/api/CommandeClient/${commandeId}/GenererBesoinsDepuisBom`,
+      ),
+    onSuccess: (data, commandeId) => {
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: [...KEY, commandeId] })
+      const parts: string[] = []
+      if (data.crees > 0) parts.push(`${data.crees} créé(s)`)
+      if (data.misAJour > 0) parts.push(`${data.misAJour} mis à jour`)
+      if (data.supprimes > 0) parts.push(`${data.supprimes} supprimé(s)`)
+      toast.success(`Besoins générés depuis la BOM${parts.length ? ' — ' + parts.join(', ') : ''}`)
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la génération des besoins'),
+  })
+}
+
 export function useGetResultatCalcul(commandeId: number) {
   return useQuery<ResultatCalcul[]>({
     queryKey: [...KEY, commandeId, 'resultat'],
