@@ -12,13 +12,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
   Table,
   TableBody,
   TableCell,
@@ -32,7 +25,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
-import { CommandeSelect } from '@/components/forms/commande-select'
+import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { DocumentSection } from '@/components/documents/document-section'
 import {
   useGetAchat,
@@ -102,7 +95,6 @@ function AjouterLigneDialog({
     control,
     reset,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<LigneAchatSchema>({
     resolver: zodResolver(ligneAchatSchema),
@@ -110,7 +102,6 @@ function AjouterLigneDialog({
       articleId: 0,
       quantite: 0,
       prixUnitaire: 0,
-      typeDestination: 'StockLibre',
       commandeClientId: null,
       clientId: null,
       plateformeId: null,
@@ -123,8 +114,6 @@ function AjouterLigneDialog({
       notes: null,
     },
   })
-
-  const typeDestination = watch('typeDestination')
 
   if (!open) return null
 
@@ -208,116 +197,13 @@ function AjouterLigneDialog({
             </div>
           </div>
 
-          {/* Destination */}
-          <div className="grid gap-2">
-            <Label>Destination</Label>
-            <Controller
-              name="typeDestination"
-              control={control}
-              render={({ field: f }) => (
-                <Select
-                  value={f.value ?? 'StockLibre'}
-                  onValueChange={(v) => {
-                    f.onChange(v)
-                    if (v !== 'Commande') setValue('commandeClientId', null)
-                    if (v !== 'Marque') setValue('clientId', null)
-                    if (v !== 'Plateforme') setValue('plateformeId', null)
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Commande">Commande</SelectItem>
-                    <SelectItem value="Marque">Marque (client)</SelectItem>
-                    <SelectItem value="Plateforme">Plateforme</SelectItem>
-                    <SelectItem value="StockLibre">Stock libre</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {typeDestination === 'Commande' && (
-            <div className="grid gap-2">
-              <Label>Commande client <span className="text-destructive">*</span></Label>
-              <Controller
-                name="commandeClientId"
-                control={control}
-                render={({ field: f }) => (
-                  <CommandeSelect
-                    value={f.value ?? null}
-                    onChange={(id) => f.onChange(id)}
-                    commandes={commandes ?? []}
-                    placeholder="Sélectionner…"
-                  />
-                )}
-              />
-              {errors.commandeClientId && (
-                <p className="text-sm text-destructive">{errors.commandeClientId.message}</p>
-              )}
-            </div>
-          )}
-          {typeDestination === 'Marque' && (
-            <div className="grid gap-2">
-              <Label>Client <span className="text-destructive">*</span></Label>
-              <Controller
-                name="clientId"
-                control={control}
-                render={({ field: f }) => (
-                  <Select
-                    value={f.value ? String(f.value) : '0'}
-                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Sélectionner…</SelectItem>
-                      {clients?.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.nomEntreprise ?? `${c.nom} ${c.prenom ?? ''}`.trim()}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.clientId && (
-                <p className="text-sm text-destructive">{errors.clientId.message}</p>
-              )}
-            </div>
-          )}
-          {typeDestination === 'Plateforme' && (
-            <div className="grid gap-2">
-              <Label>Plateforme <span className="text-destructive">*</span></Label>
-              <Controller
-                name="plateformeId"
-                control={control}
-                render={({ field: f }) => (
-                  <Select
-                    value={f.value ? String(f.value) : '0'}
-                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Sélectionner…</SelectItem>
-                      {plateformes?.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.nom}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.plateformeId && (
-                <p className="text-sm text-destructive">{errors.plateformeId.message}</p>
-              )}
-            </div>
-          )}
+          {/* Destination (niveaux combinables et indépendants) */}
+          <DestinationScopeFields
+            control={control}
+            commandes={commandes}
+            clients={clients}
+            plateformes={plateformes}
+          />
 
           <div className="grid gap-2">
             <Label htmlFor="descriptionSpecifique">Description spécifique</Label>

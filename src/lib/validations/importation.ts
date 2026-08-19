@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { destinationEffectif, TYPE_DESTINATION } from './destination'
 
 export const importationSchema = z.object({
   fournisseurId: z.number().int().min(0).nullable(),
@@ -28,7 +29,6 @@ export const ligneImportationSchema = z.object({
   quantite: z.number().min(0.01, 'La quantité doit être > 0'),
   prixUnitaire: z.number().min(0, 'Le prix doit être ≥ 0'),
   typeOrigine: z.enum(['Fournisseur', 'ClientCMT']),
-  typeDestination: z.enum(['Commande', 'Marque', 'Plateforme', 'StockLibre']),
   commandeClientId: z.number().int().nullable(),
   clientId: z.number().int().nullable(),
   plateformeId: z.number().int().nullable(),
@@ -44,18 +44,6 @@ export const ligneImportationSchema = z.object({
     (d) => d.typeOrigine !== 'ClientCMT' || d.commandeClientId != null,
     { message: 'Commande client requise pour une ligne CMT', path: ['commandeClientId'] }
   )
-  .refine(
-    (d) => d.typeDestination !== 'Commande' || d.commandeClientId != null,
-    { message: 'Commande client requise pour destination Commande', path: ['commandeClientId'] }
-  )
-  .refine(
-    (d) => d.typeDestination !== 'Marque' || d.clientId != null,
-    { message: 'Client requis pour destination Marque', path: ['clientId'] }
-  )
-  .refine(
-    (d) => d.typeDestination !== 'Plateforme' || d.plateformeId != null,
-    { message: 'Plateforme requise pour destination Plateforme', path: ['plateformeId'] }
-  )
 
 export type LigneImportationSchema = z.infer<typeof ligneImportationSchema>
 
@@ -66,18 +54,12 @@ const TYPE_ORIGINE: Record<LigneImportationSchema['typeOrigine'], number> = {
   Fournisseur: 0,
   ClientCMT: 1,
 }
-const TYPE_DESTINATION: Record<LigneImportationSchema['typeDestination'], number> = {
-  Commande: 0,
-  Marque: 1,
-  Plateforme: 2,
-  StockLibre: 3,
-}
 
 export function toLigneImportationPayload(data: LigneImportationSchema) {
   return {
     ...data,
     typeOrigine: TYPE_ORIGINE[data.typeOrigine],
-    typeDestination: TYPE_DESTINATION[data.typeDestination],
+    typeDestination: TYPE_DESTINATION[destinationEffectif(data)],
     commandeClientId: data.commandeClientId || null,
     clientId: data.clientId || null,
     plateformeId: data.plateformeId || null,

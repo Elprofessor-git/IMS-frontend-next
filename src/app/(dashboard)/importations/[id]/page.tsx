@@ -27,7 +27,7 @@ import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
 import { DocumentSection } from '@/components/documents/document-section'
-import { CommandeSelect } from '@/components/forms/commande-select'
+import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
@@ -125,14 +125,12 @@ function AjouterLigneDialog({
   const { data: commandes } = useGetCommandes()
   const { data: clients } = useGetClients()
   const { data: plateformes } = useGetPlateformes()
-  const [plateformeFilter, setPlateformeFilter] = useState<number | null>(null)
 
   const {
     register,
     handleSubmit,
     control,
     reset,
-    setValue,
     watch,
     formState: { errors },
   } = useForm<LigneImportationSchema>({
@@ -142,7 +140,6 @@ function AjouterLigneDialog({
       quantite: 0,
       prixUnitaire: 0,
       typeOrigine: 'Fournisseur',
-      typeDestination: 'StockLibre',
       commandeClientId: null,
       clientId: null,
       plateformeId: null,
@@ -156,23 +153,7 @@ function AjouterLigneDialog({
     },
   })
 
-  const currentCommandeId = watch('commandeClientId')
   const typeOrigine = watch('typeOrigine')
-  const typeDestination = watch('typeDestination')
-
-  const filteredCommandes = plateformeFilter
-    ? (commandes ?? []).filter((c) => c.client?.plateforme?.id === plateformeFilter)
-    : (commandes ?? [])
-
-  function handlePlateformeFilterChange(pid: number | null) {
-    setPlateformeFilter(pid)
-    if (currentCommandeId && pid) {
-      const stillValid = (commandes ?? []).find(
-        (c) => c.id === currentCommandeId && c.client?.plateforme?.id === pid,
-      )
-      if (!stillValid) setValue('commandeClientId', null)
-    }
-  }
 
   if (!open) return null
 
@@ -182,7 +163,6 @@ function AjouterLigneDialog({
       data: toLigneImportationPayload(data) as Record<string, unknown>,
     })
     reset()
-    setPlateformeFilter(null)
     onClose()
   }
 
@@ -263,7 +243,7 @@ function AjouterLigneDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-2">
             <div className="grid gap-2">
               <Label>Origine</Label>
               <Controller
@@ -272,10 +252,7 @@ function AjouterLigneDialog({
                 render={({ field }) => (
                   <Select
                     value={field.value ?? 'Fournisseur'}
-                    onValueChange={(v) => {
-                      field.onChange(v)
-                      if (v === 'Fournisseur') setValue('commandeClientId', null)
-                    }}
+                    onValueChange={(v) => field.onChange(v)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -288,141 +265,21 @@ function AjouterLigneDialog({
                 )}
               />
             </div>
-            <div className="grid gap-2">
-              <Label>Destination</Label>
-              <Controller
-                name="typeDestination"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? 'StockLibre'}
-                    onValueChange={(v) => {
-                      field.onChange(v)
-                      if (v !== 'Commande') setValue('commandeClientId', null)
-                      if (v !== 'Marque') setValue('clientId', null)
-                      if (v !== 'Plateforme') setValue('plateformeId', null)
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Commande">Commande</SelectItem>
-                      <SelectItem value="Marque">Marque (client)</SelectItem>
-                      <SelectItem value="Plateforme">Plateforme</SelectItem>
-                      <SelectItem value="StockLibre">Stock libre</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
+            {typeOrigine === 'ClientCMT' && (
+              <p className="text-xs text-muted-foreground">
+                Ligne CMT : renseignez la commande client dans « Destination » ci-dessous
+                (requise pour la validation).
+              </p>
+            )}
           </div>
 
-          {/* Champ conditionnel selon TypeDestination */}
-          {typeDestination === 'Commande' && (
-            <div className="grid gap-2">
-              <Label>
-                Commande client <span className="text-destructive">*</span>
-                {typeOrigine === 'ClientCMT' && (
-                  <span className="ml-1 text-xs text-muted-foreground">(requis CMT)</span>
-                )}
-              </Label>
-              <div className="grid gap-2">
-                <Label className="text-xs text-muted-foreground">Filtrer par plateforme</Label>
-                <Select
-                  value={plateformeFilter ? String(plateformeFilter) : '0'}
-                  onValueChange={(v) => handlePlateformeFilterChange(v === '0' ? null : Number(v))}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Toutes les plateformes</SelectItem>
-                    {plateformes?.map((p) => (
-                      <SelectItem key={p.id} value={String(p.id)}>
-                        {p.nom}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Controller
-                name="commandeClientId"
-                control={control}
-                render={({ field }) => (
-                  <CommandeSelect
-                    value={field.value ?? null}
-                    onChange={(id) => field.onChange(id)}
-                    commandes={filteredCommandes}
-                    placeholder="Sélectionner…"
-                  />
-                )}
-              />
-              {errors.commandeClientId && (
-                <p className="text-sm text-destructive">{errors.commandeClientId.message}</p>
-              )}
-            </div>
-          )}
-          {typeDestination === 'Marque' && (
-            <div className="grid gap-2">
-              <Label>Client <span className="text-destructive">*</span></Label>
-              <Controller
-                name="clientId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ? String(field.value) : '0'}
-                    onValueChange={(v) => field.onChange(v === '0' ? null : Number(v))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Sélectionner…</SelectItem>
-                      {clients?.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.nomEntreprise ?? `${c.nom} ${c.prenom ?? ''}`.trim()}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.clientId && (
-                <p className="text-sm text-destructive">{errors.clientId.message}</p>
-              )}
-            </div>
-          )}
-          {typeDestination === 'Plateforme' && (
-            <div className="grid gap-2">
-              <Label>Plateforme <span className="text-destructive">*</span></Label>
-              <Controller
-                name="plateformeId"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ? String(field.value) : '0'}
-                    onValueChange={(v) => field.onChange(v === '0' ? null : Number(v))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Sélectionner…</SelectItem>
-                      {plateformes?.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.nom}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.plateformeId && (
-                <p className="text-sm text-destructive">{errors.plateformeId.message}</p>
-              )}
-            </div>
-          )}
+          {/* Destination (niveaux combinables et indépendants) */}
+          <DestinationScopeFields
+            control={control}
+            commandes={commandes}
+            clients={clients}
+            plateformes={plateformes}
+          />
 
           <div className="grid gap-2">
             <Label htmlFor="imp-notes">Notes</Label>

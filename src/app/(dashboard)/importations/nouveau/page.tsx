@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
 import { ArticleSelect } from '@/components/forms/article-select'
-import { CommandeSelect } from '@/components/forms/commande-select'
+import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { apiClient } from '@/lib/api-client'
 import {
   importationSchema,
@@ -49,7 +49,6 @@ const LIGNE_DEFAULTS = {
   quantite: 1,
   prixUnitaire: 0,
   typeOrigine: 'Fournisseur' as const,
-  typeDestination: 'StockLibre' as const,
   commandeClientId: null,
   clientId: null,
   plateformeId: null,
@@ -70,7 +69,6 @@ export default function NouvelleImportationPage() {
   const { data: clients } = useGetClients()
   const { data: plateformes } = useGetPlateformes()
 
-  const [plateformeFilter, setPlateformeFilter] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitProgress, setSubmitProgress] = useState<{ current: number; total: number } | null>(
     null,
@@ -80,7 +78,6 @@ export default function NouvelleImportationPage() {
     register,
     handleSubmit,
     control,
-    setValue,
     watch,
     formState: { errors },
   } = useForm<CreationSchema>({
@@ -100,28 +97,6 @@ export default function NouvelleImportationPage() {
 
   const watchedLignes = watch('lignes')
   const parentDevise = watch('devise')
-
-  const filteredCommandes = plateformeFilter
-    ? (commandes ?? []).filter((c) => c.client?.plateforme?.id === plateformeFilter)
-    : (commandes ?? [])
-
-  function handlePlateformeFilterChange(pid: number | null) {
-    setPlateformeFilter(pid)
-    // Reset commande on lines whose selection is now out of filter
-    if (pid) {
-      const validIds = new Set(
-        (commandes ?? [])
-          .filter((c) => c.client?.plateforme?.id === pid)
-          .map((c) => c.id),
-      )
-      const current = watchedLignes ?? []
-      current.forEach((l, i) => {
-        if (l.commandeClientId && !validIds.has(l.commandeClientId)) {
-          setValue(`lignes.${i}.commandeClientId`, null)
-        }
-      })
-    }
-  }
 
   function addLigne() {
     append({ ...LIGNE_DEFAULTS, devise: parentDevise || 'EUR' })
@@ -306,31 +281,6 @@ export default function NouvelleImportationPage() {
               </Button>
             </CardHeader>
             <CardContent>
-              {/* Plateforme filter — global, applies to all line commande selects */}
-              {fields.length > 0 && (
-                <div className="mb-4 grid gap-2">
-                  <Label>Filtrer commandes par plateforme</Label>
-                  <Select
-                    value={plateformeFilter ? String(plateformeFilter) : '0'}
-                    onValueChange={(v) =>
-                      handlePlateformeFilterChange(v === '0' ? null : Number(v))
-                    }
-                  >
-                    <SelectTrigger className="max-w-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Toutes les plateformes</SelectItem>
-                      {plateformes?.map((p) => (
-                        <SelectItem key={p.id} value={String(p.id)}>
-                          {p.nom}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
               {fields.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   Aucune ligne — vous pourrez en ajouter depuis la page détail après la création.
@@ -454,7 +404,7 @@ export default function NouvelleImportationPage() {
                             </div>
                           </div>
 
-                          {/* Origine + Destination */}
+                          {/* Origine */}
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div className="grid gap-2">
                               <Label>Origine</Label>
@@ -464,12 +414,7 @@ export default function NouvelleImportationPage() {
                                 render={({ field: f }) => (
                                   <Select
                                     value={f.value ?? 'Fournisseur'}
-                                    onValueChange={(v) => {
-                                      f.onChange(v)
-                                      if (v === 'Fournisseur') {
-                                        setValue(`lignes.${i}.commandeClientId`, null)
-                                      }
-                                    }}
+                                    onValueChange={(v) => f.onChange(v)}
                                   >
                                     <SelectTrigger>
                                       <SelectValue />
@@ -483,128 +428,23 @@ export default function NouvelleImportationPage() {
                               />
                             </div>
                             <div className="grid gap-2">
-                              <Label>Destination</Label>
-                              <Controller
-                                name={`lignes.${i}.typeDestination`}
-                                control={control}
-                                render={({ field: f }) => (
-                                  <Select
-                                    value={f.value ?? 'StockLibre'}
-                                    onValueChange={(v) => {
-                                      f.onChange(v)
-                                      if (v !== 'Commande') setValue(`lignes.${i}.commandeClientId`, null)
-                                      if (v !== 'Marque') setValue(`lignes.${i}.clientId`, null)
-                                      if (v !== 'Plateforme') setValue(`lignes.${i}.plateformeId`, null)
-                                    }}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Commande">Commande</SelectItem>
-                                      <SelectItem value="Marque">Marque (client)</SelectItem>
-                                      <SelectItem value="Plateforme">Plateforme</SelectItem>
-                                      <SelectItem value="StockLibre">Stock libre</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
+                              <Label className="text-muted-foreground">Note</Label>
+                              <p className="text-xs text-muted-foreground">
+                                {watchedLignes?.[i]?.typeOrigine === 'ClientCMT'
+                                  ? 'CMT : renseignez la commande client dans « Destination » ci-dessous.'
+                                  : 'Source fournisseur.'}
+                              </p>
                             </div>
                           </div>
 
-                          {/* Champ conditionnel selon TypeDestination */}
-                          {watchedLignes?.[i]?.typeDestination === 'Commande' && (
-                            <div className="grid gap-2">
-                              <Label>
-                                Commande client <span className="text-destructive">*</span>
-                              </Label>
-                              <Controller
-                                name={`lignes.${i}.commandeClientId`}
-                                control={control}
-                                render={({ field: f }) => (
-                                  <CommandeSelect
-                                    value={f.value ?? null}
-                                    onChange={(id) => f.onChange(id)}
-                                    commandes={filteredCommandes}
-                                    placeholder="Sélectionner…"
-                                  />
-                                )}
-                              />
-                              {errors.lignes?.[i]?.commandeClientId && (
-                                <p className="text-xs text-destructive">
-                                  {errors.lignes[i].commandeClientId?.message}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          {watchedLignes?.[i]?.typeDestination === 'Marque' && (
-                            <div className="grid gap-2">
-                              <Label>
-                                Client <span className="text-destructive">*</span>
-                              </Label>
-                              <Controller
-                                name={`lignes.${i}.clientId`}
-                                control={control}
-                                render={({ field: f }) => (
-                                  <Select
-                                    value={f.value ? String(f.value) : '0'}
-                                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Sélectionner…" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="0">Sélectionner…</SelectItem>
-                                      {clients?.map((c) => (
-                                        <SelectItem key={c.id} value={String(c.id)}>
-                                          {c.nomEntreprise ?? `${c.nom} ${c.prenom ?? ''}`.trim()}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                              {errors.lignes?.[i]?.clientId && (
-                                <p className="text-xs text-destructive">
-                                  {errors.lignes[i].clientId?.message}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                          {watchedLignes?.[i]?.typeDestination === 'Plateforme' && (
-                            <div className="grid gap-2">
-                              <Label>
-                                Plateforme <span className="text-destructive">*</span>
-                              </Label>
-                              <Controller
-                                name={`lignes.${i}.plateformeId`}
-                                control={control}
-                                render={({ field: f }) => (
-                                  <Select
-                                    value={f.value ? String(f.value) : '0'}
-                                    onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Sélectionner…" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="0">Sélectionner…</SelectItem>
-                                      {plateformes?.map((p) => (
-                                        <SelectItem key={p.id} value={String(p.id)}>
-                                          {p.nom}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                              {errors.lignes?.[i]?.plateformeId && (
-                                <p className="text-xs text-destructive">
-                                  {errors.lignes[i].plateformeId?.message}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                          {/* Destination (niveaux combinables et indépendants) */}
+                          <DestinationScopeFields
+                            control={control}
+                            path={`lignes.${i}`}
+                            commandes={commandes}
+                            clients={clients}
+                            plateformes={plateformes}
+                          />
 
                           {/* Montant ligne */}
                           {montant !== null && (
