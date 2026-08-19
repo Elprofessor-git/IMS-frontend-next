@@ -24,7 +24,6 @@ export type LigneImportation = {
   devise: string | null
   notes: string | null
   estAffecteStock: boolean
-  typeOrigine: number // 0=Fournisseur 1=ClientCMT
   typeDestination: number // 0=Commande 1=Marque 2=Plateforme 3=StockLibre
   dateCreation: string
   article: LigneImportationArticle | null
@@ -47,10 +46,16 @@ export type ImportationFournisseur = {
   nomEntreprise: string
 }
 
+export type ImportationPlateforme = {
+  id: number
+  nom: string
+}
+
 export type Importation = {
   id: number
   referenceImportation: string
   fournisseurId: number | null
+  plateformeId: number | null
   statut: number // 0=Brouillon 1=Soumise 2=Validee 3=Recue 4=Annulee
   dateImportation: string
   dateReceptionPrevue: string | null
@@ -68,6 +73,7 @@ export type Importation = {
   creePar: string | null
   modifiePar: string | null
   fournisseur: ImportationFournisseur | null
+  plateforme: ImportationPlateforme | null
   lignesImportation: LigneImportation[]
   documents: DocumentImportation[]
 }

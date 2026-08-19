@@ -48,7 +48,6 @@ const LIGNE_DEFAULTS = {
   articleId: 0,
   quantite: 1,
   prixUnitaire: 0,
-  typeOrigine: 'Fournisseur' as const,
   commandeClientId: null,
   clientId: null,
   plateformeId: null,
@@ -79,11 +78,13 @@ export default function NouvelleImportationPage() {
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CreationSchema>({
     resolver: zodResolver(creationSchema),
     defaultValues: {
       fournisseurId: 0,
+      plateformeId: null,
       dateReceptionPrevue: null,
       modeExpedition: 0,
       devise: 'EUR',
@@ -186,29 +187,74 @@ export default function NouvelleImportationPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-2">
-                <Label>Fournisseur <span className="text-muted-foreground text-xs">(optionnel)</span></Label>
-                <Controller
-                  name="fournisseurId"
-                  control={control}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ? String(field.value) : '0'}
-                      onValueChange={(v) => field.onChange(v === '0' ? null : Number(v))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Aucun fournisseur" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">Aucun fournisseur</SelectItem>
-                        {fournisseurs?.map((f) => (
-                          <SelectItem key={f.id} value={String(f.id)}>
-                            {f.nomEntreprise}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
+                <Label>
+                  Source de l&apos;importation{' '}
+                  <span className="text-muted-foreground text-xs">
+                    (optionnel — fournisseur direct OU plateforme, pas les deux)
+                  </span>
+                </Label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="grid gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Fournisseur</Label>
+                    <Controller
+                      name="fournisseurId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ? String(field.value) : '0'}
+                          onValueChange={(v) => {
+                            field.onChange(v === '0' ? null : Number(v))
+                            if (v !== '0') setValue('plateformeId', null)
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Aucun fournisseur" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Aucun fournisseur</SelectItem>
+                            {fournisseurs?.map((f) => (
+                              <SelectItem key={f.id} value={String(f.id)}>
+                                {f.nomEntreprise}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                  <div className="grid gap-1.5">
+                    <Label className="text-xs text-muted-foreground">Plateforme</Label>
+                    <Controller
+                      name="plateformeId"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          value={field.value ? String(field.value) : '0'}
+                          onValueChange={(v) => {
+                            field.onChange(v === '0' ? null : Number(v))
+                            if (v !== '0') setValue('fournisseurId', null)
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Aucune plateforme" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Aucune plateforme</SelectItem>
+                            {plateformes?.map((p) => (
+                              <SelectItem key={p.id} value={String(p.id)}>
+                                {p.nom}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Plateforme : l&apos;envoi regroupe des articles commandés à plusieurs
+                  fournisseurs par cette plateforme, qui nous l&apos;envoie en un seul lot.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -401,39 +447,6 @@ export default function NouvelleImportationPage() {
                             <div className="grid gap-2">
                               <Label>Nature</Label>
                               <Input {...register(`lignes.${i}.nature`)} />
-                            </div>
-                          </div>
-
-                          {/* Origine */}
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <div className="grid gap-2">
-                              <Label>Origine</Label>
-                              <Controller
-                                name={`lignes.${i}.typeOrigine`}
-                                control={control}
-                                render={({ field: f }) => (
-                                  <Select
-                                    value={f.value ?? 'Fournisseur'}
-                                    onValueChange={(v) => f.onChange(v)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Fournisseur">Fournisseur</SelectItem>
-                                      <SelectItem value="ClientCMT">Client (CMT)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                              />
-                            </div>
-                            <div className="grid gap-2">
-                              <Label className="text-muted-foreground">Note</Label>
-                              <p className="text-xs text-muted-foreground">
-                                {watchedLignes?.[i]?.typeOrigine === 'ClientCMT'
-                                  ? 'CMT : renseignez la commande client dans « Destination » ci-dessous.'
-                                  : 'Source fournisseur.'}
-                              </p>
                             </div>
                           </div>
 

@@ -31,13 +31,7 @@ import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+
 import {
   useGetImportation,
   useUpdateImportation,
@@ -62,6 +56,14 @@ const IMPORTATION_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   2: { label: 'Validée', badgeVariant: 'default' },
   3: { label: 'Reçue', badgeClassName: 'border-green-200 bg-green-100 text-green-800' },
   4: { label: 'Annulée', badgeVariant: 'destructive' },
+}
+
+// TypeDestinationImportation (backend, sérialisé en nombre) : Commande=0, Marque=1, Plateforme=2, StockLibre=3
+const DESTINATION_LABEL_BY_NUMBER: Record<number, string> = {
+  0: 'Commande',
+  1: 'Marque',
+  2: 'Plateforme',
+  3: 'Stock libre',
 }
 
 // ── Dialog Valider (saisie validePar) ──────────────────────────
@@ -131,7 +133,6 @@ function AjouterLigneDialog({
     handleSubmit,
     control,
     reset,
-    watch,
     formState: { errors },
   } = useForm<LigneImportationSchema>({
     resolver: zodResolver(ligneImportationSchema),
@@ -139,7 +140,6 @@ function AjouterLigneDialog({
       articleId: 0,
       quantite: 0,
       prixUnitaire: 0,
-      typeOrigine: 'Fournisseur',
       commandeClientId: null,
       clientId: null,
       plateformeId: null,
@@ -152,8 +152,6 @@ function AjouterLigneDialog({
       notes: null,
     },
   })
-
-  const typeOrigine = watch('typeOrigine')
 
   if (!open) return null
 
@@ -241,36 +239,6 @@ function AjouterLigneDialog({
               <Label htmlFor="imp-devise">Devise</Label>
               <Input id="imp-devise" {...register('devise')} maxLength={10} />
             </div>
-          </div>
-
-          <div className="grid gap-2">
-            <div className="grid gap-2">
-              <Label>Origine</Label>
-              <Controller
-                name="typeOrigine"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? 'Fournisseur'}
-                    onValueChange={(v) => field.onChange(v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Fournisseur">Fournisseur</SelectItem>
-                      <SelectItem value="ClientCMT">Client (CMT)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            {typeOrigine === 'ClientCMT' && (
-              <p className="text-xs text-muted-foreground">
-                Ligne CMT : renseignez la commande client dans « Destination » ci-dessous
-                (requise pour la validation).
-              </p>
-            )}
           </div>
 
           {/* Destination (niveaux combinables et indépendants) */}
@@ -473,9 +441,12 @@ export default function ImportationDetailPage({
               <CardContent className="pt-6">
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div>
-                    <dt className="text-muted-foreground">Fournisseur</dt>
+                    <dt className="text-muted-foreground">Source</dt>
                     <dd className="font-medium">
-                      {importation.fournisseur?.nomEntreprise ?? (importation.fournisseurId ? `#${importation.fournisseurId}` : '—')}
+                      {importation.plateformeId
+                        ? `${importation.plateforme?.nom ?? `#${importation.plateformeId}`} (plateforme)`
+                        : importation.fournisseur?.nomEntreprise ??
+                          (importation.fournisseurId ? `#${importation.fournisseurId}` : '—')}
                     </dd>
                   </div>
                   <div>
@@ -595,7 +566,7 @@ export default function ImportationDetailPage({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Article</TableHead>
-                    <TableHead>Origine</TableHead>
+                    <TableHead>Destination</TableHead>
                     <TableHead className="text-right">Qté</TableHead>
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
@@ -625,8 +596,8 @@ export default function ImportationDetailPage({
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={l.typeOrigine === 1 ? 'outline' : 'secondary'}>
-                          {l.typeOrigine === 1 ? 'CMT' : 'Fourn.'}
+                        <Badge variant={l.typeDestination === 3 ? 'secondary' : 'outline'}>
+                          {DESTINATION_LABEL_BY_NUMBER[l.typeDestination] ?? l.typeDestination}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>

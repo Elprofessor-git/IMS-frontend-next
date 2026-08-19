@@ -239,10 +239,14 @@ export default function ImportationsPage() {
       },
       {
         key: 'fournisseur',
-        header: 'Fournisseur',
+        header: 'Source',
         cardPrimary: true,
         cell: (i) => (
-          <span>{i.fournisseur?.nomEntreprise ?? `#${i.fournisseurId}`}</span>
+          <span>
+            {i.plateformeId
+              ? `${i.plateforme?.nom ?? `#${i.plateformeId}`} (plateforme)`
+              : i.fournisseur?.nomEntreprise ?? (i.fournisseurId ? `#${i.fournisseurId}` : '—')}
+          </span>
         ),
       },
       {
@@ -451,7 +455,9 @@ export default function ImportationsPage() {
       'Date importation': fmtDate(importation.dateImportation),
       'Réception prévue': fmtDate(importation.dateReceptionPrevue),
       'Réception réelle': fmtDate(importation.dateReceptionReelle),
-      Fournisseur: importation.fournisseur?.nomEntreprise ?? '',
+      Source: importation.plateformeId
+        ? `${importation.plateforme?.nom ?? `#${importation.plateformeId}`} (plateforme)`
+        : importation.fournisseur?.nomEntreprise ?? '',
       Article: ligne?.article?.designation ?? '',
       'Désignation / Réf.': ligne?.article?.reference ?? '',
       Couleur: ligne?.couleur ?? '',
