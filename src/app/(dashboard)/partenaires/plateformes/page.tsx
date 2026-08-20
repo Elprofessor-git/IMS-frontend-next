@@ -113,7 +113,7 @@ export default function PlateformesPage() {
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <PermissionGate module="plateformes" mode="write">
-                      <Button variant="ghost" size="icon-sm" asChild>
+                      <Button variant="ghost" size="icon-sm" asChild title="Modifier">
                         <Link href={`/partenaires/plateformes/${p.id}`}>
                           <Pencil className="size-3.5" />
                         </Link>
@@ -124,6 +124,7 @@ export default function PlateformesPage() {
                             variant="ghost"
                             size="icon-sm"
                             className="text-destructive hover:text-destructive"
+                            title={`Supprimer « ${p.nom} »`}
                             disabled={deleteMutation.isPending}
                           >
                             <Trash2 className="size-3.5" />

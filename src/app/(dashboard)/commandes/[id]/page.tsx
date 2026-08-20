@@ -277,7 +277,7 @@ function TaillesForm({
             <Label>Quantité</Label>
             <Input type="number" min="1" {...register(`tailles.${idx}.quantite`, { valueAsNumber: true })} />
           </div>
-          <Button type="button" variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onClick={() => remove(idx)}>
+          <Button type="button" variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" title="Supprimer" onClick={() => remove(idx)}>
             <Trash2 className="size-3.5" />
           </Button>
         </div>
@@ -345,7 +345,7 @@ function BomForm({
             <Label>Unité</Label>
             <Input placeholder="m, kg…" {...register(`bom.${idx}.unite`)} />
           </div>
-          <Button type="button" variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onClick={() => remove(idx)}>
+          <Button type="button" variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" title="Supprimer" onClick={() => remove(idx)}>
             <Trash2 className="size-3.5" />
           </Button>
         </div>

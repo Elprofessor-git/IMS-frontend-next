@@ -126,7 +126,7 @@ export default function CommandesPage() {
           const canDelete = c.statut < 2
           return (
             <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon-sm" asChild>
+              <Button variant="ghost" size="icon-sm" asChild title="Voir la commande">
                 <Link href={`/commandes/${c.id}`}>
                   <ExternalLink className="size-3.5" />
                 </Link>

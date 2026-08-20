@@ -269,6 +269,7 @@ export default function NouvelleCommandePage() {
                       variant="ghost"
                       size="icon-sm"
                       className="mb-0.5 text-destructive hover:text-destructive"
+                      title="Supprimer cette taille"
                       onClick={() => removeTaille(idx)}
                     >
                       <Trash2 className="size-3.5" />
@@ -362,6 +363,7 @@ export default function NouvelleCommandePage() {
                       variant="ghost"
                       size="icon-sm"
                       className="mb-0.5 text-destructive hover:text-destructive"
+                      title="Supprimer cette ligne de nomenclature"
                       onClick={() => removeBom(idx)}
                     >
                       <Trash2 className="size-3.5" />
