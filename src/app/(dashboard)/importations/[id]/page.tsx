@@ -421,7 +421,7 @@ export default function ImportationDetailPage({
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
-        <TabsList className="mb-4">
+        <TabsList variant="line" className="mb-4">
           <TabsTrigger value="info">
             <Info className="size-4" />
             Informations

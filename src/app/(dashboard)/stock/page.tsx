@@ -378,7 +378,7 @@ export default function StockPage() {
 
       <Tabs defaultValue="tous">
         <div className="mb-4 overflow-x-auto">
-          <TabsList>
+          <TabsList variant="line">
             <TabsTrigger value="tous">
               <LayoutGrid className="size-4" />
               Tous

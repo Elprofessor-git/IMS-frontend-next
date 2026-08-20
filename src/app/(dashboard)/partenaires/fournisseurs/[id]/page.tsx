@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { UserCheck, UserX } from 'lucide-react'
+import { UserCheck, UserX, Info, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -167,9 +167,15 @@ export default function EditFournisseurPage({
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
-        <TabsList className="mb-4">
-          <TabsTrigger value="info">Informations</TabsTrigger>
-          <TabsTrigger value="historique">Historique</TabsTrigger>
+        <TabsList variant="line" className="mb-4">
+          <TabsTrigger value="info">
+            <Info className="size-4" />
+            Informations
+          </TabsTrigger>
+          <TabsTrigger value="historique">
+            <History className="size-4" />
+            Historique
+          </TabsTrigger>
         </TabsList>
 
         {/* ── ONGLET INFORMATIONS ── */}

@@ -4,7 +4,7 @@ import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -352,9 +352,13 @@ export default function AchatDetailPage({
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
-        <TabsList className="mb-4">
-          <TabsTrigger value="info">Informations</TabsTrigger>
+        <TabsList variant="line" className="mb-4">
+          <TabsTrigger value="info">
+            <Info className="size-4" />
+            Informations
+          </TabsTrigger>
           <TabsTrigger value="lignes">
+            <ListOrdered className="size-4" />
             Lignes
             {achat.lignesAchat.length > 0 && (
               <span className="ml-1.5 rounded-full bg-muted px-1.5 text-xs">
@@ -362,7 +366,10 @@ export default function AchatDetailPage({
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="documents">
+            <FileText className="size-4" />
+            Documents
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}

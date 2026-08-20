@@ -642,13 +642,13 @@ export default function ImportationsPage() {
 
       <Tabs defaultValue="importations">
         <div className="mb-4 overflow-x-auto">
-          <TabsList>
+          <TabsList variant="line">
             <TabsTrigger value="importations">
-              <Table2 className="mr-1.5 size-3.5" />
+              <Table2 className="size-4" />
               Importations ({filtered.length})
             </TabsTrigger>
             <TabsTrigger value="lignes">
-              <Rows3 className="mr-1.5 size-3.5" />
+              <Rows3 className="size-4" />
               Lignes / articles ({lignes.length})
             </TabsTrigger>
           </TabsList>

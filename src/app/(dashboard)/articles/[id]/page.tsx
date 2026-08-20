@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, UserCheck, UserX } from 'lucide-react'
+import { AlertTriangle, UserCheck, UserX, Info, Warehouse } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -152,9 +152,13 @@ export default function EditArticlePage({
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
-        <TabsList className="mb-4">
-          <TabsTrigger value="info">Informations</TabsTrigger>
+        <TabsList variant="line" className="mb-4">
+          <TabsTrigger value="info">
+            <Info className="size-4" />
+            Informations
+          </TabsTrigger>
           <TabsTrigger value="stock" className="gap-1.5">
+            <Warehouse className="size-4" />
             Stock
             {isCritique && (
               <span className="inline-block size-2 rounded-full bg-destructive" />

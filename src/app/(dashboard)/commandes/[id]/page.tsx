@@ -460,7 +460,7 @@ export default function CommandeDetailPage({
       />
 
       <Tabs value={tab} onValueChange={setTab} className="max-w-5xl">
-        <TabsList className="mb-4">
+        <TabsList variant="line" className="mb-4">
           <TabsTrigger value="info">
             <Info className="size-4" />
             Informations

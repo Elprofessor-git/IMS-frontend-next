@@ -775,7 +775,7 @@ export default function TachesPage() {
           <div className="sm:hidden">
             <Tabs defaultValue={String(COLUMNS[0].statut)}>
               <div className="mb-3 overflow-x-auto">
-                <TabsList>
+                <TabsList variant="line">
                   {COLUMNS.map((col) => {
                     const ColIcon = col.icon
                     return (

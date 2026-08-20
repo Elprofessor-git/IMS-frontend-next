@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, ExternalLink, Trash2, Clock, CheckCircle2, LoaderCircle, CheckCheck, XCircle } from 'lucide-react'
+import { Plus, ExternalLink, Trash2, Clock, CheckCircle2, LoaderCircle, CheckCheck, XCircle, LayoutGrid } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -46,11 +46,11 @@ function CouvertureBarre({ pct }: { pct: number }) {
 }
 
 const TABS = [
-  { value: 'tous',       label: 'Tous',          filter: () => true },
-  { value: 'attente',    label: 'En attente',     filter: (c: CommandeClient) => c.statut === 0 },
-  { value: 'prete',      label: 'Prête',          filter: (c: CommandeClient) => c.statut === 1 },
-  { value: 'production', label: 'En production',  filter: (c: CommandeClient) => c.statut === 2 },
-  { value: 'terminee',   label: 'Terminée',       filter: (c: CommandeClient) => c.statut === 3 },
+  { value: 'tous',       label: 'Tous',          icon: LayoutGrid,    filter: () => true },
+  { value: 'attente',    label: 'En attente',     icon: Clock,          filter: (c: CommandeClient) => c.statut === 0 },
+  { value: 'prete',      label: 'Prête',          icon: CheckCircle2,   filter: (c: CommandeClient) => c.statut === 1 },
+  { value: 'production', label: 'En production',  icon: LoaderCircle,   filter: (c: CommandeClient) => c.statut === 2 },
+  { value: 'terminee',   label: 'Terminée',       icon: CheckCheck,     filter: (c: CommandeClient) => c.statut === 3 },
 ]
 
 export default function CommandesPage() {
@@ -179,9 +179,12 @@ export default function CommandesPage() {
 
       <Tabs defaultValue="tous">
         <div className="mb-4 overflow-x-auto">
-          <TabsList>
-            {TABS.map((t) => (
+          <TabsList variant="line">
+            {TABS.map((t) => {
+            const TabIcon = t.icon
+            return (
               <TabsTrigger key={t.value} value={t.value}>
+                <TabIcon className="size-4" />
                 {t.label}
                 {!isLoading && byTab[t.value]?.length > 0 && (
                   <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0 text-xs font-medium">
@@ -189,7 +192,8 @@ export default function CommandesPage() {
                   </span>
                 )}
               </TabsTrigger>
-            ))}
+            )
+          })}
           </TabsList>
         </div>
 
