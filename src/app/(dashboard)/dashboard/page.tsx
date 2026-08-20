@@ -254,7 +254,7 @@ export default function DashboardPage() {
                   <Tooltip
                     formatter={(value) => [fmtEur(Number(value)), 'Montant total']}
                   />
-                  <Bar dataKey="total" fill="#3B82F6" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="total" fill="#1E5FBF" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
