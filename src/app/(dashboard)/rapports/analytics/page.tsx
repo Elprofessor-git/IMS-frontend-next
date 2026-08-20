@@ -167,7 +167,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           title="Montant moyen / achat"
-          value={nbAchats > 0 ? formatCurrency(montantMoyen) : '—'}
+          value={nbAchats > 0 ? formatCurrency(montantMoyen) : '0 €'}
           subtitle={`${nbAchats} achat${nbAchats > 1 ? 's' : ''} actifs`}
           icon={ShoppingCart}
           tone="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
@@ -175,7 +175,7 @@ export default function AnalyticsPage() {
 
         <KpiCard
           title="Délai moyen de livraison"
-          value={delaiMoyen != null ? `${delaiMoyen.toFixed(1)} j` : '—'}
+          value={delaiMoyen != null ? `${delaiMoyen.toFixed(1)} j` : 'Aucune donnée'}
           subtitle={
             nbLivres > 0
               ? `${nbLivres} livraison${nbLivres > 1 ? 's' : ''} enregistrée${nbLivres > 1 ? 's' : ''}`
@@ -190,7 +190,7 @@ export default function AnalyticsPage() {
 
         <KpiCard
           title="Rotation de stock"
-          value={rotation != null ? `${rotation} j` : '—'}
+          value={rotation != null ? `${rotation} j` : 'Aucune sortie'}
           subtitle={
             rotation != null
               ? `Stock libre : ${stockLibre} unités · base 30 j`
@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
 
         <KpiCard
           title="Tâches en cours / terminées"
-          value={ratioTaches != null ? `${ratioTaches} %` : '—'}
+          value={ratioTaches != null ? `${ratioTaches} %` : 'Aucune donnée'}
           subtitle={
             taches
               ? `En cours : ${taches.enCours} · Terminées : ${taches.terminees}`
@@ -242,7 +242,7 @@ export default function AnalyticsPage() {
           value={
             chartData.at(-1)?.montant
               ? formatCurrency(chartData.at(-1)!.montant)
-              : '—'
+              : '0 €'
           }
           subtitle="Montant non annulé"
           icon={TrendingUp}

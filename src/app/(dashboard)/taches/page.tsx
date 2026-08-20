@@ -711,7 +711,7 @@ export default function TachesPage() {
         />
         <KpiCard
           title="En cours"
-          value={dashboard?.enCours ?? '—'}
+          value={dashboard?.enCours ?? 0}
           sub={
             dashboard
               ? `Avancement moyen : ${dashboard.avancementMoyen.toFixed(0)}%`
@@ -722,7 +722,7 @@ export default function TachesPage() {
         />
         <KpiCard
           title="Bloquées"
-          value={dashboard?.bloquees ?? '—'}
+          value={dashboard?.bloquees ?? 0}
           sub={
             dashboard && dashboard.tachesEnRetard > 0
               ? `${dashboard.tachesEnRetard} en retard`
@@ -733,7 +733,7 @@ export default function TachesPage() {
         />
         <KpiCard
           title="Urgentes"
-          value={dashboard?.tachesUrgentes ?? '—'}
+          value={dashboard?.tachesUrgentes ?? 0}
           icon={<Zap className="size-5" />}
           tone="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
         />

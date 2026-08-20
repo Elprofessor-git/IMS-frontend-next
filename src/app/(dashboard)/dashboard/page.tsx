@@ -11,11 +11,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { ClipboardList, ShoppingCart, Package, AlertTriangle, ArrowRight } from 'lucide-react'
+import { ClipboardList, ShoppingCart, Package, AlertTriangle, ArrowRight, AlertCircle, Ban, Clock3, Timer } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PageHeader } from '@/components/shared/page-header'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { useGetAchats } from '@/hooks/use-achats'
 import { useGetStocks, useGetStocksAlertes } from '@/hooks/use-stocks'
@@ -102,6 +103,38 @@ function KpiCard({
   )
 }
 
+// ── Priorité tile ──────────────────────────────────────────────────────────────
+
+function PriorityTile({
+  icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: number
+  href: string
+}) {
+  if (value <= 0) return null
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 rounded-lg border border-amber-200 bg-card px-3.5 py-3 transition-colors hover:border-amber-300 hover:shadow-sm dark:border-amber-800"
+    >
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/60 dark:text-amber-300">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold leading-tight text-foreground">
+          {value}
+        </span>
+        <span className="block truncate text-xs text-muted-foreground">{label}</span>
+      </span>
+    </Link>
+  )
+}
+
 // ── Dashboard Page ─────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -178,6 +211,29 @@ export default function DashboardPage() {
     [achats],
   )
 
+  // ── Priorités : anomalies/actions à traiter ───────────────────────────────────
+  const commandesNonLancables = useMemo(
+    () => commandes?.filter((c) => c.statut === 0).length ?? 0,
+    [commandes],
+  )
+  const achatsAttenteReception = useMemo(
+    () => achats?.filter((a) => a.statut === 1 || a.statut === 2).length ?? 0,
+    [achats],
+  )
+  const tachesEnRetard = dashboard?.tachesEnRetard ?? 0
+  const alertesCritiques = useMemo(
+    () => alertes?.filter((a) => a.estCritique) ?? [],
+    [alertes],
+  )
+  const nbAlertesCritiques = alertesCritiques.length
+
+  // Colonne vide = pas de priorité affichée
+  const hasPriorities =
+    commandesNonLancables > 0 ||
+    achatsAttenteReception > 0 ||
+    nbAlertesCritiques > 0 ||
+    tachesEnRetard > 0
+
   return (
     <PermissionGate
       module="dashboard"
@@ -189,7 +245,10 @@ export default function DashboardPage() {
       }
     >
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
+        <PageHeader
+          title="Dashboard"
+          description="Vue d&apos;ensemble — ce qui se passe, ce qui est urgent, ce qu&apos;il faut faire."
+        />
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -226,6 +285,44 @@ export default function DashboardPage() {
           loading={loadingAlertes}
         />
       </div>
+
+      {/* ── À traiter en priorité ── */}
+      {hasPriorities && (
+        <Card className="border-amber-300 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base text-amber-900 dark:text-amber-100">
+              <AlertCircle className="size-4.5 text-amber-600 dark:text-amber-400" />
+              À traiter en priorité
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <PriorityTile
+              icon={<Ban className="size-4.5" />}
+              label="Commandes non lançables"
+              value={commandesNonLancables}
+              href="/commandes"
+            />
+            <PriorityTile
+              icon={<Clock3 className="size-4.5" />}
+              label="Achats en attente de réception"
+              value={achatsAttenteReception}
+              href="/achats"
+            />
+            <PriorityTile
+              icon={<AlertTriangle className="size-4.5" />}
+              label={nbAlertesCritiques > 0 ? 'Alertes stock critiques' : 'Alerte(s) stock'}
+              value={nbAlertesCritiques || nbAlertes}
+              href="/stock"
+            />
+            <PriorityTile
+              icon={<Timer className="size-4.5" />}
+              label="Tâches en retard"
+              value={tachesEnRetard}
+              href="/taches"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Graphique + Widget tâches ── */}
       <div className="grid gap-4 lg:grid-cols-3">
