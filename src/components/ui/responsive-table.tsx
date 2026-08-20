@@ -88,7 +88,7 @@ export function ResponsiveTable<T>({
                   colSpan={columns.length}
                   className="h-32 p-8 text-center"
                 >
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-[15px] font-medium text-muted-foreground">
                     {emptyText}
                   </p>
                 </TableCell>
@@ -112,7 +112,7 @@ export function ResponsiveTable<T>({
       <div className="md:hidden space-y-2">
         {isLoading &&
           Array.from({ length: loadingRows }).map((_, i) => (
-            <div key={i} className="rounded-lg border bg-card p-3 space-y-2">
+            <div key={i} className="rounded-lg border bg-card p-4 space-y-2">
               <Skeleton className="h-4 w-2/3" />
               <Skeleton className="h-3 w-1/2" />
             </div>
@@ -120,7 +120,7 @@ export function ResponsiveTable<T>({
 
         {!isLoading && data.length === 0 && (
           <div className="rounded-lg border bg-card p-8">
-            <p className="py-4 text-center text-sm font-medium text-muted-foreground">
+            <p className="py-4 text-center text-[15px] font-medium text-muted-foreground">
               {emptyText}
             </p>
           </div>
@@ -133,7 +133,7 @@ export function ResponsiveTable<T>({
             return (
               <div key={key} className="rounded-lg border bg-card divide-y overflow-hidden">
                 {/* Colonnes primaires — toujours visibles */}
-                <div className="p-3 space-y-1.5">
+                <div className="p-4 space-y-2">
                   {primaryCols.map((col) => (
                     <div key={col.key}>{col.cell(row)}</div>
                   ))}
@@ -143,10 +143,10 @@ export function ResponsiveTable<T>({
                 {secondaryCols.length > 0 && (
                   <>
                     {isExpanded && (
-                      <div className="px-3 py-2.5 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div className="px-4 py-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[15px]">
                         {secondaryCols.map((col) => (
                           <div key={col.key}>
-                            <span className="block text-[11px] text-muted-foreground mb-0.5">
+                            <span className="block text-xs text-muted-foreground mb-0.5">
                               {col.header}
                             </span>
                             {col.cell(row)}
@@ -155,7 +155,7 @@ export function ResponsiveTable<T>({
                       </div>
                     )}
                     <button
-                      className="flex w-full items-center justify-center gap-1 py-1.5 text-xs text-muted-foreground hover:bg-accent transition-colors"
+                      className="flex w-full items-center justify-center gap-1 py-2 text-[13px] text-muted-foreground hover:bg-accent transition-colors"
                       onClick={() => toggle(key)}
                     >
                       {isExpanded ? (

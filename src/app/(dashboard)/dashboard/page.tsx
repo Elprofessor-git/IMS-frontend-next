@@ -84,14 +84,14 @@ function KpiCard({
           {icon}
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">{title}</p>
+          <p className="text-[15px] text-muted-foreground">{title}</p>
           {loading ? (
-            <Skeleton className="mt-1 h-7 w-20" />
+            <Skeleton className="mt-1 h-8 w-24" />
           ) : (
-            <p className="text-2xl font-bold leading-none">{value}</p>
+            <p className="text-3xl font-bold leading-none">{value}</p>
           )}
           {sub && !loading && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
+            <p className="mt-1 text-[13px] text-muted-foreground">{sub}</p>
           )}
         </div>
       </CardContent>
@@ -186,7 +186,7 @@ export default function DashboardPage() {
       }
     >
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
 
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

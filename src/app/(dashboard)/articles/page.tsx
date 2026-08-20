@@ -188,6 +188,7 @@ export default function ArticlesPage() {
     <div>
       <PageHeader
         title="Articles"
+        description="Catalogue, références, unités et niveaux de stock"
         action={
           <PermissionGate module="articles" mode="write">
             <Button asChild>
@@ -213,7 +214,7 @@ export default function ArticlesPage() {
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
         />
-        <span className="text-sm text-muted-foreground">{displayed.length} article(s)</span>
+        <span className="text-[15px] text-muted-foreground">{displayed.length} article(s)</span>
       </div>
 
       <ResponsiveTable

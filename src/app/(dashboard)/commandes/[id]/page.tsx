@@ -423,6 +423,7 @@ export default function CommandeDetailPage({
     <div>
       <PageHeader
         title={commande.numeroCommande}
+        description={`${commande.client?.nom ?? `Client #${commande.clientId}`} · créée le ${new Date(commande.dateCommande).toLocaleDateString('fr-FR')}`}
         backHref="/commandes"
         action={
           <div className="flex flex-wrap items-center gap-2">
@@ -477,7 +478,7 @@ export default function CommandeDetailPage({
           <div className="grid gap-4">
             <Card>
               <CardContent className="pt-6">
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[15px]">
                   <div>
                     <dt className="text-muted-foreground">Client</dt>
                     <dd className="font-medium">{commande.client?.nom ?? `#${commande.clientId}`}</dd>
