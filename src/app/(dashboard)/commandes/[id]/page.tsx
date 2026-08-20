@@ -816,9 +816,15 @@ export default function CommandeDetailPage({
                             </TableCell>
                             <TableCell>
                               {r.estSuffisant ? (
-                                <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">Suffisant</Badge>
+                                <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
+                                  <CheckCircle2 className="size-3.5" />
+                                  Suffisant
+                                </Badge>
                               ) : (
-                                <Badge variant="destructive">Insuffisant</Badge>
+                                <Badge variant="destructive">
+                                  <XCircle className="size-3.5" />
+                                  Insuffisant
+                                </Badge>
                               )}
                             </TableCell>
                           </TableRow>
@@ -978,13 +984,20 @@ export default function CommandeDetailPage({
                         </TableCell>
                         <TableCell>
                           {!hasBeenValidated ? (
-                            <Badge variant="secondary">Non validé</Badge>
+                            <Badge variant="secondary">
+                              <Clock className="size-3.5" />
+                              Non validé
+                            </Badge>
                           ) : b.estCompletementCouvert ? (
                             <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
-                              Couvert ✓
+                              <CheckCircle2 className="size-3.5" />
+                              Couvert
                             </Badge>
                           ) : (
-                            <Badge variant="destructive">Manque</Badge>
+                            <Badge variant="destructive">
+                              <XCircle className="size-3.5" />
+                              Manque
+                            </Badge>
                           )}
                         </TableCell>
                       </TableRow>

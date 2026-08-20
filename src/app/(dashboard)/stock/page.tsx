@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ShieldCheck, ArrowDownToLine, Trash2, Plus, LayoutGrid, Unlock, Lock, TriangleAlert } from 'lucide-react'
+import { ShieldCheck, ArrowDownToLine, Trash2, Plus, LayoutGrid, Unlock, Lock, TriangleAlert, BadgeCheck, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -266,9 +266,15 @@ export default function StockPage() {
         cardPrimary: true,
         cell: (s) =>
           s.estValide ? (
-            <Badge variant="default">Validé</Badge>
+            <Badge variant="default">
+              <BadgeCheck className="size-3.5" />
+              Validé
+            </Badge>
           ) : (
-            <Badge variant="secondary">En attente</Badge>
+            <Badge variant="secondary">
+              <Clock className="size-3.5" />
+              En attente
+            </Badge>
           ),
       },
       {
@@ -353,9 +359,15 @@ export default function StockPage() {
         cardPrimary: true,
         cell: (a) =>
           a.estCritique ? (
-            <Badge variant="destructive">Critique</Badge>
+            <Badge variant="destructive">
+              <TriangleAlert className="size-3.5" />
+              Critique
+            </Badge>
           ) : (
-            <Badge className="border border-orange-200 bg-orange-100 text-orange-800">Alerte</Badge>
+            <Badge className="border border-orange-200 bg-orange-100 text-orange-800">
+              <TriangleAlert className="size-3.5" />
+              Alerte
+            </Badge>
           ),
       },
     ],

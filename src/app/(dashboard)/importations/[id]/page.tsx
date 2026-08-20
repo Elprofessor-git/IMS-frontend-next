@@ -4,7 +4,7 @@ import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Info, ListOrdered, FileText } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText, PackageCheck, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -621,10 +621,14 @@ export default function ImportationDetailPage({
                       <TableCell>
                         {l.estAffecteStock ? (
                           <Badge variant="default" className="border-green-200 bg-green-100 text-green-800">
+                            <PackageCheck className="size-3.5" />
                             Affecté
                           </Badge>
                         ) : (
-                          <Badge variant="secondary">En attente</Badge>
+                          <Badge variant="secondary">
+                            <Clock className="size-3.5" />
+                            En attente
+                          </Badge>
                         )}
                       </TableCell>
                     </TableRow>
