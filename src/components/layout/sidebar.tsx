@@ -63,7 +63,7 @@ const NAV: (NavItem | NavGroup)[] = [
     children: [
       { href: '/partenaires/clients',      label: 'Clients',      icon: UserRound, iconColor: 'text-emerald-700 group-data-[active=true]:text-white dark:text-emerald-400', module: 'clients' },
       { href: '/partenaires/fournisseurs', label: 'Fournisseurs', icon: Truck,     iconColor: 'text-orange-600 group-data-[active=true]:text-white dark:text-orange-400', module: 'fournisseurs' },
-      { href: '/partenaires/plateformes',  label: 'Plateformes',  icon: Globe,     iconColor: 'text-indigo-600 group-data-[active=true]:text-white dark:text-indigo-400', module: 'fournisseurs' },
+      { href: '/partenaires/plateformes',  label: 'Plateformes',  icon: Globe,     iconColor: 'text-indigo-600 group-data-[active=true]:text-white dark:text-indigo-400', module: 'plateformes' },
     ],
   },
   { href: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, iconColor: 'text-slate-700 group-data-[active=true]:text-white dark:text-slate-300', module: 'utilisateurs' },
@@ -120,6 +120,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           const isActive = item.children.some((c) => pathname.startsWith(c.href))
           return (
             <li key={item.label}>
+              <div className="my-2 h-px bg-sidebar-border/80" />
               <button
                 onClick={() => toggleGroup(item.label)}
                 className={cn(
@@ -130,7 +131,14 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 )}
               >
                 <item.icon className={cn('size-4.5 shrink-0', item.iconColor)} />
-                <span className="flex-1 text-left">{item.label}</span>
+                <span className="flex-1 text-left">
+                  {item.label}
+                  {isActive && (
+                    <span className="ml-1.5 rounded-full bg-sidebar-primary/10 px-1.5 py-0 text-[11px] font-semibold text-sidebar-accent-foreground">
+                      {item.children.filter((c) => pathname.startsWith(c.href)).length} actif
+                    </span>
+                  )}
+                </span>
                 {isOpen ? (
                   <ChevronDown className="size-4 text-sidebar-foreground/60" />
                 ) : (
@@ -138,7 +146,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 )}
               </button>
               {isOpen && (
-                <ul className="ml-4 mt-1 space-y-1 border-l border-sidebar-accent pl-2">
+                <ul className="ml-3 mt-1 space-y-1 border-l-2 border-sidebar-accent pl-2.5">
                   {item.children.map((child) => (
                     <li key={child.href}>
                       <NavLink
@@ -178,7 +186,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden md:flex h-full w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+    <aside className="hidden md:flex h-full w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-sidebar-border px-4">
         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
           <Shirt className="size-4.5" />
