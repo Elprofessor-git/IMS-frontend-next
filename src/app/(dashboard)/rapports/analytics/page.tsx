@@ -12,6 +12,8 @@ import {
 } from 'recharts'
 import { Clock, RotateCcw, AlertTriangle, CheckSquare, ShoppingCart, TrendingUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageHeader } from '@/components/shared/page-header'
+import { cn } from '@/lib/utils'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useGetAchats } from '@/hooks/use-achats'
@@ -28,23 +30,27 @@ function KpiCard({
   value,
   subtitle,
   icon: Icon,
+  tone,
   valueClass,
 }: {
   title: string
   value: string
   subtitle?: string
   icon: React.ElementType
+  tone: string
   valueClass?: string
 }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="size-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <p className={`text-2xl font-bold ${valueClass ?? ''}`}>{value}</p>
-        {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+    <Card className="h-full">
+      <CardContent className="flex items-center gap-4 py-5">
+        <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', tone)}>
+          <Icon className="size-5" />
+        </div>
+        <div>
+          <p className="text-[15px] text-muted-foreground">{title}</p>
+          <p className={cn('text-3xl font-bold leading-none', valueClass)}>{value}</p>
+          {subtitle && <p className="mt-1 text-[13px] text-muted-foreground">{subtitle}</p>}
+        </div>
       </CardContent>
     </Card>
   )
@@ -131,7 +137,7 @@ export default function AnalyticsPage() {
   }, [achats])
 
   const loadingFallback = (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <Skeleton className="h-8 w-40" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 5 }).map((_, i) => (
@@ -152,20 +158,19 @@ export default function AnalyticsPage() {
         </p>
       }
     >
-      {loading ? loadingFallback : <div className="p-6 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Analytics</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Indicateurs de performance — calculs temps réel sur toutes les données
-        </p>
-      </div>
+      {loading ? loadingFallback : <div className="space-y-6">
+      <PageHeader
+        title="Analytics"
+        description="Indicateurs de performance — calculs temps réel sur toutes les données"
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           title="Montant moyen / achat"
           value={nbAchats > 0 ? formatCurrency(montantMoyen) : '—'}
           subtitle={`${nbAchats} achat${nbAchats > 1 ? 's' : ''} actifs`}
           icon={ShoppingCart}
+          tone="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
         />
 
         <KpiCard
@@ -177,6 +182,7 @@ export default function AnalyticsPage() {
               : 'Aucune livraison enregistrée'
           }
           icon={Clock}
+          tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
           valueClass={
             delaiMoyen != null && delaiMoyen > 30 ? 'text-amber-500' : undefined
           }
@@ -191,6 +197,7 @@ export default function AnalyticsPage() {
               : 'Aucune sortie sur 30 j'
           }
           icon={RotateCcw}
+          tone="bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300"
           valueClass={
             rotation != null && rotation < 15
               ? 'text-destructive'
@@ -205,6 +212,7 @@ export default function AnalyticsPage() {
           value={`${pctAlerte} %`}
           subtitle={`${nbAlertes} / ${nbArticles} articles`}
           icon={AlertTriangle}
+          tone="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
           valueClass={
             pctAlerte > 30
               ? 'text-destructive'
@@ -223,6 +231,7 @@ export default function AnalyticsPage() {
               : 'Aucune donnée'
           }
           icon={CheckSquare}
+          tone="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
           valueClass={
             ratioTaches != null && ratioTaches > 70 ? 'text-amber-500' : undefined
           }
@@ -237,6 +246,7 @@ export default function AnalyticsPage() {
           }
           subtitle="Montant non annulé"
           icon={TrendingUp}
+          tone="bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
         />
       </div>
 
