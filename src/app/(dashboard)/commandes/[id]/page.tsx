@@ -22,6 +22,13 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -112,8 +119,6 @@ function AjouterBesoinDialog({
     },
   })
 
-  if (!open) return null
-
   const onSubmit = async (data: BesoinSchema) => {
     await ajouterMutation.mutateAsync({
       commandeId,
@@ -124,12 +129,14 @@ function AjouterBesoinDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-[500px] overflow-y-auto rounded-lg bg-background p-6 shadow-xl">
-        <h3 className="mb-4 text-lg font-semibold">Ajouter un besoin</h3>
-        <p className="mb-4 text-sm text-muted-foreground">
-          La quantité totale sera calculée par le backend : quantité unitaire × nombre de pièces.
-        </p>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Ajouter un besoin</DialogTitle>
+          <DialogDescription>
+            La quantité totale sera calculée par le backend : quantité unitaire × nombre de pièces.
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="grid gap-2">
             <Label>Article <span className="text-destructive">*</span></Label>
@@ -228,8 +235,8 @@ function AjouterBesoinDialog({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

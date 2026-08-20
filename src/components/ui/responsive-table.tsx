@@ -49,7 +49,11 @@ export function ResponsiveTable<T>({
   const toggle = (key: React.Key) =>
     setExpanded((prev) => {
       const next = new Set(prev)
-      next.has(key) ? next.delete(key) : next.add(key)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
       return next
     })
 
@@ -82,9 +86,11 @@ export function ResponsiveTable<T>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="py-10 text-center text-muted-foreground"
+                  className="h-32 p-8 text-center"
                 >
-                  {emptyText}
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {emptyText}
+                  </p>
                 </TableCell>
               </TableRow>
             )}
@@ -113,8 +119,10 @@ export function ResponsiveTable<T>({
           ))}
 
         {!isLoading && data.length === 0 && (
-          <div className="rounded-lg border bg-card py-10 text-center text-sm text-muted-foreground">
-            {emptyText}
+          <div className="rounded-lg border bg-card p-8">
+            <p className="py-4 text-center text-sm font-medium text-muted-foreground">
+              {emptyText}
+            </p>
           </div>
         )}
 
