@@ -79,15 +79,15 @@ function RealisableBadge({ statut, pct }: { statut: number; pct: number }) {
   if (pct === 0) return null
   if (statut === 1) {
     return (
-      <div className="flex items-center gap-1.5 rounded-md border border-green-300 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-800">
-        <CheckCircle2 className="size-4" />
+      <div className="flex items-center gap-2 rounded-md border border-green-600 bg-green-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm">
+        <CheckCircle2 className="size-4.5 shrink-0" />
         RÉALISABLE — {pct.toFixed(1)}% couvert
       </div>
     )
   }
   return (
-    <div className="flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-1.5 text-sm font-medium text-destructive">
-      <AlertTriangle className="size-4" />
+    <div className="flex items-center gap-2 rounded-md border border-red-700 bg-red-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm">
+      <AlertTriangle className="size-4.5 shrink-0" />
       NON LANÇABLE — {pct.toFixed(1)}% couvert
     </div>
   )
@@ -893,16 +893,16 @@ export default function CommandeDetailPage({
             {/* Résultat de validation */}
             {pct > 0 && (
               <div
-                className={`flex items-center gap-3 rounded-md border px-4 py-3 text-sm ${
+                className={`flex items-center gap-3 rounded-md border px-4 py-3 text-sm font-semibold text-white shadow-sm ${
                   isPrete
-                    ? 'border-green-300 bg-green-50 text-green-800'
-                    : 'border-orange-300 bg-orange-50 text-orange-800'
+                    ? 'border-green-700 bg-green-600'
+                    : 'border-red-700 bg-red-600'
                 }`}
               >
                 {isPrete ? (
-                  <CheckCircle2 className="size-4 shrink-0" />
+                  <CheckCircle2 className="size-5 shrink-0" />
                 ) : (
-                  <AlertTriangle className="size-4 shrink-0" />
+                  <AlertTriangle className="size-5 shrink-0" />
                 )}
                 <span>
                   <strong>{isPrete ? 'RÉALISABLE' : 'NON LANÇABLE'}</strong>

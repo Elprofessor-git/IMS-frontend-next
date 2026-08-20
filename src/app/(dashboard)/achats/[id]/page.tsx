@@ -330,13 +330,16 @@ export default function AchatDetailPage({
       />
 
       {achat.statut === 0 && achat.lignesAchat.length === 0 && (
-        <div className="mb-4 max-w-4xl rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-950">
-          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-            Ajoutez maintenant les articles de cet achat
-          </p>
-          <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
-            L&apos;achat a été créé — ajoutez au moins une ligne avant de le soumettre.
-          </p>
+        <div className="mb-4 flex max-w-4xl items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-950">
+          <Info className="mt-0.5 size-4.5 shrink-0 text-amber-700 dark:text-amber-300" />
+          <div>
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
+              Ajoutez maintenant les articles de cet achat
+            </p>
+            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+              L&apos;achat a été créé — ajoutez au moins une ligne avant de le soumettre.
+            </p>
+          </div>
           <Button
             size="sm"
             className="mt-3"
