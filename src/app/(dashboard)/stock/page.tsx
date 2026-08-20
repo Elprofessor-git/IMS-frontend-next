@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ShieldCheck, ArrowDownToLine, Trash2, Plus } from 'lucide-react'
+import { ShieldCheck, ArrowDownToLine, Trash2, Plus, LayoutGrid, Unlock, Lock, TriangleAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -379,10 +379,20 @@ export default function StockPage() {
       <Tabs defaultValue="tous">
         <div className="mb-4 overflow-x-auto">
           <TabsList>
-            <TabsTrigger value="tous">Tous</TabsTrigger>
-            <TabsTrigger value="libre">Libre</TabsTrigger>
-            <TabsTrigger value="reserve">Réservé</TabsTrigger>
+            <TabsTrigger value="tous">
+              <LayoutGrid className="size-4" />
+              Tous
+            </TabsTrigger>
+            <TabsTrigger value="libre">
+              <Unlock className="size-4" />
+              Libre
+            </TabsTrigger>
+            <TabsTrigger value="reserve">
+              <Lock className="size-4" />
+              Réservé
+            </TabsTrigger>
             <TabsTrigger value="alertes">
+              <TriangleAlert className="size-4" />
               Alertes
               {(alertes?.length ?? 0) > 0 && (
                 <Badge variant="destructive" className="ml-1.5 px-1.5 py-0 text-xs">

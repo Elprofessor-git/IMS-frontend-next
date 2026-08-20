@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, ExternalLink, Trash2 } from 'lucide-react'
+import { Plus, ExternalLink, Trash2, Clock, CheckCircle2, LoaderCircle, CheckCheck, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -14,18 +14,19 @@ import { useGetCommandes, useDeleteCommande } from '@/hooks/use-commandes'
 import { STATUT_COMMANDE } from '@/types/commande'
 import type { CommandeClient } from '@/types/commande'
 
-const STATUT_CFG: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
-  0: { variant: 'secondary' },
-  1: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800' },
-  2: { variant: 'default' },
-  3: { variant: 'outline', className: 'border-blue-200 bg-blue-100 text-blue-800' },
-  4: { variant: 'destructive' },
+const STATUT_CFG: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
+  0: { variant: 'secondary', icon: <Clock className="size-3.5" /> },
+  1: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800', icon: <CheckCircle2 className="size-3.5" /> },
+  2: { variant: 'default', icon: <LoaderCircle className="size-3.5" /> },
+  3: { variant: 'outline', className: 'border-blue-200 bg-blue-100 text-blue-800', icon: <CheckCheck className="size-3.5" /> },
+  4: { variant: 'destructive', icon: <XCircle className="size-3.5" /> },
 }
 
 function StatutBadge({ statut }: { statut: number }) {
   const cfg = STATUT_CFG[statut]
   return (
     <Badge variant={cfg?.variant} className={cfg?.className}>
+      {cfg?.icon}
       {STATUT_COMMANDE[statut] ?? String(statut)}
     </Badge>
   )

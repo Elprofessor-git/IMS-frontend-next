@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { ClipboardList, ShoppingCart, Package, AlertTriangle, ArrowRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -69,18 +70,20 @@ function KpiCard({
   value,
   sub,
   icon,
+  tone = 'bg-muted text-muted-foreground',
   loading,
 }: {
   title: string
   value: string | number
   sub?: string
   icon: React.ReactNode
+  tone?: string
   loading?: boolean
 }) {
   return (
-    <Card>
+    <Card className="h-full">
       <CardContent className="flex items-center gap-4 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', tone)}>
           {icon}
         </div>
         <div>
@@ -195,6 +198,7 @@ export default function DashboardPage() {
           value={commandesActives}
           sub="Prête + En production"
           icon={<ClipboardList className="size-5" />}
+          tone="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
           loading={loadingCommandes}
         />
         <KpiCard
@@ -202,6 +206,7 @@ export default function DashboardPage() {
           value={fmtEur(montantDuMois)}
           sub={`${achatsDuMois.length} ordre(s)`}
           icon={<ShoppingCart className="size-5" />}
+          tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
           loading={loadingAchats}
         />
         <KpiCard
@@ -209,6 +214,7 @@ export default function DashboardPage() {
           value={fmtEur(stockValorise)}
           sub={`${stocks?.length ?? 0} entrées`}
           icon={<Package className="size-5" />}
+          tone="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
           loading={loadingStocks}
         />
         <KpiCard
@@ -216,6 +222,7 @@ export default function DashboardPage() {
           value={nbAlertes}
           sub={nbCritiques > 0 ? `dont ${nbCritiques} critique(s)` : 'Aucun critique'}
           icon={<AlertTriangle className="size-5" />}
+          tone="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
           loading={loadingAlertes}
         />
       </div>

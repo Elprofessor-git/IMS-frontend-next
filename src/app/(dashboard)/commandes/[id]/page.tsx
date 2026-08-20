@@ -4,7 +4,7 @@ import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2, AlertTriangle, CheckCircle2, Info } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -67,11 +67,11 @@ import { z } from 'zod'
 import type { WorkflowStatutConfig } from '@/components/ui/statut-workflow'
 
 const COMMANDE_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
-  0: { label: 'En attente', badgeVariant: 'secondary' },
-  1: { label: 'Prête', badgeClassName: 'border-green-200 bg-green-100 text-green-800' },
-  2: { label: 'En production', badgeVariant: 'default' },
-  3: { label: 'Terminée', badgeClassName: 'border-blue-200 bg-blue-100 text-blue-800' },
-  4: { label: 'Annulée', badgeVariant: 'destructive' },
+  0: { label: 'En attente', badgeVariant: 'secondary', badgeIcon: <Clock className="size-3.5" /> },
+  1: { label: 'Prête', badgeClassName: 'border-green-200 bg-green-100 text-green-800', badgeIcon: <CheckCircle2 className="size-3.5" /> },
+  2: { label: 'En production', badgeVariant: 'default', badgeIcon: <LoaderCircle className="size-3.5" /> },
+  3: { label: 'Terminée', badgeClassName: 'border-blue-200 bg-blue-100 text-blue-800', badgeIcon: <CheckCheck className="size-3.5" /> },
+  4: { label: 'Annulée', badgeVariant: 'destructive', badgeIcon: <XCircle className="size-3.5" /> },
 }
 
 // ── Badge RÉALISABLE / NON LANÇABLE ────────────────────────────
@@ -461,9 +461,16 @@ export default function CommandeDetailPage({
 
       <Tabs value={tab} onValueChange={setTab} className="max-w-5xl">
         <TabsList className="mb-4">
-          <TabsTrigger value="info">Informations</TabsTrigger>
-          <TabsTrigger value="bom">Tailles &amp; BOM</TabsTrigger>
+          <TabsTrigger value="info">
+            <Info className="size-4" />
+            Informations
+          </TabsTrigger>
+          <TabsTrigger value="bom">
+            <Layers className="size-4" />
+            Tailles &amp; BOM
+          </TabsTrigger>
           <TabsTrigger value="ressources">
+            <ListChecks className="size-4" />
             Besoins &amp; Ressources
             {commande.besoins.length > 0 && (
               <span className="ml-1.5 rounded-full bg-muted px-1.5 text-xs">
@@ -481,12 +488,12 @@ export default function CommandeDetailPage({
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-[15px]">
                   <div>
                     <dt className="text-muted-foreground">Client</dt>
-                    <dd className="font-medium">{commande.client?.nom ?? `#${commande.clientId}`}</dd>
+                    <dd className="font-semibold">{commande.client?.nom ?? `#${commande.clientId}`}</dd>
                   </div>
                   {commande.marque && (
                     <div>
                       <dt className="text-muted-foreground">Marque</dt>
-                      <dd className="font-medium">{commande.marque.nom}</dd>
+                      <dd className="font-semibold">{commande.marque.nom}</dd>
                     </div>
                   )}
                   <div>
@@ -495,7 +502,7 @@ export default function CommandeDetailPage({
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Couverture ressources</dt>
-                    <dd className="font-medium">{pct.toFixed(1)}%</dd>
+                    <dd className="font-semibold">{pct.toFixed(1)}%</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Date de commande</dt>
@@ -512,7 +519,7 @@ export default function CommandeDetailPage({
                   {commande.titreCommande && (
                     <div className="col-span-2">
                       <dt className="text-muted-foreground">Titre</dt>
-                      <dd className="font-medium">{commande.titreCommande}</dd>
+                      <dd className="font-semibold">{commande.titreCommande}</dd>
                     </div>
                   )}
                   {commande.descriptionCommande && (

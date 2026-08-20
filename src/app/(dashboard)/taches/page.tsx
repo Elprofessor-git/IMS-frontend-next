@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, type ReactNode } from 'react'
-import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap } from 'lucide-react'
+import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap, Clock, LoaderCircle } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
@@ -48,11 +48,11 @@ import type { TacheSchema } from '@/lib/validations/tache'
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const COLUMNS = [
-  { statut: 0, label: 'Non commencée', headerClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  { statut: 1, label: 'En cours',      headerClass: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
-  { statut: 2, label: 'Bloquée',       headerClass: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
-  { statut: 3, label: 'Terminée',      headerClass: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300' },
-  { statut: 4, label: 'Annulée',       headerClass: 'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500' },
+  { statut: 0, label: 'Non commencée', icon: Clock, headerClass: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+  { statut: 1, label: 'En cours',      icon: LoaderCircle, headerClass: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+  { statut: 2, label: 'Bloquée',       icon: AlertTriangle, headerClass: 'bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+  { statut: 3, label: 'Terminée',      icon: CheckCircle, headerClass: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300' },
+  { statut: 4, label: 'Annulée',       icon: XCircle, headerClass: 'bg-slate-50 text-slate-400 dark:bg-slate-900 dark:text-slate-500' },
 ]
 
 const PRIORITE_CFG: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
@@ -611,12 +611,14 @@ function TacheCard({
 
 function KanbanColumn({
   label,
+  icon: ColumnIcon,
   headerClass,
   taches,
   onOpenDialog,
 }: {
   statut: number
   label: string
+  icon: React.ElementType
   headerClass: string
   taches: TacheProduction[]
   onOpenDialog: (type: DialogType, tache: TacheProduction) => void
@@ -624,7 +626,10 @@ function KanbanColumn({
   return (
     <div className="flex w-72 shrink-0 flex-col rounded-lg border bg-muted/30">
       <div className={`flex items-center justify-between rounded-t-lg px-3 py-2 ${headerClass}`}>
-        <span className="text-sm font-semibold">{label}</span>
+        <span className="flex items-center gap-1.5 text-sm font-semibold">
+          <ColumnIcon className="size-3.5" />
+          {label}
+        </span>
         <span className="rounded-full bg-white/50 px-1.5 text-xs font-bold">{taches.length}</span>
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-2" style={{ maxHeight: '62vh' }}>
@@ -764,14 +769,18 @@ export default function TachesPage() {
             <Tabs defaultValue={String(COLUMNS[0].statut)}>
               <div className="mb-3 overflow-x-auto">
                 <TabsList>
-                  {COLUMNS.map((col) => (
-                    <TabsTrigger key={col.statut} value={String(col.statut)}>
-                      {col.label}
-                      <span className="ml-1 text-xs opacity-70">
-                        ({byColumn[col.statut]?.length ?? 0})
-                      </span>
-                    </TabsTrigger>
-                  ))}
+                  {COLUMNS.map((col) => {
+                    const ColIcon = col.icon
+                    return (
+                      <TabsTrigger key={col.statut} value={String(col.statut)}>
+                        <ColIcon className="size-4" />
+                        {col.label}
+                        <span className="ml-1 text-xs opacity-70">
+                          ({byColumn[col.statut]?.length ?? 0})
+                        </span>
+                      </TabsTrigger>
+                    )
+                  })}
                 </TabsList>
               </div>
               {COLUMNS.map((col) => (
@@ -804,6 +813,7 @@ export default function TachesPage() {
                 key={col.statut}
                 statut={col.statut}
                 label={col.label}
+                icon={col.icon}
                 headerClass={col.headerClass}
                 taches={byColumn[col.statut] ?? []}
                 onOpenDialog={handleOpenDialog}

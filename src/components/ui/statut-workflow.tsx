@@ -9,6 +9,7 @@ export interface WorkflowStatutConfig {
   label: string
   badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline'
   badgeClassName?: string
+  badgeIcon?: ReactNode
 }
 
 export interface WorkflowTransition {
@@ -34,6 +35,7 @@ export function StatutWorkflow({ statut, statutConfig, transition }: Props) {
   return (
     <div className="flex items-center gap-2">
       <Badge variant={cfg?.badgeVariant} className={cfg?.badgeClassName}>
+        {cfg?.badgeIcon}
         {cfg?.label ?? String(statut)}
       </Badge>
 

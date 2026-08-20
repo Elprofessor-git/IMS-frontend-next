@@ -4,7 +4,7 @@ import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -422,8 +422,12 @@ export default function ImportationDetailPage({
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-4xl">
         <TabsList className="mb-4">
-          <TabsTrigger value="info">Informations</TabsTrigger>
+          <TabsTrigger value="info">
+            <Info className="size-4" />
+            Informations
+          </TabsTrigger>
           <TabsTrigger value="lignes">
+            <ListOrdered className="size-4" />
             Lignes
             {importation.lignesImportation.length > 0 && (
               <span className="ml-1.5 rounded-full bg-muted px-1.5 text-xs">
@@ -431,7 +435,10 @@ export default function ImportationDetailPage({
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="documents">
+            <FileText className="size-4" />
+            Documents
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}
@@ -442,7 +449,7 @@ export default function ImportationDetailPage({
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div>
                     <dt className="text-muted-foreground">Source</dt>
-                    <dd className="font-medium">
+                    <dd className="font-semibold">
                       {importation.plateformeId
                         ? `${importation.plateforme?.nom ?? `#${importation.plateformeId}`} (plateforme)`
                         : importation.fournisseur?.nomEntreprise ??

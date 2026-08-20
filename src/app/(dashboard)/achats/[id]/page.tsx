@@ -373,11 +373,11 @@ export default function AchatDetailPage({
                 <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <div>
                     <dt className="text-muted-foreground">Fournisseur</dt>
-                    <dd className="font-medium">{achat.fournisseur?.nomEntreprise ?? `#${achat.fournisseurId}`}</dd>
+                    <dd className="font-semibold">{achat.fournisseur?.nomEntreprise ?? `#${achat.fournisseurId}`}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">Commande client (en-tête)</dt>
-                    <dd className="font-medium">
+                    <dd className="font-semibold">
                       {achat.commandeClient
                         ? (achat.commandeClient.numeroCommande ?? `#${achat.commandeClientId}`)
                         : achat.commandeClientId

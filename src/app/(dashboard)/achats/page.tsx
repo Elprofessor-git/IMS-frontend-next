@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Plus, ExternalLink, Trash2, Download, X, Rows3, Table2 } from 'lucide-react'
+import { Plus, ExternalLink, Trash2, Download, X, Rows3, Table2, FilePenLine, Send, BadgeCheck, PackageCheck, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -26,18 +26,19 @@ import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { STATUT_ACHAT } from '@/types/fournisseur'
 import type { Achat, LigneAchat } from '@/types/achat'
 
-const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string }> = {
-  0: { variant: 'secondary' },
-  1: { variant: 'outline' },
-  2: { variant: 'default' },
-  3: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800' },
-  4: { variant: 'destructive' },
+const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
+  0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
+  1: { variant: 'outline', icon: <Send className="size-3.5" /> },
+  2: { variant: 'default', icon: <BadgeCheck className="size-3.5" /> },
+  3: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800', icon: <PackageCheck className="size-3.5" /> },
+  4: { variant: 'destructive', icon: <XCircle className="size-3.5" /> },
 }
 
 function StatutBadge({ statut }: { statut: number }) {
   const cfg = STATUT_BADGE[statut]
   return (
     <Badge variant={cfg?.variant} className={cfg?.className}>
+      {cfg?.icon}
       {STATUT_ACHAT[statut] ?? String(statut)}
     </Badge>
   )
