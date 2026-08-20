@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, Globe, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, Globe, Users, CircleCheck, CircleX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -102,7 +102,11 @@ export default function PlateformesPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={p.estActif ? 'default' : 'secondary'}>
+                  <Badge
+                    variant={p.estActif ? 'default' : 'secondary'}
+                    className={p.estActif ? '' : 'bg-slate-100 text-slate-600'}
+                  >
+                    {p.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
                     {p.estActif ? 'Actif' : 'Inactif'}
                   </Badge>
                 </TableCell>

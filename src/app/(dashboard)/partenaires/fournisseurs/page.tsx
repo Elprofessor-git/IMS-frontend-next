@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, UserX, History, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, UserX, History, Search, CircleCheck, CircleX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -88,7 +88,11 @@ export default function FournisseursPage() {
         header: 'Statut',
         cardPrimary: true,
         cell: (f) => (
-          <Badge variant={f.estActif ? 'default' : 'secondary'}>
+          <Badge
+                    variant={f.estActif ? 'default' : 'secondary'}
+                    className={f.estActif ? '' : 'bg-slate-100 text-slate-600'}
+                  >
+                    {f.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
             {f.estActif ? 'Actif' : 'Inactif'}
           </Badge>
         ),

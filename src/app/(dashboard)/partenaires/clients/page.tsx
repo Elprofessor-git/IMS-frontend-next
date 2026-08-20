@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, UserX, History } from 'lucide-react'
+import { Plus, Pencil, Trash2, UserX, History, CircleCheck, CircleX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -83,7 +83,11 @@ export default function ClientsPage() {
         header: 'Statut',
         cardPrimary: true,
         cell: (c) => (
-          <Badge variant={c.estActif ? 'default' : 'secondary'}>
+          <Badge
+                    variant={c.estActif ? 'default' : 'secondary'}
+                    className={c.estActif ? '' : 'bg-slate-100 text-slate-600'}
+                  >
+                    {c.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
             {c.estActif ? 'Actif' : 'Inactif'}
           </Badge>
         ),

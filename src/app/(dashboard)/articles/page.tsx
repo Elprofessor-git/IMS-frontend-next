@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, UserX, UserCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, UserX, UserCheck, ChevronLeft, ChevronRight, TriangleAlert, CircleCheck, CircleX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -107,10 +107,14 @@ export default function ArticlesPage() {
             <div className="flex items-center gap-2">
               <span>{dispo}</span>
               {level === 'critical' && (
-                <Badge variant="destructive" className="text-xs">Critique</Badge>
+                <Badge variant="destructive" className="text-xs">
+                  <TriangleAlert className="size-3.5" />
+                  Critique
+                </Badge>
               )}
               {level === 'alert' && (
                 <Badge className="border border-orange-200 bg-orange-100 text-xs text-orange-800">
+                  <TriangleAlert className="size-3.5" />
                   Alerte
                 </Badge>
               )}
@@ -123,7 +127,11 @@ export default function ArticlesPage() {
         header: 'Statut',
         cardPrimary: true,
         cell: (a) => (
-          <Badge variant={a.estActif ? 'default' : 'secondary'}>
+          <Badge
+            variant={a.estActif ? 'default' : 'secondary'}
+            className={a.estActif ? '' : 'bg-slate-100 text-slate-600'}
+          >
+            {a.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
             {a.estActif ? 'Actif' : 'Inactif'}
           </Badge>
         ),

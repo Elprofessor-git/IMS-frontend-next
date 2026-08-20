@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Pencil, Plus, Trash2, UserCheck, UserX } from 'lucide-react'
+import { Pencil, Plus, Trash2, UserCheck, UserX, CircleCheck, CircleX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -179,7 +179,11 @@ export default function UtilisateursPage() {
                   </PermissionGate>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={u.estActif ? 'default' : 'secondary'}>
+                  <Badge
+                    variant={u.estActif ? 'default' : 'secondary'}
+                    className={u.estActif ? '' : 'bg-slate-100 text-slate-600'}
+                  >
+                    {u.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
                     {u.estActif ? 'Actif' : 'Inactif'}
                   </Badge>
                 </TableCell>
