@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/shared/empty-state'
 import {
   Table,
   TableBody,
@@ -84,13 +85,11 @@ export function ResponsiveTable<T>({
               ))}
             {!isLoading && data.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-32 p-8 text-center"
-                >
-                  <p className="text-[15px] font-medium text-muted-foreground">
-                    {emptyText}
-                  </p>
+                <TableCell colSpan={columns.length} className="p-0">
+                  <EmptyState
+                    title="Aucun résultat"
+                    description={emptyText}
+                  />
                 </TableCell>
               </TableRow>
             )}
@@ -119,10 +118,8 @@ export function ResponsiveTable<T>({
           ))}
 
         {!isLoading && data.length === 0 && (
-          <div className="rounded-lg border bg-card p-8">
-            <p className="py-4 text-center text-[15px] font-medium text-muted-foreground">
-              {emptyText}
-            </p>
+          <div className="rounded-lg border bg-card">
+            <EmptyState title="Aucun résultat" description={emptyText} />
           </div>
         )}
 

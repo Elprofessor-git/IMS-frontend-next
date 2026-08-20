@@ -10,9 +10,11 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
+import { PaginationBar } from '@/components/shared/pagination'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { useClientPagination } from '@/hooks/use-client-pagination'
 import {
   Select,
   SelectContent,
@@ -224,6 +226,9 @@ export default function ImportationsPage() {
     }
     return rows
   }, [enTete, filters])
+
+  const paginationImportations = useClientPagination(filtered)
+  const paginationLignes = useClientPagination(lignes)
 
   // ── Colonnes tableau en-têtes ──
   const columns = useMemo<ColDef<Importation>[]>(
@@ -657,20 +662,28 @@ export default function ImportationsPage() {
         <TabsContent value="importations">
           <ResponsiveTable
             columns={columns}
-            data={filtered}
+            data={paginationImportations.pageItems}
             keyExtractor={(i) => i.id}
             isLoading={isLoading}
             emptyText="Aucune importation trouvée."
+          />
+          <PaginationBar
+            {...paginationImportations}
+            label="importations"
           />
         </TabsContent>
 
         <TabsContent value="lignes">
           <ResponsiveTable
             columns={ligneColumns}
-            data={lignes}
+            data={paginationLignes.pageItems}
             keyExtractor={(r) => (r.ligne ? `l${r.ligne.id}` : `i${r.importation.id}`)}
             isLoading={isLoading}
             emptyText="Aucune ligne trouvée."
+          />
+          <PaginationBar
+            {...paginationLignes}
+            label="lignes"
           />
         </TabsContent>
       </Tabs>

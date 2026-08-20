@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
 import { PermissionGate } from '@/components/auth/permission-gate'
-import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { type ColDef } from '@/components/ui/responsive-table'
 import { useGetCommandes, useDeleteCommande } from '@/hooks/use-commandes'
 import { STATUT_COMMANDE } from '@/types/commande'
 import type { CommandeClient } from '@/types/commande'
@@ -199,12 +200,13 @@ export default function CommandesPage() {
 
         {TABS.map((t) => (
           <TabsContent key={t.value} value={t.value}>
-            <ResponsiveTable
+            <PaginatedResponsiveTable
               columns={columns}
               data={byTab[t.value] ?? []}
               keyExtractor={(c) => c.id}
               isLoading={isLoading}
-              emptyText="Aucun ordre de fabrication."
+              emptyText="Aucun ordre de fabrication ne correspond à ce statut."
+              label="ordres de fabrication"
             />
           </TabsContent>
         ))}

@@ -13,9 +13,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
+import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
-import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { type ColDef } from '@/components/ui/responsive-table'
 import { useGetClients, useDeleteClient, useDesactiverClient } from '@/hooks/use-clients'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
 import type { Client } from '@/types/client'
@@ -186,12 +187,13 @@ export default function ClientsPage() {
         </span>
       </div>
 
-      <ResponsiveTable
+      <PaginatedResponsiveTable
         columns={columns}
         data={filtered ?? []}
         keyExtractor={(c) => c.id}
         isLoading={isLoading}
         emptyText="Aucun client trouvé."
+        label="clients"
       />
     </div>
   )

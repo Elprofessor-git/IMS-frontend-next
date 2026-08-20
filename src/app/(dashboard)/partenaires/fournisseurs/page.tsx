@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
-import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
+import { type ColDef } from '@/components/ui/responsive-table'
 import {
   useGetFournisseurs,
   useSearchFournisseurs,
@@ -186,12 +187,13 @@ export default function FournisseursPage() {
         </span>
       </div>
 
-      <ResponsiveTable
+      <PaginatedResponsiveTable
         columns={columns}
         data={fournisseurs ?? []}
         keyExtractor={(f) => f.id}
         isLoading={isLoading}
         emptyText={isSearching ? 'Aucun résultat pour cette recherche.' : 'Aucun fournisseur trouvé.'}
+        label="fournisseurs"
       />
     </div>
   )

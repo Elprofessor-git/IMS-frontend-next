@@ -31,6 +31,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/page-header'
+import { PaginationBar } from '@/components/shared/pagination'
+import { useClientPagination } from '@/hooks/use-client-pagination'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import {
@@ -52,6 +54,7 @@ const EMPTY_FORM = {
 
 export default function UtilisateursPage() {
   const { data: users, isLoading } = useGetUsers()
+  const pagination = useClientPagination(users ?? [])
   const { data: roles } = useGetRoles()
   const toggleMutation = useToggleUserActif()
   const deleteMutation = useDeleteUser()
@@ -132,7 +135,7 @@ export default function UtilisateursPage() {
               </TableRow>
             )}
 
-            {users?.map((u) => (
+            {pagination.pageItems.map((u) => (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">
                   {u.nom}
@@ -235,6 +238,8 @@ export default function UtilisateursPage() {
           </TableBody>
         </Table>
       </div>
+
+      <PaginationBar {...pagination} label="utilisateurs" />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">

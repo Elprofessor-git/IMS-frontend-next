@@ -22,9 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
+import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
-import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { type ColDef } from '@/components/ui/responsive-table'
 import { ArticleSelect } from '@/components/forms/article-select'
 import {
   useGetStocks,
@@ -416,42 +417,46 @@ export default function StockPage() {
         </div>
 
         <TabsContent value="tous">
-          <ResponsiveTable
+          <PaginatedResponsiveTable
             columns={stockColumns}
             data={allStocks ?? []}
             keyExtractor={(s) => s.id}
             isLoading={loadingAll}
             emptyText="Aucune entrée de stock."
+            label="entrées"
           />
         </TabsContent>
 
         <TabsContent value="libre">
-          <ResponsiveTable
+          <PaginatedResponsiveTable
             columns={stockColumns}
             data={libresStocks ?? []}
             keyExtractor={(s) => s.id}
             isLoading={loadingLibres}
             emptyText="Aucune entrée de stock."
+            label="entrées"
           />
         </TabsContent>
 
         <TabsContent value="reserve">
-          <ResponsiveTable
+          <PaginatedResponsiveTable
             columns={stockColumns}
             data={reservesStocks ?? []}
             keyExtractor={(s) => s.id}
             isLoading={loadingReserves}
             emptyText="Aucune entrée de stock."
+            label="entrées"
           />
         </TabsContent>
 
         <TabsContent value="alertes">
-          <ResponsiveTable
+          <PaginatedResponsiveTable
             columns={alerteColumns}
             data={alertes ?? []}
             keyExtractor={(a) => a.id}
             isLoading={loadingAlertes}
             emptyText="Aucun article en alerte de stock."
+            label="articles"
           />
         </TabsContent>
       </Tabs>

@@ -10,9 +10,11 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
+import { PaginationBar } from '@/components/shared/pagination'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { useClientPagination } from '@/hooks/use-client-pagination'
 import {
   Select,
   SelectContent,
@@ -245,6 +247,9 @@ export default function AchatsPage() {
     }
     return rows
   }, [achatsEnTete, filters, plateformes])
+
+  const paginationAchats = useClientPagination(filtered)
+  const paginationLignes = useClientPagination(lignes)
 
   // ── Colonnes tableau en-têtes ──
   const columns = useMemo<ColDef<Achat>[]>(
@@ -669,20 +674,28 @@ export default function AchatsPage() {
         <TabsContent value="achats">
           <ResponsiveTable
             columns={columns}
-            data={filtered}
+            data={paginationAchats.pageItems}
             keyExtractor={(a) => a.id}
             isLoading={isLoading}
             emptyText="Aucun achat trouvé."
+          />
+          <PaginationBar
+            {...paginationAchats}
+            label="achats"
           />
         </TabsContent>
 
         <TabsContent value="lignes">
           <ResponsiveTable
             columns={ligneColumns}
-            data={lignes}
+            data={paginationLignes.pageItems}
             keyExtractor={(r) => (r.ligne ? `l${r.ligne.id}` : `a${r.achat.id}`)}
             isLoading={isLoading}
             emptyText="Aucune ligne trouvée."
+          />
+          <PaginationBar
+            {...paginationLignes}
+            label="lignes"
           />
         </TabsContent>
       </Tabs>

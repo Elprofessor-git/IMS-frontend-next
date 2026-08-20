@@ -27,6 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { PageHeader } from '@/components/shared/page-header'
+import { EmptyState } from '@/components/shared/empty-state'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { useGetRoles, useCreateRole, useUpdateRole, useDeleteRole } from '@/hooks/use-roles'
@@ -292,8 +293,11 @@ export default function RolesPage() {
 
             {!isLoading && roles?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-10 text-center text-muted-foreground">
-                  Aucun rôle configuré.
+                <TableCell colSpan={5} className="p-0">
+                  <EmptyState
+                    title="Aucun rôle configuré"
+                    description="Créez un premier rôle et assignez les permissions métier."
+                  />
                 </TableCell>
               </TableRow>
             )}
