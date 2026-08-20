@@ -164,7 +164,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               label={item.label}
               icon={item.icon}
               iconColor={item.iconColor}
-              active={pathname === item.href}
+              active={pathname === item.href || pathname.startsWith(item.href + '/')}
               onNavigate={onNavigate}
             />
           </li>

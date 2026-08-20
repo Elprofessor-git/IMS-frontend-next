@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
+import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import {
@@ -88,16 +89,18 @@ function KpiCard({
   value,
   sub,
   icon,
+  tone = 'bg-muted text-muted-foreground',
 }: {
   title: string
   value: string | number
   sub?: string
   icon: ReactNode
+  tone?: string
 }) {
   return (
     <Card>
       <CardContent className="flex items-center gap-4 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', tone)}>
           {icon}
         </div>
         <div>
@@ -704,6 +707,7 @@ export default function TachesPage() {
           title="Total tâches"
           value={dashboard?.totalTaches ?? '—'}
           icon={<BarChart3 className="size-5" />}
+          tone="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
         />
         <KpiCard
           title="En cours"
@@ -714,6 +718,7 @@ export default function TachesPage() {
               : undefined
           }
           icon={<Play className="size-5" />}
+          tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
         />
         <KpiCard
           title="Bloquées"
@@ -724,11 +729,13 @@ export default function TachesPage() {
               : undefined
           }
           icon={<AlertTriangle className="size-5" />}
+          tone="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
         />
         <KpiCard
           title="Urgentes"
           value={dashboard?.tachesUrgentes ?? '—'}
           icon={<Zap className="size-5" />}
+          tone="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
         />
       </div>
 
