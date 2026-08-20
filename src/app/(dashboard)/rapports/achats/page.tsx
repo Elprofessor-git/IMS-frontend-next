@@ -274,7 +274,7 @@ export default function RapportAchatsPage() {
         <CardContent className="pt-4 pb-4">
           <div className="flex flex-wrap items-end gap-4">
             <div className="grid gap-1.5">
-              <Label className="text-xs">Date début</Label>
+              <Label>Date début</Label>
               <Input
                 type="date"
                 value={dateDebut}
@@ -283,7 +283,7 @@ export default function RapportAchatsPage() {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-xs">Date fin</Label>
+              <Label>Date fin</Label>
               <Input
                 type="date"
                 value={dateFin}
@@ -292,7 +292,7 @@ export default function RapportAchatsPage() {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label className="text-xs">Statut</Label>
+              <Label>Statut</Label>
               <Select value={statutFilter} onValueChange={setStatutFilter}>
                 <SelectTrigger className="w-40">
                   <SelectValue />

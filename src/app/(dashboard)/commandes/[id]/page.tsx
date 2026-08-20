@@ -267,14 +267,14 @@ function TaillesForm({
       {fields.map((f, idx) => (
         <div key={f.id} className="flex items-end gap-3">
           <div className="flex-1 grid gap-1">
-            <Label className="text-xs">Taille</Label>
+            <Label>Taille</Label>
             <Input placeholder="S, M, L…" {...register(`tailles.${idx}.taille`)} />
             {errors.tailles?.[idx]?.taille && (
               <p className="text-xs text-destructive">{errors.tailles[idx]!.taille!.message}</p>
             )}
           </div>
           <div className="w-28 grid gap-1">
-            <Label className="text-xs">Quantité</Label>
+            <Label>Quantité</Label>
             <Input type="number" min="1" {...register(`tailles.${idx}.quantite`, { valueAsNumber: true })} />
           </div>
           <Button type="button" variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onClick={() => remove(idx)}>
@@ -325,7 +325,7 @@ function BomForm({
       {fields.map((f, idx) => (
         <div key={f.id} className="flex flex-wrap items-end gap-3">
           <div className="w-full grid gap-1 sm:flex-1">
-            <Label className="text-xs">Article</Label>
+            <Label>Article</Label>
             <Controller
               name={`bom.${idx}.articleId`}
               control={control}
@@ -338,11 +338,11 @@ function BomForm({
             )}
           </div>
           <div className="w-28 grid gap-1">
-            <Label className="text-xs">Qté / pièce</Label>
+            <Label>Qté / pièce</Label>
             <Input type="number" min="0.001" step="0.001" {...register(`bom.${idx}.quantiteParPiece`, { valueAsNumber: true })} />
           </div>
           <div className="w-20 grid gap-1">
-            <Label className="text-xs">Unité</Label>
+            <Label>Unité</Label>
             <Input placeholder="m, kg…" {...register(`bom.${idx}.unite`)} />
           </div>
           <Button type="button" variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onClick={() => remove(idx)}>

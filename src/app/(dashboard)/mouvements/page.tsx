@@ -629,7 +629,7 @@ function MouvementsContent() {
       {/* ── Filtres ── */}
       <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <div className="grid gap-1">
-          <Label className="text-xs">Date début</Label>
+          <Label>Date début</Label>
           <Input
             type="date"
             value={dateDebut ?? ''}
@@ -638,7 +638,7 @@ function MouvementsContent() {
           />
         </div>
         <div className="grid gap-1">
-          <Label className="text-xs">Date fin</Label>
+          <Label>Date fin</Label>
           <Input
             type="date"
             value={dateFin ?? ''}
@@ -647,7 +647,7 @@ function MouvementsContent() {
           />
         </div>
         <div className="grid gap-1">
-          <Label className="text-xs">Type</Label>
+          <Label>Type</Label>
           <Select
             value={typeMouvementParam ?? 'all'}
             onValueChange={(v) => setParam('typeMouvement', v === 'all' ? null : v)}
@@ -664,7 +664,7 @@ function MouvementsContent() {
           </Select>
         </div>
         <div className="grid gap-1">
-          <Label className="text-xs">Origine</Label>
+          <Label>Origine</Label>
           <Select
             value={origineMouvementParam ?? 'all'}
             onValueChange={(v) => setParam('origineMouvement', v === 'all' ? null : v)}
@@ -681,7 +681,7 @@ function MouvementsContent() {
           </Select>
         </div>
         <div className="grid gap-1">
-          <Label className="text-xs">Article</Label>
+          <Label>Article</Label>
           <ArticleSelect
             value={articleId ?? null}
             selectedArticle={null}
@@ -692,7 +692,7 @@ function MouvementsContent() {
           />
         </div>
         <div className="grid gap-1">
-          <Label className="text-xs">Effectué par</Label>
+          <Label>Effectué par</Label>
           <Input
             value={effectuePar ?? ''}
             onChange={(e) => setParam('effectuePar', e.target.value)}

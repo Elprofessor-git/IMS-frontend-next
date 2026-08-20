@@ -537,7 +537,7 @@ export default function AchatsPage() {
       <Card className="mb-4">
         <div className="flex flex-wrap items-end gap-4 p-4">
           <div className="grid gap-1.5">
-            <Label className="text-xs">Date début</Label>
+            <Label>Date début</Label>
             <Input
               type="date"
               value={filters.dateDebut}
@@ -546,7 +546,7 @@ export default function AchatsPage() {
             />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Date fin</Label>
+            <Label>Date fin</Label>
             <Input
               type="date"
               value={filters.dateFin}
@@ -555,7 +555,7 @@ export default function AchatsPage() {
             />
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Statut</Label>
+            <Label>Statut</Label>
             <Select value={filters.statut} onValueChange={(v) => setFilter('statut', v)}>
               <SelectTrigger className="w-40">
                 <SelectValue />
@@ -571,7 +571,7 @@ export default function AchatsPage() {
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Fournisseur</Label>
+            <Label>Fournisseur</Label>
             <Select
               value={filters.fournisseurId}
               onValueChange={(v) => setFilter('fournisseurId', v)}
@@ -590,7 +590,7 @@ export default function AchatsPage() {
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Plateforme</Label>
+            <Label>Plateforme</Label>
             <Select
               value={filters.plateformeId}
               onValueChange={(v) => setFilter('plateformeId', v)}
@@ -609,7 +609,7 @@ export default function AchatsPage() {
             </Select>
           </div>
           <div className="grid gap-1.5">
-            <Label className="text-xs">Article / Réf.</Label>
+            <Label>Article / Réf.</Label>
             <Input
               placeholder="bobine, bouton…"
               value={filters.article}

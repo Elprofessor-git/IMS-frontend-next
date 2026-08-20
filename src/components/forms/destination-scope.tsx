@@ -94,7 +94,7 @@ export function DestinationScopeFields<T extends FieldValues>({
 
       {/* Commande client */}
       <div className="grid gap-1.5">
-        <Label className="text-xs text-muted-foreground">
+        <Label className="text-muted-foreground">
           Commande client <span>(optionnel)</span>
         </Label>
         <Controller
@@ -113,7 +113,7 @@ export function DestinationScopeFields<T extends FieldValues>({
 
       {/* Marque (client) */}
       <div className="grid gap-1.5">
-        <Label className="text-xs text-muted-foreground">
+        <Label className="text-muted-foreground">
           Marque / Client <span>(optionnel)</span>
         </Label>
         <Controller
@@ -142,7 +142,7 @@ export function DestinationScopeFields<T extends FieldValues>({
 
       {/* Plateforme */}
       <div className="grid gap-1.5">
-        <Label className="text-xs text-muted-foreground">
+        <Label className="text-muted-foreground">
           Plateforme <span>(optionnel)</span>
         </Label>
         <Controller

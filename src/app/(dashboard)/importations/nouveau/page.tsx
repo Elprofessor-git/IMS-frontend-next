@@ -195,7 +195,7 @@ export default function NouvelleImportationPage() {
                 </Label>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <Label className="text-xs text-muted-foreground">Fournisseur</Label>
+                    <Label className="text-muted-foreground">Fournisseur</Label>
                     <Controller
                       name="fournisseurId"
                       control={control}
@@ -223,7 +223,7 @@ export default function NouvelleImportationPage() {
                     />
                   </div>
                   <div className="grid gap-1.5">
-                    <Label className="text-xs text-muted-foreground">Plateforme</Label>
+                    <Label className="text-muted-foreground">Plateforme</Label>
                     <Controller
                       name="plateformeId"
                       control={control}
