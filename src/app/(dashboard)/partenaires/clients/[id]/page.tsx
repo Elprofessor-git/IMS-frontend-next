@@ -126,7 +126,7 @@ export default function EditClientPage({
         backHref="/partenaires/clients"
         action={
           <div className="flex items-center gap-2">
-            <Badge variant={client.estActif ? 'default' : 'secondary'}>
+            <Badge variant={client.estActif ? 'outline' : 'secondary'} className={client.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}>
               {client.estActif ? 'Actif' : 'Inactif'}
             </Badge>
             <PermissionGate module="clients" mode="write">

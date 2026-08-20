@@ -67,10 +67,10 @@ import { z } from 'zod'
 import type { WorkflowStatutConfig } from '@/components/ui/statut-workflow'
 
 const COMMANDE_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
-  0: { label: 'En attente', badgeVariant: 'secondary', badgeIcon: <Clock className="size-3.5" /> },
+  0: { label: 'En attente', badgeClassName: 'border-amber-200 bg-amber-100 text-amber-800', badgeIcon: <Clock className="size-3.5" /> },
   1: { label: 'Prête', badgeClassName: 'border-green-200 bg-green-100 text-green-800', badgeIcon: <CheckCircle2 className="size-3.5" /> },
-  2: { label: 'En production', badgeVariant: 'default', badgeIcon: <LoaderCircle className="size-3.5" /> },
-  3: { label: 'Terminée', badgeClassName: 'border-blue-200 bg-blue-100 text-blue-800', badgeIcon: <CheckCheck className="size-3.5" /> },
+  2: { label: 'En production', badgeClassName: 'border-blue-200 bg-blue-100 text-blue-800', badgeIcon: <LoaderCircle className="size-3.5" /> },
+  3: { label: 'Terminée', badgeClassName: 'border-green-200 bg-green-100 text-green-800', badgeIcon: <CheckCheck className="size-3.5" /> },
   4: { label: 'Annulée', badgeVariant: 'destructive', badgeIcon: <XCircle className="size-3.5" /> },
 }
 

@@ -183,8 +183,8 @@ export default function UtilisateursPage() {
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={u.estActif ? 'default' : 'secondary'}
-                    className={u.estActif ? '' : 'bg-slate-100 text-slate-600'}
+                    variant="outline"
+                    className={u.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'border-slate-200 bg-slate-100 text-slate-600'}
                   >
                     {u.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
                     {u.estActif ? 'Actif' : 'Inactif'}

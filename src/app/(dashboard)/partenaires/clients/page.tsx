@@ -85,8 +85,8 @@ export default function ClientsPage() {
         cardPrimary: true,
         cell: (c) => (
           <Badge
-                    variant={c.estActif ? 'default' : 'secondary'}
-                    className={c.estActif ? '' : 'bg-slate-100 text-slate-600'}
+                    variant="outline"
+                    className={c.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'border-slate-200 bg-slate-100 text-slate-600'}
                   >
                     {c.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
             {c.estActif ? 'Actif' : 'Inactif'}

@@ -92,7 +92,7 @@ export default function EditUtilisateurPage({
         action={
           <PermissionGate module="utilisateurs" mode="write">
             <div className="flex items-center gap-2">
-              <Badge variant={user.estActif ? 'default' : 'secondary'}>
+              <Badge variant={user.estActif ? 'outline' : 'secondary'} className={user.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}>
                 {user.estActif ? 'Actif' : 'Inactif'}
               </Badge>
               <Button

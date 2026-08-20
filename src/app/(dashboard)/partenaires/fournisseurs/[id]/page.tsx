@@ -120,7 +120,7 @@ export default function EditFournisseurPage({
         backHref="/partenaires/fournisseurs"
         action={
           <div className="flex items-center gap-2">
-            <Badge variant={fournisseur.estActif ? 'default' : 'secondary'}>
+            <Badge variant={fournisseur.estActif ? 'outline' : 'secondary'} className={fournisseur.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}>
               {fournisseur.estActif ? 'Actif' : 'Inactif'}
             </Badge>
             <PermissionGate module="fournisseurs" mode="write">

@@ -52,8 +52,8 @@ import type { WorkflowStatutConfig } from '@/components/ui/statut-workflow'
 
 const IMPORTATION_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
-  1: { label: 'Soumise', badgeVariant: 'outline' },
-  2: { label: 'Validée', badgeVariant: 'default' },
+  1: { label: 'Soumise', badgeClassName: 'border-amber-200 bg-amber-100 text-amber-800' },
+  2: { label: 'Validée', badgeClassName: 'border-green-200 bg-green-100 text-green-800' },
   3: { label: 'Reçue', badgeClassName: 'border-green-200 bg-green-100 text-green-800' },
   4: { label: 'Annulée', badgeVariant: 'destructive' },
 }
@@ -628,7 +628,7 @@ export default function ImportationDetailPage({
                             Affecté
                           </Badge>
                         ) : (
-                          <Badge variant="secondary">
+                          <Badge variant="outline" className="border-amber-200 bg-amber-100 text-amber-800">
                             <Clock className="size-3.5" />
                             En attente
                           </Badge>

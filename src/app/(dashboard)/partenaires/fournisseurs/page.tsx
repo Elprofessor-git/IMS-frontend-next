@@ -90,8 +90,8 @@ export default function FournisseursPage() {
         cardPrimary: true,
         cell: (f) => (
           <Badge
-                    variant={f.estActif ? 'default' : 'secondary'}
-                    className={f.estActif ? '' : 'bg-slate-100 text-slate-600'}
+                    variant="outline"
+                    className={f.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'border-slate-200 bg-slate-100 text-slate-600'}
                   >
                     {f.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
             {f.estActif ? 'Actif' : 'Inactif'}

@@ -50,8 +50,8 @@ import type { Plateforme } from '@/types/plateforme'
 
 const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
-  1: { label: 'Soumis', badgeVariant: 'outline' },
-  2: { label: 'Confirmé', badgeVariant: 'default' },
+  1: { label: 'Soumis', badgeClassName: 'border-amber-200 bg-amber-100 text-amber-800' },
+  2: { label: 'Confirmé', badgeClassName: 'border-green-200 bg-green-100 text-green-800' },
   3: { label: 'Livré', badgeClassName: 'border-green-200 bg-green-100 text-green-800' },
   4: { label: 'Annulé', badgeVariant: 'destructive' },
 }

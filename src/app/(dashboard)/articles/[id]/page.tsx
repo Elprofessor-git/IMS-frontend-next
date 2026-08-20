@@ -105,7 +105,7 @@ export default function EditArticlePage({
         backHref="/articles"
         action={
           <div className="flex items-center gap-2">
-            <Badge variant={article.estActif ? 'default' : 'secondary'}>
+            <Badge variant={article.estActif ? 'outline' : 'secondary'} className={article.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}>
               {article.estActif ? 'Actif' : 'Inactif'}
             </Badge>
             <PermissionGate module="articles" mode="write">

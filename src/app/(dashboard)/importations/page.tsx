@@ -30,8 +30,8 @@ import type { Importation, LigneImportation } from '@/types/importation'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
-  1: { variant: 'outline', icon: <Send className="size-3.5" /> },
-  2: { variant: 'default', icon: <BadgeCheck className="size-3.5" /> },
+  1: { variant: 'outline', className: 'border-amber-200 bg-amber-100 text-amber-800', icon: <Send className="size-3.5" /> },
+  2: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800', icon: <BadgeCheck className="size-3.5" /> },
   3: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800', icon: <PackageCheck className="size-3.5" /> },
   4: { variant: 'destructive', icon: <XCircle className="size-3.5" /> },
 }

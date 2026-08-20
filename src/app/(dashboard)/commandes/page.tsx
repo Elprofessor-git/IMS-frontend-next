@@ -16,10 +16,10 @@ import { STATUT_COMMANDE } from '@/types/commande'
 import type { CommandeClient } from '@/types/commande'
 
 const STATUT_CFG: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
-  0: { variant: 'secondary', icon: <Clock className="size-3.5" /> },
+  0: { variant: 'outline', className: 'border-amber-200 bg-amber-100 text-amber-800', icon: <Clock className="size-3.5" /> },
   1: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800', icon: <CheckCircle2 className="size-3.5" /> },
-  2: { variant: 'default', icon: <LoaderCircle className="size-3.5" /> },
-  3: { variant: 'outline', className: 'border-blue-200 bg-blue-100 text-blue-800', icon: <CheckCheck className="size-3.5" /> },
+  2: { variant: 'outline', className: 'border-blue-200 bg-blue-100 text-blue-800', icon: <LoaderCircle className="size-3.5" /> },
+  3: { variant: 'outline', className: 'border-green-200 bg-green-100 text-green-800', icon: <CheckCheck className="size-3.5" /> },
   4: { variant: 'destructive', icon: <XCircle className="size-3.5" /> },
 }
 

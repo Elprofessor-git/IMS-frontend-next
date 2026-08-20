@@ -128,8 +128,8 @@ export default function ArticlesPage() {
         cardPrimary: true,
         cell: (a) => (
           <Badge
-            variant={a.estActif ? 'default' : 'secondary'}
-            className={a.estActif ? '' : 'bg-slate-100 text-slate-600'}
+            variant="outline"
+            className={a.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'border-slate-200 bg-slate-100 text-slate-600'}
           >
             {a.estActif ? <CircleCheck className="size-3.5" /> : <CircleX className="size-3.5" />}
             {a.estActif ? 'Actif' : 'Inactif'}

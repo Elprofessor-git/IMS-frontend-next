@@ -267,12 +267,12 @@ export default function StockPage() {
         cardPrimary: true,
         cell: (s) =>
           s.estValide ? (
-            <Badge variant="default">
+            <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
               <BadgeCheck className="size-3.5" />
               Validé
             </Badge>
           ) : (
-            <Badge variant="secondary">
+            <Badge variant="outline" className="border-amber-200 bg-amber-100 text-amber-800">
               <Clock className="size-3.5" />
               En attente
             </Badge>
