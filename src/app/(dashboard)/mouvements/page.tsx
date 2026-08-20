@@ -46,24 +46,23 @@ import {
 
 const PAGE_SIZE = 20
 
-// ── Badge couleur par type de mouvement ─────────────────────────
+// ── Badge couleur par type de mouvement (palette dashboard) ────
+const TYPE_BADGE_CLASS: Record<TypeMouvementValue, string> = {
+  0: 'border-green-200 bg-green-100 text-green-700',
+  1: 'border-red-200 bg-red-100 text-red-700',
+  2: 'border-blue-200 bg-blue-100 text-blue-700',
+  3: 'border-amber-200 bg-amber-100 text-amber-700',
+  4: 'border-purple-200 bg-purple-100 text-purple-700',
+  5: 'border-slate-200 bg-slate-100 text-slate-600',
+}
+
 function TypeBadge({ type }: { type: TypeMouvementValue }) {
   const label = TYPE_MOUVEMENT[type] ?? String(type)
-  const variant =
-    type === 0 ? 'default'
-    : type === 1 ? 'destructive'
-    : type === 2 ? 'outline'
-    : type === 3 ? undefined
-    : 'secondary'
-
-  if (type === 3) {
-    return (
-      <Badge className="border border-orange-200 bg-orange-100 text-orange-800">
-        {label}
-      </Badge>
-    )
-  }
-  return <Badge variant={variant}>{label}</Badge>
+  return (
+    <Badge variant="outline" className={TYPE_BADGE_CLASS[type]}>
+      {label}
+    </Badge>
+  )
 }
 
 // ── Dialog Nouveau mouvement ────────────────────────────────────
@@ -612,13 +611,13 @@ function MouvementsContent() {
                 </Card>
                 <Card>
                   <CardContent className="pt-4">
-                    <p className="text-2xl font-bold">{Number(stats.totalTransferts)}</p>
+                    <p className="text-2xl font-bold text-blue-600">{Number(stats.totalTransferts)}</p>
                     <p className="text-sm text-muted-foreground">Transferts</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="pt-4">
-                    <p className="text-2xl font-bold text-orange-600">{Number(stats.totalAjustements)}</p>
+                    <p className="text-2xl font-bold text-amber-600">{Number(stats.totalAjustements)}</p>
                     <p className="text-sm text-muted-foreground">Ajustements</p>
                   </CardContent>
                 </Card>
