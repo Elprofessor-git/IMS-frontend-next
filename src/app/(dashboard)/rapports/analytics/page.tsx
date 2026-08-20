@@ -260,7 +260,7 @@ export default function AnalyticsPage() {
                 <Tooltip
                   formatter={(value) => [formatCurrency(Number(value)), 'Montant']}
                 />
-                <Bar dataKey="montant" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="montant" fill="#1E5FBF" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

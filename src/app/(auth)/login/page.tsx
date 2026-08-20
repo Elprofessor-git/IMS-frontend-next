@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
+import { Shirt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -86,8 +87,11 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
       <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">IMS</h1>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <span className="mb-3 grid size-12 place-items-center rounded-xl bg-header text-header-foreground shadow-md">
+            <Shirt className="size-6" />
+          </span>
+          <h1 className="text-xl font-bold tracking-tight">Système de Gestion Textile</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Connectez-vous à votre espace
           </p>
