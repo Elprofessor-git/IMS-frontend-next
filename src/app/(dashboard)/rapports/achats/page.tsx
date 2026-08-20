@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Download, X } from 'lucide-react'
+import { Download, X, ShoppingCart, Wallet, Building2, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -92,6 +92,36 @@ function BarCell({ value, max }: { value: number; max: number }) {
       </div>
       <span className="text-xs tabular-nums text-muted-foreground">{pct.toFixed(0)}%</span>
     </div>
+  )
+}
+
+// ── Carte KPI (même style que le rapport Analytics) ────────────────────────────
+
+function KpiCard({
+  title,
+  value,
+  icon: Icon,
+  tone,
+}: {
+  title: string
+  value: string
+  icon: React.ElementType
+  tone: string
+}) {
+  return (
+    <Card className="h-full">
+      <CardContent className="flex items-center gap-4 py-5">
+        <div
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}
+        >
+          <Icon className="size-5" />
+        </div>
+        <div>
+          <p className="text-[15px] text-muted-foreground">{title}</p>
+          <p className="text-3xl font-bold leading-none">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -317,30 +347,39 @@ export default function RapportAchatsPage() {
         </CardContent>
       </Card>
 
-      {/* ── Bandeau résumé ── */}
+      {/* ── KPIs (cards, style rapport Analytics) ── */}
       {isLoading ? (
-        <Skeleton className="h-14 w-full rounded-lg" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
       ) : (
-        <div className="flex flex-wrap items-center gap-6 rounded-lg border bg-muted/40 px-5 py-3 text-sm">
-          <span>
-            <span className="text-2xl font-bold">{filtered.length}</span>
-            <span className="ml-1 text-muted-foreground">achat(s)</span>
-          </span>
-          <span className="text-muted-foreground">·</span>
-          <span>
-            <span className="text-2xl font-bold">{fmtEur(totalMontant)}</span>
-            <span className="ml-1 text-muted-foreground">montant total</span>
-          </span>
-          <span className="text-muted-foreground">·</span>
-          <span>
-            <span className="text-2xl font-bold">{nbFournisseurs}</span>
-            <span className="ml-1 text-muted-foreground">fournisseur(s)</span>
-          </span>
-          <span className="text-muted-foreground">·</span>
-          <span>
-            <span className="font-semibold">{fmtEur(montantMoyen)}</span>
-            <span className="ml-1 text-muted-foreground">moyenne / achat</span>
-          </span>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            title="Achat(s)"
+            value={String(filtered.length)}
+            icon={ShoppingCart}
+            tone="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
+          />
+          <KpiCard
+            title="Montant total"
+            value={fmtEur(totalMontant)}
+            icon={Wallet}
+            tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+          />
+          <KpiCard
+            title="Fournisseur(s)"
+            value={String(nbFournisseurs)}
+            icon={Building2}
+            tone="bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
+          />
+          <KpiCard
+            title="Moyenne / achat"
+            value={fmtEur(montantMoyen)}
+            icon={TrendingUp}
+            tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+          />
         </div>
       )}
 
