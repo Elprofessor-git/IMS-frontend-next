@@ -46,6 +46,7 @@ import {
 } from '@/hooks/use-importations'
 import { MODE_EXPEDITION } from '@/types/fournisseur'
 import type { LigneImportation } from '@/types/importation'
+import type { CommandeClient } from '@/types/commande'
 import {
   ligneImportationSchema,
   toLigneImportationPayload,
@@ -69,22 +70,25 @@ const DESTINATION_LABEL_BY_NUMBER: Record<number, string> = {
   3: 'Stock libre',
 }
 
-// Numéro de commande pour un id donné (résolution via la liste des commandes).
-// Même logique que la colonne « Commande destinée » de la vue Lignes (importations/page.tsx).
-function numeroCommande(
+// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
+// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
+// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
+function libelleCommande(
   id: number | null | undefined,
-  commandes: { id: number; numeroCommande: string }[] | undefined,
+  commandes: CommandeClient[] | undefined,
 ): string | null {
-  if (!id) return null
-  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
+  const c = commandes?.find((c) => c.id === id)
+  if (!c) return id ? `#${id}` : null
+  const nom = c.titreCommande || c.client?.nom || null
+  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 function destinationLabel(
   l: LigneImportation,
-  commandes?: { id: number; numeroCommande: string }[],
+  commandes?: CommandeClient[],
 ): string {
   if (l.typeDestination === 0 && l.commandeClientId) {
-    return numeroCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
+    return libelleCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
   }
   return DESTINATION_LABEL_BY_NUMBER[l.typeDestination] ?? String(l.typeDestination)
 }
@@ -685,7 +689,7 @@ export default function ImportationDetailPage({
                         )}
                         {l.commandeClientId && (
                           <p className="text-xs text-muted-foreground">
-                            Commande {numeroCommande(l.commandeClientId, commandes) ?? `#${l.commandeClientId}`}
+                            Commande {libelleCommande(l.commandeClientId, commandes) ?? `#${l.commandeClientId}`}
                           </p>
                         )}
                        </TableCell>

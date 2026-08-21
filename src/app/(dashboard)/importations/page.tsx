@@ -28,6 +28,7 @@ import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_IMPORTATION, MODE_EXPEDITION } from '@/types/fournisseur'
 import type { Importation, LigneImportation } from '@/types/importation'
+import type { CommandeClient } from '@/types/commande'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
@@ -123,13 +124,17 @@ function ligneMatcheCommande(l: LigneImportation, commandeId: string): boolean {
   return l.commandeClientId === Number(commandeId)
 }
 
-// Numéro de commande pour un id donné (résolution via la liste des commandes).
-function numeroCommande(
+// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
+// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
+// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
+function libelleCommande(
   id: number | null | undefined,
-  commandes: { id: number; numeroCommande: string }[] | undefined,
+  commandes: CommandeClient[] | undefined,
 ): string | null {
-  if (!id) return null
-  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
+  const c = commandes?.find((c) => c.id === id)
+  if (!c) return id ? `#${id}` : null
+  const nom = c.titreCommande || c.client?.nom || null
+  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 function ligneMatcheArticle(l: LigneImportation, terme: string): boolean {
@@ -459,7 +464,7 @@ export default function ImportationsPage() {
         header: 'Commande destinée',
         cell: ({ ligne }) => (
           <span className="text-sm text-muted-foreground">
-            {numeroCommande(ligne?.commandeClientId ?? null, commandes) ?? '—'}
+            {libelleCommande(ligne?.commandeClientId ?? null, commandes) ?? '—'}
           </span>
         ),
       },
@@ -510,7 +515,7 @@ export default function ImportationsPage() {
       'Montant ligne': ligne?.montantLigne ?? 0,
       Devise: ligne?.devise ?? importation.devise ?? 'EUR',
       Plateforme: ligne ? (plateformeDeLaLigne(ligne, plateformes) ?? '') : '',
-      'Commande destinée': numeroCommande(ligne?.commandeClientId ?? null, commandes) ?? '',
+      'Commande destinée': libelleCommande(ligne?.commandeClientId ?? null, commandes) ?? '',
       'Mode expédition': MODE_EXPEDITION[importation.modeExpedition] ?? String(importation.modeExpedition),
       'Créé par': importation.creePar ?? '',
       Statut: STATUT_IMPORTATION[importation.statut] ?? String(importation.statut),

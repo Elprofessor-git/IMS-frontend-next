@@ -28,6 +28,7 @@ import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_ACHAT } from '@/types/fournisseur'
 import type { Achat, LigneAchat } from '@/types/achat'
+import type { CommandeClient } from '@/types/commande'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
@@ -143,13 +144,17 @@ function ligneMatcheArticle(l: LigneAchat, terme: string): boolean {
   )
 }
 
-// Numéro de commande pour un id donné (résolution via la liste des commandes).
-function numeroCommande(
+// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
+// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
+// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
+function libelleCommande(
   id: number | null | undefined,
-  commandes: { id: number; numeroCommande: string }[] | undefined,
+  commandes: CommandeClient[] | undefined,
 ): string | null {
-  if (!id) return null
-  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
+  const c = commandes?.find((c) => c.id === id)
+  if (!c) return id ? `#${id}` : null
+  const nom = c.titreCommande || c.client?.nom || null
+  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 // Commande destinataire d'une ligne : celle de la ligne, sinon celle de l'en-tête
@@ -159,10 +164,10 @@ function commandeIdDeLaLigne(l: LigneAchat | null, a: Achat): number | null {
 }
 
 // Vue en-têtes : agrège l'en-tête + les lignes (ids distincts). Une seule → son
-// numéro ; plusieurs → « N commandes ».
+// libellé ; plusieurs → « N commandes ».
 function commandeDestineeDeLAchat(
   a: Achat,
-  commandes: { id: number; numeroCommande: string }[] | undefined,
+  commandes: CommandeClient[] | undefined,
 ): string | null {
   const ids = new Set<number>()
   if (a.commandeClientId) ids.add(a.commandeClientId)
@@ -170,7 +175,7 @@ function commandeDestineeDeLAchat(
     if (l.commandeClientId) ids.add(l.commandeClientId)
   }
   if (ids.size === 0) return null
-  if (ids.size === 1) return numeroCommande(ids.values().next().value, commandes)
+  if (ids.size === 1) return libelleCommande(ids.values().next().value, commandes)
   return `${ids.size} commandes`
 }
 
@@ -498,7 +503,7 @@ export default function AchatsPage() {
         header: 'Commande destinée',
         cell: ({ achat, ligne }) => (
           <span className="text-sm text-muted-foreground">
-            {numeroCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '—'}
+            {libelleCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '—'}
           </span>
         ),
       },
@@ -541,7 +546,7 @@ export default function AchatsPage() {
         'Montant ligne': ligne?.montantLigne ?? 0,
         Devise: ligne?.devise ?? achat.devise ?? 'EUR',
         Plateforme: plateforme,
-        'Commande destinée': numeroCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '',
+        'Commande destinée': libelleCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '',
         'Commandé par': achat.creePar ?? '',
         Statut: STATUT_ACHAT[achat.statut] ?? String(achat.statut),
       }

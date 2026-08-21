@@ -49,6 +49,7 @@ import {
 import type { WorkflowStatutConfig, WorkflowTransition } from '@/components/ui/statut-workflow'
 import type { LigneAchat } from '@/types/achat'
 import type { Plateforme } from '@/types/plateforme'
+import type { CommandeClient } from '@/types/commande'
 
 const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
@@ -65,24 +66,27 @@ const DESTINATION_LABELS: Record<number, string> = {
   3: 'Libre',
 }
 
-// Numéro de commande pour un id donné (résolution via la liste des commandes).
-// Même logique que la colonne « Commande destinée » de la vue Lignes (achats/page.tsx).
-function numeroCommande(
+// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
+// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
+// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
+function libelleCommande(
   id: number | null | undefined,
-  commandes: { id: number; numeroCommande: string }[] | undefined,
+  commandes: CommandeClient[] | undefined,
 ): string | null {
-  if (!id) return null
-  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
+  const c = commandes?.find((c) => c.id === id)
+  if (!c) return id ? `#${id}` : null
+  const nom = c.titreCommande || c.client?.nom || null
+  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 function destinationLabel(
   l: LigneAchat,
   plateformes?: Plateforme[],
-  commandes?: { id: number; numeroCommande: string }[],
+  commandes?: CommandeClient[],
 ): string {
   const base = DESTINATION_LABELS[l.typeDestination] ?? `#${l.typeDestination}`
   if (l.typeDestination === 0 && l.commandeClientId) {
-    return numeroCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
+    return libelleCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
   }
   if (l.typeDestination === 1 && l.clientId) return `Client #${l.clientId}`
   if (l.typeDestination === 2 && l.plateformeId) {
