@@ -25,6 +25,7 @@ import {
 import { useGetAchats, useDeleteAchat } from '@/hooks/use-achats'
 import { useGetFournisseurs } from '@/hooks/use-fournisseurs'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
+import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_ACHAT } from '@/types/fournisseur'
 import type { Achat, LigneAchat } from '@/types/achat'
 
@@ -84,6 +85,7 @@ type Filters = {
   statut: string
   fournisseurId: string
   plateformeId: string
+  commandeId: string
   article: string
 }
 
@@ -93,11 +95,14 @@ const EMPTY_FILTERS: Filters = {
   statut: 'tous',
   fournisseurId: '',
   plateformeId: '',
+  commandeId: '',
   article: '',
 }
 
+// La plateforme d'une ligne : dès que le contexte Plateforme est renseigné,
+// quel que soit le niveau effectif de destination (Commande / Marque / Plateforme).
 function plateformeDeLaLigne(l: LigneAchat, plateformes: { id: number; nom: string }[] | undefined) {
-  if (l.typeDestination === 2 && l.plateformeId) {
+  if (l.plateformeId) {
     return plateformes?.find((p) => p.id === l.plateformeId)?.nom ?? `Plf #${l.plateformeId}`
   }
   return null
@@ -111,16 +116,19 @@ function ligneMatchePlateforme(
   l: LigneAchat,
   a: Achat,
   plateformeId: string,
-  plateformes: { id: number; nom: string }[] | undefined,
 ): boolean {
   if (!plateformeId) return true
   const pid = Number(plateformeId)
-  if (l.typeDestination === 2 && l.plateformeId === pid) return true
-  if (l.typeDestination === 2 && !l.plateformeId) {
-    return plateformes?.find((p) => p.id === pid)?.nom === plateformeDeLaLigne(l, plateformes)
-  }
-  if (a.commandeClient?.client?.plateforme?.id === pid) return true
+  if (l.plateformeId === pid) return true
+  if (!l.plateformeId && a.commandeClient?.client?.plateforme?.id === pid) return true
   return false
+}
+
+function ligneMatcheCommande(l: LigneAchat, a: Achat, commandeId: string): boolean {
+  if (!commandeId) return true
+  const cid = Number(commandeId)
+  if (l.commandeClientId === cid) return true
+  return !l.commandeClientId && a.commandeClientId === cid
 }
 
 function ligneMatcheArticle(l: LigneAchat, terme: string): boolean {
@@ -135,6 +143,37 @@ function ligneMatcheArticle(l: LigneAchat, terme: string): boolean {
   )
 }
 
+// Numéro de commande pour un id donné (résolution via la liste des commandes).
+function numeroCommande(
+  id: number | null | undefined,
+  commandes: { id: number; numeroCommande: string }[] | undefined,
+): string | null {
+  if (!id) return null
+  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
+}
+
+// Commande destinataire d'une ligne : celle de la ligne, sinon celle de l'en-tête
+// (héritage du niveau Commande). Lecture seule — aucune écriture sur l'entité Achat.
+function commandeIdDeLaLigne(l: LigneAchat | null, a: Achat): number | null {
+  return l?.commandeClientId ?? a.commandeClientId
+}
+
+// Vue en-têtes : agrège l'en-tête + les lignes (ids distincts). Une seule → son
+// numéro ; plusieurs → « N commandes ».
+function commandeDestineeDeLAchat(
+  a: Achat,
+  commandes: { id: number; numeroCommande: string }[] | undefined,
+): string | null {
+  const ids = new Set<number>()
+  if (a.commandeClientId) ids.add(a.commandeClientId)
+  for (const l of a.lignesAchat ?? []) {
+    if (l.commandeClientId) ids.add(l.commandeClientId)
+  }
+  if (ids.size === 0) return null
+  if (ids.size === 1) return numeroCommande(ids.values().next().value, commandes)
+  return `${ids.size} commandes`
+}
+
 // Filtres d'EN-TÊTE uniquement (date, statut, fournisseur) — s'appliquent à l'achat.
 function achatMatcheEnTete(a: Achat, f: Filters): boolean {
   const d = a.dateAchat?.slice(0, 10) ?? ''
@@ -142,35 +181,36 @@ function achatMatcheEnTete(a: Achat, f: Filters): boolean {
   if (f.dateFin && d > f.dateFin) return false
   if (f.statut !== 'tous' && a.statut !== Number(f.statut)) return false
   if (f.fournisseurId && a.fournisseurId !== Number(f.fournisseurId)) return false
+  if (f.commandeId) {
+    const cid = Number(f.commandeId)
+    const match =
+      a.commandeClientId === cid ||
+      (a.lignesAchat?.some((l) => l.commandeClientId === cid) ?? false)
+    if (!match) return false
+  }
   return true
 }
 
-// Une LIGNE matche-t-elle les filtres plateforme + article ?
+// Une LIGNE matche-t-elle les filtres plateforme + commande + article ?
 function ligneMatcheFiltres(
   l: LigneAchat,
   a: Achat,
   f: Filters,
-  plateformes: { id: number; nom: string }[] | undefined,
 ): boolean {
-  if (f.plateformeId && !ligneMatchePlateforme(l, a, f.plateformeId, plateformes)) return false
+  if (f.plateformeId && !ligneMatchePlateforme(l, a, f.plateformeId)) return false
+  if (f.commandeId && !ligneMatcheCommande(l, a, f.commandeId)) return false
   if (f.article.trim() && !ligneMatcheArticle(l, f.article)) return false
   return true
 }
 
 // L'achat (vue en-têtes) est retenu s'il a au moins une ligne qui matche plateforme/article,
 // ou (achat sans lignes) si son en-tête matche via la plateforme de la commande liée.
-function achatMatcheLignes(
-  a: Achat,
-  f: Filters,
-  plateformes: { id: number; nom: string }[] | undefined,
-): boolean {
+function achatMatcheLignes(a: Achat, f: Filters): boolean {
   const aUnArticle = a.lignesAchat?.length > 0
 
   if (f.plateformeId) {
-    if (!plateformes) return false
     if (aUnArticle) {
-      if (!a.lignesAchat.some((l) => ligneMatchePlateforme(l, a, f.plateformeId, plateformes)))
-        return false
+      if (!a.lignesAchat.some((l) => ligneMatchePlateforme(l, a, f.plateformeId))) return false
     } else if (a.commandeClient?.client?.plateforme?.id !== Number(f.plateformeId)) {
       return false
     }
@@ -197,6 +237,7 @@ export default function AchatsPage() {
   const deleteMutation = useDeleteAchat()
   const { data: fournisseurs } = useGetFournisseurs()
   const { data: plateformes } = useGetPlateformes()
+  const { data: commandes } = useGetCommandes()
 
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
 
@@ -209,11 +250,12 @@ export default function AchatsPage() {
     filters.statut !== 'tous' ||
     filters.fournisseurId ||
     filters.plateformeId ||
+    filters.commandeId ||
     filters.article.trim()
 
   const resetFilters = () => setFilters(EMPTY_FILTERS)
 
-  // Achats retenus par les filtres d'en-tête (date, statut, fournisseur)
+  // Achats retenus par les filtres d'en-tête (date, statut, fournisseur, commande)
   const achatsEnTete = useMemo(() => {
     if (!achats) return []
     return achats.filter((a) => achatMatcheEnTete(a, filters))
@@ -221,8 +263,8 @@ export default function AchatsPage() {
 
   // Vue « Achats » : en-têtes dont au moins une ligne (ou l'en-tête sans lignes) matche plateforme/article
   const filtered = useMemo(() => {
-    return achatsEnTete.filter((a) => achatMatcheLignes(a, filters, plateformes))
-  }, [achatsEnTete, filters, plateformes])
+    return achatsEnTete.filter((a) => achatMatcheLignes(a, filters))
+  }, [achatsEnTete, filters])
 
   // Vue « Lignes » : une ligne = un article acheté. Chaque ligne est filtrée INDIVIDUELLEMENT
   // (plateforme + article), indépendamment des autres lignes de son achat.
@@ -232,21 +274,21 @@ export default function AchatsPage() {
       const ls = a.lignesAchat?.length ? a.lignesAchat : []
       if (ls.length === 0) {
         // Achat sans lignes : on ne le montre que si les filtres de lignes ne l'excluent pas.
-        if (filters.plateformeId || filters.article.trim()) {
-          if (achatMatcheLignes(a, filters, plateformes)) rows.push({ achat: a, ligne: null })
+        if (filters.plateformeId || filters.commandeId || filters.article.trim()) {
+          if (achatMatcheLignes(a, filters)) rows.push({ achat: a, ligne: null })
         } else {
           rows.push({ achat: a, ligne: null })
         }
         continue
       }
       for (const l of ls) {
-        if (ligneMatcheFiltres(l, a, filters, plateformes)) {
+        if (ligneMatcheFiltres(l, a, filters)) {
           rows.push({ achat: a, ligne: l })
         }
       }
     }
     return rows
-  }, [achatsEnTete, filters, plateformes])
+  }, [achatsEnTete, filters])
 
   const paginationAchats = useClientPagination(filtered)
   const paginationLignes = useClientPagination(lignes)
@@ -273,9 +315,7 @@ export default function AchatsPage() {
         header: 'Commande',
         cell: (a) => (
           <span className="text-sm text-muted-foreground">
-            {a.commandeClient
-              ? a.commandeClient.numeroCommande ?? `#${a.commandeClientId}`
-              : `#${a.commandeClientId}`}
+            {commandeDestineeDeLAchat(a, commandes) ?? '—'}
           </span>
         ),
       },
@@ -362,7 +402,7 @@ export default function AchatsPage() {
         },
       },
     ],
-    [deleteMutation],
+    [deleteMutation, commandes],
   )
 
   // ── Colonnes tableau lignes (façon Excel) ──
@@ -456,9 +496,9 @@ export default function AchatsPage() {
       {
         key: 'commandeDestinee',
         header: 'Commande destinée',
-        cell: ({ achat }) => (
+        cell: ({ achat, ligne }) => (
           <span className="text-sm text-muted-foreground">
-            {achat.commandeClient?.numeroCommande ?? '—'}
+            {numeroCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '—'}
           </span>
         ),
       },
@@ -477,7 +517,7 @@ export default function AchatsPage() {
         cell: ({ achat }) => <StatutBadge statut={achat.statut} />,
       },
     ],
-    [plateformes],
+    [plateformes, commandes],
   )
 
   // ── Export CSV (par ligne, colonnes Excel) ──
@@ -501,7 +541,7 @@ export default function AchatsPage() {
         'Montant ligne': ligne?.montantLigne ?? 0,
         Devise: ligne?.devise ?? achat.devise ?? 'EUR',
         Plateforme: plateforme,
-        'Commande destinée': achat.commandeClient?.numeroCommande ?? '',
+        'Commande destinée': numeroCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '',
         'Commandé par': achat.creePar ?? '',
         Statut: STATUT_ACHAT[achat.statut] ?? String(achat.statut),
       }
@@ -609,6 +649,26 @@ export default function AchatsPage() {
                 {plateformes?.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
                     {p.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Commande</Label>
+            <Select
+              value={filters.commandeId}
+              onValueChange={(v) => setFilter('commandeId', v)}
+            >
+              <SelectTrigger className="w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Toutes les commandes</SelectItem>
+                {commandes?.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.numeroCommande}
+                    {c.titreCommande ? ` · ${c.titreCommande}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>

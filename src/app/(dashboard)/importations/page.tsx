@@ -25,6 +25,7 @@ import {
 import { useGetImportations, useDeleteImportation } from '@/hooks/use-importations'
 import { useGetFournisseurs } from '@/hooks/use-fournisseurs'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
+import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_IMPORTATION, MODE_EXPEDITION } from '@/types/fournisseur'
 import type { Importation, LigneImportation } from '@/types/importation'
 
@@ -85,6 +86,7 @@ type Filters = {
   modeExpedition: string
   fournisseurId: string
   plateformeId: string
+  commandeId: string
   article: string
 }
 
@@ -95,11 +97,14 @@ const EMPTY_FILTERS: Filters = {
   modeExpedition: 'tous',
   fournisseurId: '',
   plateformeId: '',
+  commandeId: '',
   article: '',
 }
 
+// La plateforme d'une ligne : dès que le contexte Plateforme est renseigné,
+// quel que soit le niveau effectif de destination (Commande / Marque / Plateforme).
 function plateformeDeLaLigne(l: LigneImportation, plateformes: { id: number; nom: string }[] | undefined) {
-  if (l.typeDestination === 2 && l.plateformeId) {
+  if (l.plateformeId) {
     return plateformes?.find((p) => p.id === l.plateformeId)?.nom ?? `Plf #${l.plateformeId}`
   }
   return null
@@ -110,7 +115,21 @@ function ligneMatchePlateforme(
   plateformeId: string,
 ): boolean {
   if (!plateformeId) return true
-  return l.typeDestination === 2 && l.plateformeId === Number(plateformeId)
+  return l.plateformeId === Number(plateformeId)
+}
+
+function ligneMatcheCommande(l: LigneImportation, commandeId: string): boolean {
+  if (!commandeId) return true
+  return l.commandeClientId === Number(commandeId)
+}
+
+// Numéro de commande pour un id donné (résolution via la liste des commandes).
+function numeroCommande(
+  id: number | null | undefined,
+  commandes: { id: number; numeroCommande: string }[] | undefined,
+): string | null {
+  if (!id) return null
+  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
 }
 
 function ligneMatcheArticle(l: LigneImportation, terme: string): boolean {
@@ -136,24 +155,30 @@ function importationMatcheEnTete(i: Importation, f: Filters): boolean {
   return true
 }
 
-// Une LIGNE matche-t-elle les filtres plateforme + article ?
+// Une LIGNE matche-t-elle les filtres plateforme + commande + article ?
 function ligneMatcheFiltres(
   l: LigneImportation,
   f: Filters,
 ): boolean {
   if (f.plateformeId && !ligneMatchePlateforme(l, f.plateformeId)) return false
+  if (f.commandeId && !ligneMatcheCommande(l, f.commandeId)) return false
   if (f.article.trim() && !ligneMatcheArticle(l, f.article)) return false
   return true
 }
 
 // L'importation (vue en-têtes) est retenue si une de ses lignes matche
-// plateforme/article ; les filtres plateforme/article sont ignorés sans lignes.
+// plateforme/commande/article ; ces filtres sont ignorés sans lignes.
 function importationMatcheLignes(i: Importation, f: Filters): boolean {
   const aDesLignes = i.lignesImportation?.length > 0
 
   if (f.plateformeId) {
     if (!aDesLignes) return false
     if (!i.lignesImportation.some((l) => ligneMatchePlateforme(l, f.plateformeId))) return false
+  }
+
+  if (f.commandeId) {
+    if (!aDesLignes) return false
+    if (!i.lignesImportation.some((l) => ligneMatcheCommande(l, f.commandeId))) return false
   }
 
   if (f.article.trim()) {
@@ -177,6 +202,7 @@ export default function ImportationsPage() {
   const deleteMutation = useDeleteImportation()
   const { data: fournisseurs } = useGetFournisseurs()
   const { data: plateformes } = useGetPlateformes()
+  const { data: commandes } = useGetCommandes()
 
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
 
@@ -190,6 +216,7 @@ export default function ImportationsPage() {
     filters.modeExpedition !== 'tous' ||
     filters.fournisseurId ||
     filters.plateformeId ||
+    filters.commandeId ||
     filters.article.trim()
 
   const resetFilters = () => setFilters(EMPTY_FILTERS)
@@ -211,7 +238,7 @@ export default function ImportationsPage() {
     for (const i of enTete) {
       const ls = i.lignesImportation?.length ? i.lignesImportation : []
       if (ls.length === 0) {
-        if (filters.plateformeId || filters.article.trim()) {
+        if (filters.plateformeId || filters.commandeId || filters.article.trim()) {
           if (importationMatcheLignes(i, filters)) rows.push({ importation: i, ligne: null })
         } else {
           rows.push({ importation: i, ligne: null })
@@ -428,6 +455,15 @@ export default function ImportationsPage() {
         ),
       },
       {
+        key: 'commandeDestinee',
+        header: 'Commande destinée',
+        cell: ({ ligne }) => (
+          <span className="text-sm text-muted-foreground">
+            {numeroCommande(ligne?.commandeClientId ?? null, commandes) ?? '—'}
+          </span>
+        ),
+      },
+      {
         key: 'mode',
         header: 'Mode expédition',
         cell: ({ importation }) => (
@@ -451,7 +487,7 @@ export default function ImportationsPage() {
         cell: ({ importation }) => <StatutBadge statut={importation.statut} />,
       },
     ],
-    [plateformes],
+    [plateformes, commandes],
   )
 
   // ── Export CSV (par ligne, colonnes Excel) ──
@@ -474,6 +510,7 @@ export default function ImportationsPage() {
       'Montant ligne': ligne?.montantLigne ?? 0,
       Devise: ligne?.devise ?? importation.devise ?? 'EUR',
       Plateforme: ligne ? (plateformeDeLaLigne(ligne, plateformes) ?? '') : '',
+      'Commande destinée': numeroCommande(ligne?.commandeClientId ?? null, commandes) ?? '',
       'Mode expédition': MODE_EXPEDITION[importation.modeExpedition] ?? String(importation.modeExpedition),
       'Créé par': importation.creePar ?? '',
       Statut: STATUT_IMPORTATION[importation.statut] ?? String(importation.statut),
@@ -597,6 +634,26 @@ export default function ImportationsPage() {
                 {plateformes?.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
                     {p.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Commande</Label>
+            <Select
+              value={filters.commandeId}
+              onValueChange={(v) => setFilter('commandeId', v)}
+            >
+              <SelectTrigger className="w-52">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Toutes les commandes</SelectItem>
+                {commandes?.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.numeroCommande}
+                    {c.titreCommande ? ` · ${c.titreCommande}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>

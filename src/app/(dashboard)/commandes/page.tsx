@@ -1,10 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Plus, ExternalLink, Trash2, Clock, CheckCircle2, LoaderCircle, CheckCheck, XCircle, LayoutGrid } from 'lucide-react'
+import { Plus, ExternalLink, Trash2, Clock, CheckCircle2, LoaderCircle, CheckCheck, XCircle, LayoutGrid, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
@@ -58,10 +60,28 @@ export default function CommandesPage() {
   const { data: commandes, isLoading } = useGetCommandes()
   const deleteMutation = useDeleteCommande()
 
+  // Recherche texte (façon Excel), combinable avec les onglets de statut.
+  const [recherche, setRecherche] = useState('')
+
   const byTab = useMemo(() => {
     if (!commandes) return {}
-    return Object.fromEntries(TABS.map((t) => [t.value, commandes.filter(t.filter)]))
-  }, [commandes])
+    const t = recherche.trim().toLowerCase()
+    return Object.fromEntries(
+      TABS.map((t2) => [
+        t2.value,
+        commandes.filter((c) => {
+          if (!t2.filter(c)) return false
+          if (!t) return true
+          return (
+            c.numeroCommande.toLowerCase().includes(t) ||
+            (c.titreCommande?.toLowerCase().includes(t) ?? false) ||
+            (c.client?.nom?.toLowerCase().includes(t) ?? false) ||
+            (c.marque?.nom?.toLowerCase().includes(t) ?? false)
+          )
+        }),
+      ]),
+    )
+  }, [commandes, recherche])
 
   const columns = useMemo<ColDef<CommandeClient>[]>(
     () => [
@@ -177,6 +197,24 @@ export default function CommandesPage() {
           </PermissionGate>
         }
       />
+
+      {/* ── Recherche texte (combinable avec les onglets) ── */}
+      <div className="mb-4 flex flex-wrap items-end gap-4">
+        <div className="grid w-full max-w-sm gap-1.5">
+          <Label>Recherche</Label>
+          <Input
+            placeholder="N° commande, titre, client, marque…"
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+          />
+        </div>
+        {recherche && (
+          <Button variant="ghost" size="sm" onClick={() => setRecherche('')}>
+            <X className="size-3.5" />
+            Réinitialiser
+          </Button>
+        )}
+      </div>
 
       <Tabs defaultValue="tous">
         <div className="mb-4 overflow-x-auto">
