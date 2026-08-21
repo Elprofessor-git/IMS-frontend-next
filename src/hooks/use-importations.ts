@@ -107,6 +107,45 @@ export function useAjouterLigneImportation() {
   })
 }
 
+export function useUpdateLigneImportation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      importationId,
+      ligneId,
+      data,
+    }: {
+      importationId: number
+      ligneId: number
+      data: Record<string, unknown>
+    }) =>
+      apiClient.put<LigneImportation>(
+        `/api/Importation/${importationId}/LignesImportation/${ligneId}`,
+        data,
+      ),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.importationId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      toast.success('Ligne mise à jour')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur'),
+  })
+}
+
+export function useDeleteLigneImportation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ importationId, ligneId }: { importationId: number; ligneId: number }) =>
+      apiClient.del<void>(`/api/Importation/${importationId}/LignesImportation/${ligneId}`),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.importationId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      toast.success('Ligne supprimée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur'),
+  })
+}
+
 export function useSoumettreImportation() {
   const qc = useQueryClient()
   return useMutation({

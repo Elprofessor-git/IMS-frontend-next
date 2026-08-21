@@ -1,10 +1,10 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Info, ListOrdered, FileText, PackageCheck, Clock } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText, PackageCheck, Clock, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,12 +37,15 @@ import {
   useUpdateImportation,
   useDeleteImportation,
   useAjouterLigneImportation,
+  useUpdateLigneImportation,
+  useDeleteLigneImportation,
   useSoumettreImportation,
   useValiderImportation,
   useRecevoirImportation,
   useAffecterCommandes,
 } from '@/hooks/use-importations'
 import { MODE_EXPEDITION } from '@/types/fournisseur'
+import type { LigneImportation } from '@/types/importation'
 import {
   ligneImportationSchema,
   toLigneImportationPayload,
@@ -113,17 +116,54 @@ function ValiderDialog({
   )
 }
 
-// ── Dialog Ajouter ligne importation ───────────────────────────
-function AjouterLigneDialog({
+// ── Dialog Ajouter / Modifier ligne importation ────────────────
+const EMPTY_LIGNE_FORM = {
+  articleId: 0,
+  quantite: 0,
+  prixUnitaire: 0,
+  commandeClientId: null,
+  clientId: null,
+  plateformeId: null,
+  designation: null,
+  couleur: null,
+  codeCouleur: null,
+  dimension: null,
+  nature: null,
+  devise: 'EUR',
+  notes: null,
+}
+
+function ligneToFormValues(l: LigneImportation): LigneImportationSchema {
+  return {
+    articleId: l.articleId,
+    quantite: Number(l.quantite),
+    prixUnitaire: Number(l.prixUnitaire),
+    commandeClientId: l.commandeClientId,
+    clientId: l.clientId,
+    plateformeId: l.plateformeId,
+    designation: l.designation,
+    couleur: l.couleur,
+    codeCouleur: l.codeCouleur,
+    dimension: l.dimension,
+    nature: l.nature,
+    devise: l.devise ?? 'EUR',
+    notes: l.notes,
+  }
+}
+
+function LigneDialog({
   importationId,
+  ligne,
   open,
   onClose,
 }: {
   importationId: number
+  ligne: LigneImportation | null
   open: boolean
   onClose: () => void
 }) {
   const ajouterMutation = useAjouterLigneImportation()
+  const modifierMutation = useUpdateLigneImportation()
   const { data: commandes } = useGetCommandes()
   const { data: clients } = useGetClients()
   const { data: plateformes } = useGetPlateformes()
@@ -136,38 +176,35 @@ function AjouterLigneDialog({
     formState: { errors },
   } = useForm<LigneImportationSchema>({
     resolver: zodResolver(ligneImportationSchema),
-    defaultValues: {
-      articleId: 0,
-      quantite: 0,
-      prixUnitaire: 0,
-      commandeClientId: null,
-      clientId: null,
-      plateformeId: null,
-      designation: null,
-      couleur: null,
-      codeCouleur: null,
-      dimension: null,
-      nature: null,
-      devise: 'EUR',
-      notes: null,
-    },
+    defaultValues: ligne ? ligneToFormValues(ligne) : EMPTY_LIGNE_FORM,
   })
+
+  // Réinitialise le formulaire à chaque ouverture (valeurs de la ligne en édition, vierge sinon)
+  useEffect(() => {
+    if (open) reset(ligne ? ligneToFormValues(ligne) : EMPTY_LIGNE_FORM)
+  }, [open, ligne, reset])
 
   if (!open) return null
 
+  const isEdition = !!ligne
+  const isPending = isEdition ? modifierMutation.isPending : ajouterMutation.isPending
+
   const onSubmit = async (data: LigneImportationSchema) => {
-    await ajouterMutation.mutateAsync({
-      importationId,
-      data: toLigneImportationPayload(data) as Record<string, unknown>,
-    })
-    reset()
+    const payload = toLigneImportationPayload(data) as Record<string, unknown>
+    if (ligne) {
+      await modifierMutation.mutateAsync({ importationId, ligneId: ligne.id, data: payload })
+    } else {
+      await ajouterMutation.mutateAsync({ importationId, data: payload })
+    }
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="max-h-[90vh] w-[520px] overflow-y-auto rounded-lg bg-background p-6 shadow-xl">
-        <h3 className="mb-4 text-lg font-semibold">Ajouter une ligne</h3>
+        <h3 className="mb-4 text-lg font-semibold">
+          {isEdition ? 'Modifier la ligne' : 'Ajouter une ligne'}
+        </h3>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="grid gap-2">
             <Label>Article <span className="text-destructive">*</span></Label>
@@ -255,11 +292,17 @@ function AjouterLigneDialog({
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => { reset(); onClose() }}>
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Annuler
             </Button>
-            <Button type="submit" size="sm" disabled={ajouterMutation.isPending}>
-              {ajouterMutation.isPending ? 'Ajout…' : 'Ajouter'}
+            <Button type="submit" size="sm" disabled={isPending}>
+              {isPending
+                ? isEdition
+                  ? 'Enregistrement…'
+                  : 'Ajout…'
+                : isEdition
+                  ? 'Enregistrer'
+                  : 'Ajouter'}
             </Button>
           </div>
         </form>
@@ -279,6 +322,7 @@ export default function ImportationDetailPage({
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('info')
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false)
+  const [ligneEnEdition, setLigneEnEdition] = useState<LigneImportation | null>(null)
   const [validerDialogOpen, setValiderDialogOpen] = useState(false)
   const [notes, setNotes] = useState('')
   const [dateReception, setDateReception] = useState('')
@@ -290,6 +334,12 @@ export default function ImportationDetailPage({
   const validerM = useValiderImportation()
   const recevoirM = useRecevoirImportation()
   const affecterM = useAffecterCommandes()
+  const deleteLigneM = useDeleteLigneImportation()
+
+  const ouvrirAjoutLigne = () => {
+    setLigneEnEdition(null)
+    setLigneDialogOpen(true)
+  }
 
   if (isLoading) {
     return (
@@ -414,7 +464,7 @@ export default function ImportationDetailPage({
             className="mt-3"
             onClick={() => {
               setActiveTab('lignes')
-              setLigneDialogOpen(true)
+              ouvrirAjoutLigne()
             }}
           >
             <Plus className="mr-1.5 size-4" />
@@ -568,7 +618,7 @@ export default function ImportationDetailPage({
             <PermissionGate module="importations" mode="write">
               {importation.statut === 0 && (
                 <div className="flex justify-end">
-                  <Button size="sm" onClick={() => setLigneDialogOpen(true)}>
+                  <Button size="sm" onClick={ouvrirAjoutLigne}>
                     <Plus className="size-4" />
                     Ajouter une ligne
                   </Button>
@@ -587,12 +637,18 @@ export default function ImportationDetailPage({
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
                     <TableHead>Affecté</TableHead>
+                    {importation.statut === 0 && (
+                      <TableHead className="text-right">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {importation.lignesImportation.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={importation.statut === 0 ? 8 : 7}
+                        className="py-10 text-center text-muted-foreground"
+                      >
                         Aucune ligne.{importation.statut === 0 && ' Ajoutez des articles.'}
                       </TableCell>
                     </TableRow>
@@ -639,6 +695,43 @@ export default function ImportationDetailPage({
                           </Badge>
                         )}
                       </TableCell>
+                      {importation.statut === 0 && (
+                        <TableCell className="text-right">
+                          <PermissionGate module="importations" mode="write">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                title="Modifier"
+                                onClick={() => {
+                                  setLigneEnEdition(l)
+                                  setLigneDialogOpen(true)
+                                }}
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              <ConfirmDialog
+                                trigger={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    className="text-destructive hover:text-destructive"
+                                    title="Supprimer"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </Button>
+                                }
+                                title="Supprimer cette ligne ?"
+                                description="Cette action est irréversible."
+                                confirmLabel="Supprimer"
+                                onConfirm={() =>
+                                  deleteLigneM.mutate({ importationId, ligneId: l.id })
+                                }
+                              />
+                            </div>
+                          </PermissionGate>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -662,8 +755,9 @@ export default function ImportationDetailPage({
         </TabsContent>
       </Tabs>
 
-      <AjouterLigneDialog
+      <LigneDialog
         importationId={importationId}
+        ligne={ligneEnEdition}
         open={ligneDialogOpen}
         onClose={() => setLigneDialogOpen(false)}
       />
