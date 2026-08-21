@@ -611,10 +611,10 @@ export default function AchatDetailPage({
                   )}
                   {achat.lignesAchat.map((l) => (
                     <TableRow key={l.id}>
-                      <TableCell>
-                        <p className="font-medium">{l.article?.designation ?? `#${l.articleId}`}</p>
+                      <TableCell className="max-w-[280px] whitespace-normal">
+                        <p className="break-words font-medium">{l.article?.designation ?? `#${l.articleId}`}</p>
                         {l.article?.reference && (
-                          <p className="font-mono text-xs text-muted-foreground">{l.article.reference}</p>
+                          <p className="break-words font-mono text-xs text-muted-foreground">{l.article.reference}</p>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -628,7 +628,7 @@ export default function AchatDetailPage({
                       <TableCell className="text-right font-mono font-medium">
                         {Number(l.montantLigne).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="whitespace-normal break-words text-sm text-muted-foreground">
                         {[l.couleur, l.taille, l.dimension].filter(Boolean).join(' / ') || '—'}
                       </TableCell>
                       {achat.statut === 0 && (

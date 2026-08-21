@@ -680,19 +680,19 @@ export default function ImportationDetailPage({
                   )}
                   {importation.lignesImportation.map((l) => (
                     <TableRow key={l.id}>
-                      <TableCell>
-                        <p className="font-medium">
+                      <TableCell className="max-w-[280px] whitespace-normal">
+                        <p className="break-words font-medium">
                           {l.designation ?? l.article?.designation ?? `#${l.articleId}`}
                         </p>
                         {l.article?.reference && (
-                          <p className="font-mono text-xs text-muted-foreground">{l.article.reference}</p>
+                          <p className="break-words font-mono text-xs text-muted-foreground">{l.article.reference}</p>
                         )}
                         {l.commandeClientId && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="break-words text-xs text-muted-foreground">
                             Commande {libelleCommande(l.commandeClientId, commandes) ?? `#${l.commandeClientId}`}
                           </p>
                         )}
-                       </TableCell>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={l.typeDestination === 3 ? 'secondary' : 'outline'}>
                           {destinationLabel(l, commandes)}
@@ -706,7 +706,7 @@ export default function ImportationDetailPage({
                       <TableCell className="text-right font-mono font-medium">
                         {Number(l.montantLigne).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="whitespace-normal break-words text-sm text-muted-foreground">
                         {[l.couleur, l.dimension, l.nature].filter(Boolean).join(' / ') || '—'}
                       </TableCell>
                       <TableCell>
