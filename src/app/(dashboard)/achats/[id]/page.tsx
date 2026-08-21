@@ -1,10 +1,10 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Info, ListOrdered, FileText } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -32,6 +32,8 @@ import {
   useUpdateAchat,
   useDeleteAchat,
   useAjouterLigneAchat,
+  useUpdateLigneAchat,
+  useDeleteLigneAchat,
   useSoumettreAchat,
   useConfirmerAchat,
   useLivrerAchat,
@@ -74,17 +76,54 @@ function destinationLabel(l: LigneAchat, plateformes?: Plateforme[]): string {
   return base
 }
 
-// ── Dialog Ajouter une ligne ────────────────────────────────────
-function AjouterLigneDialog({
+// ── Dialog Ajouter / Modifier ligne achat ───────────────────────
+const EMPTY_LIGNE_FORM = {
+  articleId: 0,
+  quantite: 0,
+  prixUnitaire: 0,
+  commandeClientId: null,
+  clientId: null,
+  plateformeId: null,
+  couleur: null,
+  codeCouleur: null,
+  taille: null,
+  dimension: null,
+  devise: 'EUR',
+  descriptionSpecifique: null,
+  notes: null,
+}
+
+function ligneToFormValues(l: LigneAchat): LigneAchatSchema {
+  return {
+    articleId: l.articleId,
+    quantite: Number(l.quantite),
+    prixUnitaire: Number(l.prixUnitaire),
+    commandeClientId: l.commandeClientId,
+    clientId: l.clientId,
+    plateformeId: l.plateformeId,
+    couleur: l.couleur,
+    codeCouleur: l.codeCouleur,
+    taille: l.taille,
+    dimension: l.dimension,
+    devise: l.devise ?? 'EUR',
+    descriptionSpecifique: l.descriptionSpecifique,
+    notes: l.notes,
+  }
+}
+
+function LigneDialog({
   achatId,
+  ligne,
   open,
   onClose,
 }: {
   achatId: number
+  ligne: LigneAchat | null
   open: boolean
   onClose: () => void
 }) {
   const ajouterMutation = useAjouterLigneAchat()
+  const modifierMutation = useUpdateLigneAchat()
   const { data: commandes } = useGetCommandes()
   const { data: clients } = useGetClients()
   const { data: plateformes } = useGetPlateformes()
@@ -98,38 +137,35 @@ function AjouterLigneDialog({
     formState: { errors },
   } = useForm<LigneAchatSchema>({
     resolver: zodResolver(ligneAchatSchema),
-    defaultValues: {
-      articleId: 0,
-      quantite: 0,
-      prixUnitaire: 0,
-      commandeClientId: null,
-      clientId: null,
-      plateformeId: null,
-      couleur: null,
-      codeCouleur: null,
-      taille: null,
-      dimension: null,
-      devise: 'EUR',
-      descriptionSpecifique: null,
-      notes: null,
-    },
+    defaultValues: ligne ? ligneToFormValues(ligne) : EMPTY_LIGNE_FORM,
   })
+
+  // Réinitialise le formulaire à chaque ouverture (valeurs de la ligne en édition, vierge sinon)
+  useEffect(() => {
+    if (open) reset(ligne ? ligneToFormValues(ligne) : EMPTY_LIGNE_FORM)
+  }, [open, ligne, reset])
 
   if (!open) return null
 
+  const isEdition = !!ligne
+  const isPending = isEdition ? modifierMutation.isPending : ajouterMutation.isPending
+
   const onSubmit = async (data: LigneAchatSchema) => {
-    await ajouterMutation.mutateAsync({
-      achatId,
-      data: toLigneAchatPayload(data) as Record<string, unknown>,
-    })
-    reset()
+    const payload = toLigneAchatPayload(data) as Record<string, unknown>
+    if (ligne) {
+      await modifierMutation.mutateAsync({ achatId, ligneId: ligne.id, data: payload })
+    } else {
+      await ajouterMutation.mutateAsync({ achatId, data: payload })
+    }
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="max-h-[90vh] w-[540px] overflow-y-auto rounded-lg bg-background p-6 shadow-xl">
-        <h3 className="mb-4 text-lg font-semibold">Ajouter une ligne</h3>
+        <h3 className="mb-4 text-lg font-semibold">
+          {isEdition ? 'Modifier la ligne' : 'Ajouter une ligne'}
+        </h3>
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div className="grid gap-2">
             <Label>Article <span className="text-destructive">*</span></Label>
@@ -211,11 +247,17 @@ function AjouterLigneDialog({
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => { reset(); onClose() }}>
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
               Annuler
             </Button>
-            <Button type="submit" size="sm" disabled={ajouterMutation.isPending}>
-              {ajouterMutation.isPending ? 'Ajout…' : 'Ajouter'}
+            <Button type="submit" size="sm" disabled={isPending}>
+              {isPending
+                ? isEdition
+                  ? 'Enregistrement…'
+                  : 'Ajout…'
+                : isEdition
+                  ? 'Enregistrer'
+                  : 'Ajouter'}
             </Button>
           </div>
         </form>
@@ -234,6 +276,7 @@ export default function AchatDetailPage({
   const achatId = Number(id)
   const router = useRouter()
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false)
+  const [ligneEnEdition, setLigneEnEdition] = useState<LigneAchat | null>(null)
 
   const { data: achat, isLoading } = useGetAchat(achatId)
   const { data: plateformes } = useGetPlateformes()
@@ -242,6 +285,12 @@ export default function AchatDetailPage({
   const soumettreM = useSoumettreAchat()
   const confirmerM = useConfirmerAchat()
   const livrerM = useLivrerAchat()
+  const deleteLigneM = useDeleteLigneAchat()
+
+  const ouvrirAjoutLigne = () => {
+    setLigneEnEdition(null)
+    setLigneDialogOpen(true)
+  }
 
   const [activeTab, setActiveTab] = useState('info')
   const [notes, setNotes] = useState('')
@@ -345,7 +394,7 @@ export default function AchatDetailPage({
             className="mt-3"
             onClick={() => {
               setActiveTab('lignes')
-              setLigneDialogOpen(true)
+              ouvrirAjoutLigne()
             }}
           >
             <Plus className="mr-1.5 size-4" />
@@ -505,7 +554,7 @@ export default function AchatDetailPage({
             <PermissionGate module="achats" mode="write">
               {achat.statut === 0 && (
                 <div className="flex justify-end">
-                  <Button size="sm" onClick={() => setLigneDialogOpen(true)}>
+                  <Button size="sm" onClick={ouvrirAjoutLigne}>
                     <Plus className="size-4" />
                     Ajouter une ligne
                   </Button>
@@ -523,12 +572,18 @@ export default function AchatDetailPage({
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
+                    {achat.statut === 0 && (
+                      <TableHead className="text-right">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {achat.lignesAchat.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={achat.statut === 0 ? 7 : 6}
+                        className="py-10 text-center text-muted-foreground"
+                      >
                         Aucune ligne.{achat.statut === 0 && ' Ajoutez des articles.'}
                       </TableCell>
                     </TableRow>
@@ -555,6 +610,43 @@ export default function AchatDetailPage({
                       <TableCell className="text-sm text-muted-foreground">
                         {[l.couleur, l.taille, l.dimension].filter(Boolean).join(' / ') || '—'}
                       </TableCell>
+                      {achat.statut === 0 && (
+                        <TableCell className="text-right">
+                          <PermissionGate module="achats" mode="write">
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                title="Modifier"
+                                onClick={() => {
+                                  setLigneEnEdition(l)
+                                  setLigneDialogOpen(true)
+                                }}
+                              >
+                                <Pencil className="size-3.5" />
+                              </Button>
+                              <ConfirmDialog
+                                trigger={
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    className="text-destructive hover:text-destructive"
+                                    title="Supprimer"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </Button>
+                                }
+                                title="Supprimer cette ligne ?"
+                                description="Cette action est irréversible."
+                                confirmLabel="Supprimer"
+                                onConfirm={() =>
+                                  deleteLigneM.mutate({ achatId, ligneId: l.id })
+                                }
+                              />
+                            </div>
+                          </PermissionGate>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -579,8 +671,9 @@ export default function AchatDetailPage({
         </TabsContent>
       </Tabs>
 
-      <AjouterLigneDialog
+      <LigneDialog
         achatId={achatId}
+        ligne={ligneEnEdition}
         open={ligneDialogOpen}
         onClose={() => setLigneDialogOpen(false)}
       />

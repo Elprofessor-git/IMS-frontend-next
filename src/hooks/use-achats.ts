@@ -78,6 +78,45 @@ export function useAjouterLigneAchat() {
   })
 }
 
+export function useUpdateLigneAchat() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      achatId,
+      ligneId,
+      data,
+    }: {
+      achatId: number
+      ligneId: number
+      data: Record<string, unknown>
+    }) =>
+      apiClient.put<LigneAchat>(
+        `/api/Achat/${achatId}/LignesAchat/${ligneId}`,
+        data,
+      ),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.achatId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      toast.success('Ligne mise à jour')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur'),
+  })
+}
+
+export function useDeleteLigneAchat() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ achatId, ligneId }: { achatId: number; ligneId: number }) =>
+      apiClient.del<void>(`/api/Achat/${achatId}/LignesAchat/${ligneId}`),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.achatId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      toast.success('Ligne supprimée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur'),
+  })
+}
+
 export function useSoumettreAchat() {
   const qc = useQueryClient()
   return useMutation({
