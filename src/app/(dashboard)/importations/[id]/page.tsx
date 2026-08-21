@@ -69,6 +69,26 @@ const DESTINATION_LABEL_BY_NUMBER: Record<number, string> = {
   3: 'Stock libre',
 }
 
+// Numéro de commande pour un id donné (résolution via la liste des commandes).
+// Même logique que la colonne « Commande destinée » de la vue Lignes (importations/page.tsx).
+function numeroCommande(
+  id: number | null | undefined,
+  commandes: { id: number; numeroCommande: string }[] | undefined,
+): string | null {
+  if (!id) return null
+  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
+}
+
+function destinationLabel(
+  l: LigneImportation,
+  commandes?: { id: number; numeroCommande: string }[],
+): string {
+  if (l.typeDestination === 0 && l.commandeClientId) {
+    return numeroCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
+  }
+  return DESTINATION_LABEL_BY_NUMBER[l.typeDestination] ?? String(l.typeDestination)
+}
+
 // ── Dialog Valider (saisie validePar) ──────────────────────────
 function ValiderDialog({
   open,
@@ -328,6 +348,7 @@ export default function ImportationDetailPage({
   const [dateReception, setDateReception] = useState('')
 
   const { data: importation, isLoading } = useGetImportation(importationId)
+  const { data: commandes } = useGetCommandes()
   const updateMutation = useUpdateImportation()
   const deleteMutation = useDeleteImportation()
   const soumettreM = useSoumettreImportation()
@@ -663,12 +684,14 @@ export default function ImportationDetailPage({
                           <p className="font-mono text-xs text-muted-foreground">{l.article.reference}</p>
                         )}
                         {l.commandeClientId && (
-                          <p className="text-xs text-muted-foreground">Commande #{l.commandeClientId}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Commande {numeroCommande(l.commandeClientId, commandes) ?? `#${l.commandeClientId}`}
+                          </p>
                         )}
-                      </TableCell>
+                       </TableCell>
                       <TableCell>
                         <Badge variant={l.typeDestination === 3 ? 'secondary' : 'outline'}>
-                          {DESTINATION_LABEL_BY_NUMBER[l.typeDestination] ?? l.typeDestination}
+                          {destinationLabel(l, commandes)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>

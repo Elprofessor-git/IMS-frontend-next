@@ -65,9 +65,25 @@ const DESTINATION_LABELS: Record<number, string> = {
   3: 'Libre',
 }
 
-function destinationLabel(l: LigneAchat, plateformes?: Plateforme[]): string {
+// Numéro de commande pour un id donné (résolution via la liste des commandes).
+// Même logique que la colonne « Commande destinée » de la vue Lignes (achats/page.tsx).
+function numeroCommande(
+  id: number | null | undefined,
+  commandes: { id: number; numeroCommande: string }[] | undefined,
+): string | null {
+  if (!id) return null
+  return commandes?.find((c) => c.id === id)?.numeroCommande ?? `#${id}`
+}
+
+function destinationLabel(
+  l: LigneAchat,
+  plateformes?: Plateforme[],
+  commandes?: { id: number; numeroCommande: string }[],
+): string {
   const base = DESTINATION_LABELS[l.typeDestination] ?? `#${l.typeDestination}`
-  if (l.typeDestination === 0 && l.commandeClientId) return `Cde #${l.commandeClientId}`
+  if (l.typeDestination === 0 && l.commandeClientId) {
+    return numeroCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
+  }
   if (l.typeDestination === 1 && l.clientId) return `Client #${l.clientId}`
   if (l.typeDestination === 2 && l.plateformeId) {
     const nom = plateformes?.find((p) => p.id === l.plateformeId)?.nom
@@ -280,6 +296,7 @@ export default function AchatDetailPage({
 
   const { data: achat, isLoading } = useGetAchat(achatId)
   const { data: plateformes } = useGetPlateformes()
+  const { data: commandes } = useGetCommandes()
   const updateMutation = useUpdateAchat()
   const deleteMutation = useDeleteAchat()
   const soumettreM = useSoumettreAchat()
@@ -597,7 +614,7 @@ export default function AchatDetailPage({
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {destinationLabel(l, plateformes)}
+                        {destinationLabel(l, plateformes, commandes)}
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
                       <TableCell className="text-right font-mono">
