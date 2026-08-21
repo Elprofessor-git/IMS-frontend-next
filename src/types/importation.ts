@@ -77,3 +77,14 @@ export type Importation = {
   lignesImportation: LigneImportation[]
   documents: DocumentImportation[]
 }
+
+// Payload PUT /api/Importation/{id} : en-tête uniquement (miroir de UpdateImportationDto).
+// Ne jamais envoyer lignesImportation ni les champs gérés par le workflow backend.
+export type UpdateImportationPayload = {
+  fournisseurId: number | null
+  plateformeId: number | null
+  dateReceptionPrevue: string | null
+  modeExpedition: number
+  devise: string | null
+  notesImportation: string | null
+}

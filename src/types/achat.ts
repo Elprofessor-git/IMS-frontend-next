@@ -68,3 +68,14 @@ export type Achat = {
   commandeClient: AchatCommandeClient | null
   lignesAchat: LigneAchat[]
 }
+
+// Payload PUT /api/Achat/{id} : en-tête uniquement (miroir de UpdateAchatDto backend).
+// Ne jamais envoyer lignesAchat ni les nav-props : gérées par /LignesAchat et le workflow.
+export type UpdateAchatPayload = {
+  fournisseurId: number
+  commandeClientId: number | null
+  dateLivraisonPrevue: string | null
+  devise: string | null
+  conditionsPaiement: string | null
+  notesAchat: string | null
+}

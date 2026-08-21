@@ -117,10 +117,15 @@ export function CommandeSelect({
       {open &&
         typeof document !== 'undefined' &&
         createPortal(
+          // Dans une modale Radix Dialog (modal), le body reçoit pointer-events:none
+          // (disableOutsidePointerEvents) et le Dialog se ferme sur tout pointerdown
+          // hors de sa surface : pointer-events:auto rend le menu cliquable et le
+          // stopPropagation évite la fermeture du dialog lors d'un clic sur une option.
           <div
             ref={dropdownRef}
             className="fixed z-50 rounded-md border bg-card shadow-md"
-            style={{ top: coords.top, left: coords.left, width: coords.width }}
+            style={{ top: coords.top, left: coords.left, width: coords.width, pointerEvents: 'auto' }}
+            onPointerDown={(e) => e.stopPropagation()}
           >
             {filtered.length === 0 ? (
               <p className="px-3 py-2 text-sm text-muted-foreground">

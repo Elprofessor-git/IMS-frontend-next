@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
-import type { Importation, LigneImportation } from '@/types/importation'
+import type { Importation, LigneImportation, UpdateImportationPayload } from '@/types/importation'
 import type { ApiError } from '@/types'
 
 const KEY = ['importations'] as const
@@ -60,8 +60,9 @@ export function useCreateImportation() {
 export function useUpdateImportation() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: Importation) =>
-      apiClient.put<void>(`/api/Importation/${data.id}`, data),
+    // En-tête uniquement (UpdateImportationPayload) : le backend PutImportation mappe un DTO.
+    mutationFn: ({ id, ...data }: UpdateImportationPayload & { id: number }) =>
+      apiClient.put<void>(`/api/Importation/${id}`, data),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: [...KEY, vars.id] })

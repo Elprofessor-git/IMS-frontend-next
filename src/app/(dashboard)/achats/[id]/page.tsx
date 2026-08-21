@@ -478,9 +478,14 @@ export default function AchatDetailPage({
                       size="sm"
                       disabled={updateMutation.isPending}
                       onClick={() =>
+                        // En-tête uniquement : le backend PutAchat attend UpdateAchatDto
                         updateMutation.mutate({
-                          ...achat,
+                          id: achat.id,
+                          fournisseurId: achat.fournisseurId,
+                          commandeClientId: achat.commandeClientId,
                           dateLivraisonPrevue: dateLivraison || achat.dateLivraisonPrevue,
+                          devise: achat.devise,
+                          conditionsPaiement: achat.conditionsPaiement,
                           notesAchat: notes || achat.notesAchat,
                         })
                       }

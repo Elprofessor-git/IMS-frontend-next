@@ -20,6 +20,19 @@ async function parseError(response: Response): Promise<ApiError> {
       if (typeof data === 'string') {
         return { status: 400, message: data }
       }
+      // { message, erreurs } : erreurs de cohérence métier (ex. SoumettreAchat)
+      if (data && typeof data === 'object' && typeof data.message === 'string') {
+        const erreurs: string[] = Array.isArray(data.erreurs)
+          ? data.erreurs.filter((e: unknown): e is string => typeof e === 'string')
+          : []
+        return {
+          status: 400,
+          message: erreurs.length > 0 ? `${data.message} : ${erreurs.join(' ')}` : data.message,
+          errors: erreurs.length > 0
+            ? Object.fromEntries(erreurs.map((e, i) => [`erreurs[${i}]`, [e]]))
+            : undefined,
+        }
+      }
       const problem = data as ValidationProblemDetails
       const firstError = problem.errors
         ? Object.values(problem.errors).flat()[0]

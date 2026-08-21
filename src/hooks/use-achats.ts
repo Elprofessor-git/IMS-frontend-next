@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
-import type { Achat, LigneAchat } from '@/types/achat'
+import type { Achat, LigneAchat, UpdateAchatPayload } from '@/types/achat'
 import type { ApiError } from '@/types'
 
 const KEY = ['achats'] as const
@@ -39,7 +39,10 @@ export function useCreateAchat() {
 export function useUpdateAchat() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: Achat) => apiClient.put<void>(`/api/Achat/${data.id}`, data),
+    // En-tête uniquement (UpdateAchatPayload) : le backend PutAchat mappe un DTO,
+    // envoyer l'entité complète provoquait un 400 sur les nav-props.
+    mutationFn: ({ id, ...data }: UpdateAchatPayload & { id: number }) =>
+      apiClient.put<void>(`/api/Achat/${id}`, data),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: [...KEY, vars.id] })

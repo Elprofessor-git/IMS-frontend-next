@@ -541,9 +541,14 @@ export default function ImportationDetailPage({
                       size="sm"
                       disabled={updateMutation.isPending}
                       onClick={() =>
+                        // En-tête uniquement : le backend PutImportation attend UpdateImportationDto
                         updateMutation.mutate({
-                          ...importation,
+                          id: importation.id,
+                          fournisseurId: importation.fournisseurId,
+                          plateformeId: importation.plateformeId,
                           dateReceptionPrevue: dateReception || importation.dateReceptionPrevue,
+                          modeExpedition: importation.modeExpedition,
+                          devise: importation.devise,
                           notesImportation: notes || importation.notesImportation,
                         })
                       }
