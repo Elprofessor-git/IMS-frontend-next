@@ -43,6 +43,17 @@ async function parseError(response: Response): Promise<ApiError> {
     }
   }
 
+  // 409 : avertissement de dépassement (ex. SoumettreAchat)
+  if (status === 409) {
+    try {
+      const data = await response.json()
+      const message = (typeof data?.message === 'string' ? data.message : '') || 'Avertissement'
+      return { status: 409, message, data }
+    } catch {
+      return { status: 409, message: 'Avertissement' }
+    }
+  }
+
   try {
     const text = await response.text()
 

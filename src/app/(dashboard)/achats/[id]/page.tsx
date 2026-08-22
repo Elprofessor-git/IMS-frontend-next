@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +20,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
@@ -52,6 +60,7 @@ import type { WorkflowStatutConfig, WorkflowTransition } from '@/components/ui/s
 import type { LigneAchat } from '@/types/achat'
 import type { Plateforme } from '@/types/plateforme'
 import type { CommandeClient } from '@/types/commande'
+import type { ApiError } from '@/types'
 
 const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
@@ -400,6 +409,29 @@ export default function AchatDetailPage({
   const [activeTab, setActiveTab] = useState('info')
   const [notes, setNotes] = useState('')
   const [dateLivraison, setDateLivraison] = useState('')
+  const [depassements, setDepassements] = useState<Array<{
+    ligneId: number
+    articleDesignation: string
+    quantiteCommandee: number
+    besoinTotal: number
+    exces: number
+  }> | null>(null)
+
+  const handleSoumettre = (forcer: boolean) => {
+    if (!achat) return
+    soumettreM.mutate(
+      { id: achat.id, forcerDepassement: forcer },
+      {
+        onError: (err: ApiError) => {
+          if (err.status === 409 && err.data?.depassements) {
+            setDepassements(err.data.depassements as Array<{
+              ligneId: number; articleDesignation: string; quantiteCommandee: number; besoinTotal: number; exces: number
+            }>)
+          }
+        },
+      },
+    )
+  }
 
   if (isLoading) {
     return (
@@ -422,7 +454,7 @@ export default function AchatDetailPage({
       confirmTitle: 'Soumettre cet achat ?',
       confirmDesc: 'L\'achat sera soumis pour confirmation. Les lignes ne pourront plus être modifiées.',
       buttonVariant: 'default',
-      onConfirm: () => soumettreM.mutate(achat.id),
+      onConfirm: () => handleSoumettre(false),
       isPending: soumettreM.isPending,
     }
     if (s === 1) return {
@@ -495,6 +527,56 @@ export default function AchatDetailPage({
           </PermissionGate>
         }
       />
+
+      {depassements && depassements.length > 0 && (
+        <Dialog open onOpenChange={(open) => { if (!open) setDepassements(null) }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="size-5 text-amber-600" />
+                Dépassement de besoin détecté
+              </DialogTitle>
+              <DialogDescription>
+                {depassements.length === 1
+                  ? '1 ligne dépasse le besoin de la commande associée.'
+                  : `${depassements.length} lignes dépassent le besoin de la commande associée.`}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-60 space-y-2 overflow-y-auto">
+              {depassements.map((d) => (
+                <div
+                  key={d.ligneId}
+                  className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950"
+                >
+                  <div>
+                    <p className="font-medium">{d.articleDesignation}</p>
+                    <p className="text-muted-foreground">
+                      Commandé : {d.quantiteCommandee} · Besoin : {d.besoinTotal}
+                    </p>
+                  </div>
+                  <span className="font-semibold text-amber-700 dark:text-amber-300">
+                    +{d.exces}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDepassements(null)}>
+                Annuler
+              </Button>
+              <Button
+                onClick={() => {
+                  setDepassements(null)
+                  handleSoumettre(true)
+                }}
+                disabled={soumettreM.isPending}
+              >
+                Soumettre quand même
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {achat.statut === 0 && achat.lignesAchat.length === 0 && (
         <div className="mb-4 flex max-w-4xl items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-700 dark:bg-amber-950">

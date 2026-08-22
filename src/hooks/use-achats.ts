@@ -120,14 +120,21 @@ export function useDeleteLigneAchat() {
 export function useSoumettreAchat() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) =>
-      apiClient.post<{ message: string }>(`/api/Achat/${id}/Soumettre`),
-    onSuccess: (_d, id) => {
+    mutationFn: ({ id, forcerDepassement }: { id: number; forcerDepassement?: boolean }) =>
+      apiClient.post<{ message: string }>(
+        `/api/Achat/${id}/Soumettre`,
+        forcerDepassement ? { forcerDepassement: true } : undefined,
+      ),
+    onSuccess: (_d, { id }) => {
       qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: [...KEY, id] })
       toast.success('Achat soumis')
     },
-    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la soumission'),
+    onError: (err: ApiError) => {
+      if (err.status !== 409) {
+        toast.error(err.message ?? 'Erreur lors de la soumission')
+      }
+    },
   })
 }
 
