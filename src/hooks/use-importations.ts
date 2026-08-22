@@ -206,3 +206,44 @@ export function useAffecterCommandes() {
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de l\'affectation'),
   })
 }
+
+export function useRecevoirPartielImportation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      importationId,
+      ligneId,
+      quantite,
+    }: {
+      importationId: number
+      ligneId: number
+      quantite: number
+    }) =>
+      apiClient.post<{ message: string; ligneId: number }>(
+        `/api/Importation/${importationId}/LignesImportation/${ligneId}/RecevoirPartiel`,
+        { quantite },
+      ),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.importationId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['stocks'] })
+      toast.success('Réception partielle enregistrée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la réception partielle'),
+  })
+}
+
+export function useClotureForceeImportation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, raison }: { id: number; raison?: string }) =>
+      apiClient.post<{ message: string }>(`/api/Importation/${id}/ClotureForcee`, { raison: raison ?? null }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: [...KEY, vars.id] })
+      qc.invalidateQueries({ queryKey: ['stocks'] })
+      toast.success('Importation clôturée avec succès')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la clôture'),
+  })
+}

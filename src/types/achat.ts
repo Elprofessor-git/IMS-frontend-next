@@ -20,6 +20,8 @@ export type LigneAchat = {
   taille: string | null
   dimension: string | null
   quantite: number
+  quantiteRecue: number
+  statutLigne: number // 0=EnAttente 1=PartielleEnCours 2=Complete 3=ClotureeForcee
   prixUnitaire: number
   montantLigne: number
   devise: string | null

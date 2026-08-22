@@ -43,6 +43,8 @@ import {
   useValiderImportation,
   useRecevoirImportation,
   useAffecterCommandes,
+  useRecevoirPartielImportation,
+  useClotureForceeImportation,
 } from '@/hooks/use-importations'
 import { MODE_EXPEDITION } from '@/types/fournisseur'
 import type { LigneImportation } from '@/types/importation'
@@ -335,6 +337,79 @@ function LigneDialog({
   )
 }
 
+// ── Dialog Réception partielle ────────────────────────────────
+function ReceptionPartielDialog({
+  importationId,
+  ligne,
+  open,
+  onClose,
+}: {
+  importationId: number
+  ligne: LigneImportation | null
+  open: boolean
+  onClose: () => void
+}) {
+  const recevoirM = useRecevoirPartielImportation()
+  const [quantite, setQuantite] = useState<number>(0)
+
+  useEffect(() => {
+    if (open && ligne) {
+      const reliquat = Number(ligne.quantite) - Number(ligne.quantiteRecue)
+      setQuantite(reliquat > 0 ? reliquat : 0)
+    }
+  }, [open, ligne])
+
+  if (!open || !ligne) return null
+
+  const reliquat = Number(ligne.quantite) - Number(ligne.quantiteRecue)
+
+  const onSubmit = async () => {
+    await recevoirM.mutateAsync({ importationId, ligneId: ligne.id, quantite })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-[420px] rounded-lg bg-background p-6 shadow-xl">
+        <h3 className="mb-4 text-lg font-semibold">Réception partielle</h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Article&nbsp;: <span className="font-medium text-foreground">{ligne.designation ?? ligne.article?.designation ?? `#${ligne.articleId}`}</span>
+        </p>
+        <p className="mb-2 text-sm text-muted-foreground">
+          Quantité commandée&nbsp;: <span className="font-mono">{Number(ligne.quantite)}</span>
+          &nbsp;— Déjà reçue&nbsp;: <span className="font-mono">{Number(ligne.quantiteRecue)}</span>
+        </p>
+        <div className="grid gap-2">
+          <Label htmlFor="quantite-reception">Quantité à recevoir <span className="text-destructive">*</span></Label>
+          <Input
+            id="quantite-reception"
+            type="number"
+            min="0.01"
+            max={reliquat}
+            step="0.01"
+            value={quantite}
+            onChange={(e) => setQuantite(Number(e.target.value))}
+          />
+          <p className="text-xs text-muted-foreground">Reliquat restant&nbsp;: {reliquat}</p>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={recevoirM.isPending || quantite <= 0 || quantite > reliquat}
+            onClick={onSubmit}
+          >
+            {recevoirM.isPending ? 'Enregistrement…' : 'Réceptionner'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Page détail importation ─────────────────────────────────────
 export default function ImportationDetailPage({
   params,
@@ -348,6 +423,8 @@ export default function ImportationDetailPage({
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState<LigneImportation | null>(null)
   const [validerDialogOpen, setValiderDialogOpen] = useState(false)
+  const [receptionDialogOpen, setReceptionDialogOpen] = useState(false)
+  const [ligneEnReception, setLigneEnReception] = useState<LigneImportation | null>(null)
   const [notes, setNotes] = useState('')
   const [dateReception, setDateReception] = useState('')
 
@@ -360,6 +437,7 @@ export default function ImportationDetailPage({
   const recevoirM = useRecevoirImportation()
   const affecterM = useAffecterCommandes()
   const deleteLigneM = useDeleteLigneImportation()
+  const clotureForceeM = useClotureForceeImportation()
 
   const ouvrirAjoutLigne = () => {
     setLigneEnEdition(null)
@@ -434,6 +512,20 @@ export default function ImportationDetailPage({
                 statutConfig={IMPORTATION_STATUT_CONFIG}
                 transition={getTransition()}
               />
+
+              {importation.statut === 2 && (
+                <ConfirmDialog
+                  trigger={
+                    <Button variant="outline" size="sm" disabled={clotureForceeM.isPending}>
+                      Clôturer
+                    </Button>
+                  }
+                  title="Clôturer cette importation ?"
+                  description="Cette action marquera les lignes non encore reçues comme clôturées et l'importation comme reçue. Cette action ne peut pas être annulée."
+                  confirmLabel="Clôturer"
+                  onConfirm={() => clotureForceeM.mutate({ id: importation.id })}
+                />
+              )}
 
               {/* Affecter aux commandes — visible uniquement au statut Reçue (3) */}
               {importation.statut === 3 && (
@@ -658,11 +750,14 @@ export default function ImportationDetailPage({
                     <TableHead>Article</TableHead>
                     <TableHead>Destination</TableHead>
                     <TableHead className="text-right">Qté</TableHead>
+                    {importation.statut >= 2 && (
+                      <TableHead className="text-right">Reçue</TableHead>
+                    )}
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
                     <TableHead>Affecté</TableHead>
-                    {importation.statut === 0 && (
+                    {(importation.statut === 0 || importation.statut === 2) && (
                       <TableHead className="text-right">Actions</TableHead>
                     )}
                   </TableRow>
@@ -671,14 +766,16 @@ export default function ImportationDetailPage({
                   {importation.lignesImportation.length === 0 && (
                     <TableRow>
                       <TableCell
-                        colSpan={importation.statut === 0 ? 8 : 7}
+                        colSpan={(importation.statut === 0 || importation.statut === 2) ? 9 : importation.statut >= 2 ? 8 : 7}
                         className="py-10 text-center text-muted-foreground"
                       >
                         Aucune ligne.{importation.statut === 0 && ' Ajoutez des articles.'}
                       </TableCell>
                     </TableRow>
                   )}
-                  {importation.lignesImportation.map((l) => (
+                  {importation.lignesImportation.map((l) => {
+                    const isComplete = l.statutLigne === 2 || l.statutLigne === 3
+                    return (
                     <TableRow key={l.id}>
                       <TableCell className="max-w-[280px] whitespace-normal">
                         <p className="break-words font-medium">
@@ -699,6 +796,13 @@ export default function ImportationDetailPage({
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
+                      {importation.statut >= 2 && (
+                        <TableCell className="text-right font-mono text-sm">
+                          <span className={isComplete ? 'text-green-600 font-medium' : Number(l.quantiteRecue) > 0 ? 'text-amber-600' : 'text-muted-foreground'}>
+                            {Number(l.quantiteRecue)} / {Number(l.quantite)}
+                          </span>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right font-mono">
                         {Number(l.prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
                         {l.devise ? ` ${l.devise}` : ''}
@@ -759,8 +863,31 @@ export default function ImportationDetailPage({
                           </PermissionGate>
                         </TableCell>
                       )}
+                      {importation.statut === 2 && (
+                        <TableCell className="text-right">
+                          {!isComplete ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setLigneEnReception(l)
+                                setReceptionDialogOpen(true)
+                              }}
+                            >
+                              <PackageCheck className="mr-1 size-3.5" />
+                              Réceptionner
+                            </Button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                              <PackageCheck className="size-3.5" />
+                              Complet
+                            </span>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -797,6 +924,13 @@ export default function ImportationDetailPage({
           setValiderDialogOpen(false)
         }}
         isPending={validerM.isPending}
+      />
+
+      <ReceptionPartielDialog
+        importationId={importationId}
+        ligne={ligneEnReception}
+        open={receptionDialogOpen}
+        onClose={() => setReceptionDialogOpen(false)}
       />
     </div>
   )

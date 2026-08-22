@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Info, ListOrdered, FileText, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,6 +37,8 @@ import {
   useSoumettreAchat,
   useConfirmerAchat,
   useLivrerAchat,
+  useRecevoirPartielAchat,
+  useClotureForceeAchat,
 } from '@/hooks/use-achats'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
@@ -292,6 +294,79 @@ function LigneDialog({
   )
 }
 
+// ── Dialog Réception partielle ────────────────────────────────
+function ReceptionPartielDialog({
+  achatId,
+  ligne,
+  open,
+  onClose,
+}: {
+  achatId: number
+  ligne: LigneAchat | null
+  open: boolean
+  onClose: () => void
+}) {
+  const recevoirM = useRecevoirPartielAchat()
+  const [quantite, setQuantite] = useState<number>(0)
+
+  useEffect(() => {
+    if (open && ligne) {
+      const reliquat = Number(ligne.quantite) - Number(ligne.quantiteRecue)
+      setQuantite(reliquat > 0 ? reliquat : 0)
+    }
+  }, [open, ligne])
+
+  if (!open || !ligne) return null
+
+  const reliquat = Number(ligne.quantite) - Number(ligne.quantiteRecue)
+
+  const onSubmit = async () => {
+    await recevoirM.mutateAsync({ achatId, ligneId: ligne.id, quantite })
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-[420px] rounded-lg bg-background p-6 shadow-xl">
+        <h3 className="mb-4 text-lg font-semibold">Réception partielle</h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Article&nbsp;: <span className="font-medium text-foreground">{ligne.article?.designation ?? `#${ligne.articleId}`}</span>
+        </p>
+        <p className="mb-2 text-sm text-muted-foreground">
+          Quantité commandée&nbsp;: <span className="font-mono">{Number(ligne.quantite)}</span>
+          &nbsp;— Déjà reçue&nbsp;: <span className="font-mono">{Number(ligne.quantiteRecue)}</span>
+        </p>
+        <div className="grid gap-2">
+          <Label htmlFor="quantite-reception">Quantité à recevoir <span className="text-destructive">*</span></Label>
+          <Input
+            id="quantite-reception"
+            type="number"
+            min="0.01"
+            max={reliquat}
+            step="0.01"
+            value={quantite}
+            onChange={(e) => setQuantite(Number(e.target.value))}
+          />
+          <p className="text-xs text-muted-foreground">Reliquat restant&nbsp;: {reliquat}</p>
+        </div>
+        <div className="mt-6 flex justify-end gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            Annuler
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={recevoirM.isPending || quantite <= 0 || quantite > reliquat}
+            onClick={onSubmit}
+          >
+            {recevoirM.isPending ? 'Enregistrement…' : 'Réceptionner'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Page détail achat ───────────────────────────────────────────
 export default function AchatDetailPage({
   params,
@@ -303,6 +378,8 @@ export default function AchatDetailPage({
   const router = useRouter()
   const [ligneDialogOpen, setLigneDialogOpen] = useState(false)
   const [ligneEnEdition, setLigneEnEdition] = useState<LigneAchat | null>(null)
+  const [receptionDialogOpen, setReceptionDialogOpen] = useState(false)
+  const [ligneEnReception, setLigneEnReception] = useState<LigneAchat | null>(null)
 
   const { data: achat, isLoading } = useGetAchat(achatId)
   const { data: plateformes } = useGetPlateformes()
@@ -313,6 +390,7 @@ export default function AchatDetailPage({
   const confirmerM = useConfirmerAchat()
   const livrerM = useLivrerAchat()
   const deleteLigneM = useDeleteLigneAchat()
+  const clotureForceeM = useClotureForceeAchat()
 
   const ouvrirAjoutLigne = () => {
     setLigneEnEdition(null)
@@ -382,6 +460,19 @@ export default function AchatDetailPage({
                 statutConfig={ACHAT_STATUT_CONFIG}
                 transition={getTransition()}
               />
+              {achat.statut === 2 && (
+                <ConfirmDialog
+                  trigger={
+                    <Button variant="outline" size="sm" disabled={clotureForceeM.isPending}>
+                      Clôturer
+                    </Button>
+                  }
+                  title="Clôturer cet achat ?"
+                  description="Cette action marquera les lignes non encore reçues comme clôturées et l'achat comme livré. Cette action ne peut pas être annulée."
+                  confirmLabel="Clôturer"
+                  onConfirm={() => clotureForceeM.mutate({ id: achat.id })}
+                />
+              )}
               <ConfirmDialog
                 trigger={
                   <Button
@@ -596,10 +687,13 @@ export default function AchatDetailPage({
                     <TableHead>Article</TableHead>
                     <TableHead>Destination</TableHead>
                     <TableHead className="text-right">Qté</TableHead>
+                    {achat.statut >= 2 && (
+                      <TableHead className="text-right">Reçue</TableHead>
+                    )}
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
-                    {achat.statut === 0 && (
+                    {(achat.statut === 0 || achat.statut === 2) && (
                       <TableHead className="text-right">Actions</TableHead>
                     )}
                   </TableRow>
@@ -608,14 +702,16 @@ export default function AchatDetailPage({
                   {achat.lignesAchat.length === 0 && (
                     <TableRow>
                       <TableCell
-                        colSpan={achat.statut === 0 ? 7 : 6}
+                        colSpan={achat.statut === 0 || achat.statut === 2 ? 8 :achat.statut >= 2 ? 7 : 6}
                         className="py-10 text-center text-muted-foreground"
                       >
                         Aucune ligne.{achat.statut === 0 && ' Ajoutez des articles.'}
                       </TableCell>
                     </TableRow>
                   )}
-                  {achat.lignesAchat.map((l) => (
+                  {achat.lignesAchat.map((l) => {
+                    const isComplete = l.statutLigne === 2 || l.statutLigne === 3
+                    return (
                     <TableRow key={l.id}>
                       <TableCell className="max-w-[280px] whitespace-normal">
                         <p className="break-words font-medium">{l.article?.designation ?? `#${l.articleId}`}</p>
@@ -627,6 +723,13 @@ export default function AchatDetailPage({
                         {destinationLabel(l, plateformes, commandes)}
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
+                      {achat.statut >= 2 && (
+                        <TableCell className="text-right font-mono text-sm">
+                          <span className={isComplete ? 'text-green-600 font-medium' : Number(l.quantiteRecue) > 0 ? 'text-amber-600' : 'text-muted-foreground'}>
+                            {Number(l.quantiteRecue)} / {Number(l.quantite)}
+                          </span>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right font-mono">
                         {Number(l.prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
                         {l.devise ? ` ${l.devise}` : ''}
@@ -674,8 +777,31 @@ export default function AchatDetailPage({
                           </PermissionGate>
                         </TableCell>
                       )}
+                      {achat.statut === 2 && (
+                        <TableCell className="text-right">
+                          {!isComplete ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setLigneEnReception(l)
+                                setReceptionDialogOpen(true)
+                              }}
+                            >
+                              <PackageCheck className="mr-1 size-3.5" />
+                              Réceptionner
+                            </Button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                              <PackageCheck className="size-3.5" />
+                              Complet
+                            </span>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -703,6 +829,12 @@ export default function AchatDetailPage({
         ligne={ligneEnEdition}
         open={ligneDialogOpen}
         onClose={() => setLigneDialogOpen(false)}
+      />
+      <ReceptionPartielDialog
+        achatId={achatId}
+        ligne={ligneEnReception}
+        open={receptionDialogOpen}
+        onClose={() => setReceptionDialogOpen(false)}
       />
     </div>
   )

@@ -159,3 +159,44 @@ export function useLivrerAchat() {
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la livraison'),
   })
 }
+
+export function useRecevoirPartielAchat() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      achatId,
+      ligneId,
+      quantite,
+    }: {
+      achatId: number
+      ligneId: number
+      quantite: number
+    }) =>
+      apiClient.post<{ message: string; ligneId: number }>(
+        `/api/Achat/${achatId}/LignesAchat/${ligneId}/RecevoirPartiel`,
+        { quantite },
+      ),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.achatId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['stocks'] })
+      toast.success('Réception partielle enregistrée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la réception partielle'),
+  })
+}
+
+export function useClotureForceeAchat() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, raison }: { id: number; raison?: string }) =>
+      apiClient.post<{ message: string }>(`/api/Achat/${id}/ClotureForcee`, { raison: raison ?? null }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: [...KEY, vars.id] })
+      qc.invalidateQueries({ queryKey: ['stocks'] })
+      toast.success('Achat clôturé avec succès')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la clôture'),
+  })
+}
