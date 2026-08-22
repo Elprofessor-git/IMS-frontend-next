@@ -60,7 +60,9 @@ import type { WorkflowStatutConfig, WorkflowTransition } from '@/components/ui/s
 import type { LigneAchat } from '@/types/achat'
 import type { Plateforme } from '@/types/plateforme'
 import type { CommandeClient } from '@/types/commande'
+import type { Client } from '@/types/client'
 import type { ApiError } from '@/types'
+import { libelleCommande } from '@/lib/labels'
 
 const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
@@ -77,29 +79,21 @@ const DESTINATION_LABELS: Record<number, string> = {
   3: 'Libre',
 }
 
-// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
-// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
-// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
-function libelleCommande(
-  id: number | null | undefined,
-  commandes: CommandeClient[] | undefined,
-): string | null {
-  const c = commandes?.find((c) => c.id === id)
-  if (!c) return id ? `#${id}` : null
-  const nom = c.titreCommande || c.client?.nom || null
-  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
-}
-
 function destinationLabel(
   l: LigneAchat,
   plateformes?: Plateforme[],
   commandes?: CommandeClient[],
+  clients?: Client[],
 ): string {
   const base = DESTINATION_LABELS[l.typeDestination] ?? `#${l.typeDestination}`
   if (l.typeDestination === 0 && l.commandeClientId) {
     return libelleCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
   }
-  if (l.typeDestination === 1 && l.clientId) return `Client #${l.clientId}`
+  if (l.typeDestination === 1 && l.clientId) {
+    const cl = clients?.find((c) => c.id === l.clientId)
+    const nom = cl?.nomEntreprise ?? cl?.nom
+    return nom ?? `Client #${l.clientId}`
+  }
   if (l.typeDestination === 2 && l.plateformeId) {
     const nom = plateformes?.find((p) => p.id === l.plateformeId)?.nom
     return nom ?? `Plf #${l.plateformeId}`
@@ -119,6 +113,7 @@ const EMPTY_LIGNE_FORM = {
   codeCouleur: null,
   taille: null,
   dimension: null,
+  unite: null,
   devise: 'EUR',
   descriptionSpecifique: null,
   notes: null,
@@ -136,6 +131,7 @@ function ligneToFormValues(l: LigneAchat): LigneAchatSchema {
     codeCouleur: l.codeCouleur,
     taille: l.taille,
     dimension: l.dimension,
+    unite: l.unite,
     devise: l.devise ?? 'EUR',
     descriptionSpecifique: l.descriptionSpecifique,
     notes: l.notes,
@@ -215,6 +211,10 @@ function LigneDialog({
                     if (dernierPrix > 0) {
                       setValue('prixUnitaire', dernierPrix)
                     }
+                    // Pré-remplissage de l'unité depuis l'article (modifiable manuellement)
+                    if (article?.unite) {
+                      setValue('unite', article.unite)
+                    }
                   }}
                 />
               )}
@@ -267,6 +267,13 @@ function LigneDialog({
             <div className="grid gap-2">
               <Label htmlFor="devise">Devise</Label>
               <Input id="devise" {...register('devise')} maxLength={10} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="unite">Unité</Label>
+              <Input id="unite" placeholder="m, kg, pièce…" {...register('unite')} />
             </div>
           </div>
 
@@ -393,6 +400,7 @@ export default function AchatDetailPage({
   const { data: achat, isLoading } = useGetAchat(achatId)
   const { data: plateformes } = useGetPlateformes()
   const { data: commandes } = useGetCommandes()
+  const { data: clients } = useGetClients()
   const updateMutation = useUpdateAchat()
   const deleteMutation = useDeleteAchat()
   const soumettreM = useSoumettreAchat()
@@ -638,7 +646,7 @@ export default function AchatDetailPage({
                     <dt className="text-muted-foreground">Commande client (en-tête)</dt>
                     <dd className="font-semibold">
                       {achat.commandeClient
-                        ? (achat.commandeClient.numeroCommande ?? `#${achat.commandeClientId}`)
+                        ? (achat.commandeClient.titreCommande ?? achat.commandeClient.numeroCommande ?? `#${achat.commandeClientId}`)
                         : achat.commandeClientId
                           ? `#${achat.commandeClientId}`
                           : '—'}
@@ -768,6 +776,7 @@ export default function AchatDetailPage({
                   <TableRow>
                     <TableHead>Article</TableHead>
                     <TableHead>Destination</TableHead>
+                    <TableHead>Unité</TableHead>
                     <TableHead className="text-right">Qté</TableHead>
                     {achat.statut >= 2 && (
                       <TableHead className="text-right">Reçue</TableHead>
@@ -784,7 +793,7 @@ export default function AchatDetailPage({
                   {achat.lignesAchat.length === 0 && (
                     <TableRow>
                       <TableCell
-                        colSpan={achat.statut === 0 || achat.statut === 2 ? 8 :achat.statut >= 2 ? 7 : 6}
+                        colSpan={achat.statut === 0 || achat.statut === 2 ? 9 :achat.statut >= 2 ? 8 : 7}
                         className="py-10 text-center text-muted-foreground"
                       >
                         Aucune ligne.{achat.statut === 0 && ' Ajoutez des articles.'}
@@ -802,7 +811,10 @@ export default function AchatDetailPage({
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {destinationLabel(l, plateformes, commandes)}
+                        {destinationLabel(l, plateformes, commandes, clients)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {l.unite ?? '—'}
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
                       {achat.statut >= 2 && (

@@ -29,6 +29,7 @@ import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_ACHAT } from '@/types/fournisseur'
 import type { Achat, LigneAchat } from '@/types/achat'
 import type { CommandeClient } from '@/types/commande'
+import { libelleCommande } from '@/lib/labels'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
@@ -142,19 +143,6 @@ function ligneMatcheArticle(l: LigneAchat, terme: string): boolean {
     (l.taille?.toLowerCase().includes(t) ?? false) ||
     (l.dimension?.toLowerCase().includes(t) ?? false)
   )
-}
-
-// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
-// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
-// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
-function libelleCommande(
-  id: number | null | undefined,
-  commandes: CommandeClient[] | undefined,
-): string | null {
-  const c = commandes?.find((c) => c.id === id)
-  if (!c) return id ? `#${id}` : null
-  const nom = c.titreCommande || c.client?.nom || null
-  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 // Commande destinataire d'une ligne : celle de la ligne, sinon celle de l'en-tête
@@ -458,6 +446,13 @@ export default function AchatsPage() {
         ),
       },
       {
+        key: 'unite',
+        header: 'Unité',
+        cell: ({ ligne }) => (
+          <span className="text-sm text-muted-foreground">{ligne?.unite ?? '—'}</span>
+        ),
+      },
+      {
         key: 'quantite',
         header: 'Quantité',
         cardPrimary: true,
@@ -541,6 +536,7 @@ export default function AchatsPage() {
         Couleur: ligne?.couleur ?? '',
         Taille: ligne?.taille ?? '',
         Dimension: ligne?.dimension ?? '',
+        Unité: ligne?.unite ?? '',
         Quantité: ligne?.quantite ?? 0,
         'Prix unitaire': ligne?.prixUnitaire ?? 0,
         'Montant ligne': ligne?.montantLigne ?? 0,

@@ -73,7 +73,7 @@ export function DestinationScopeFields<T extends FieldValues>({
 
   const effectiveLabel =
     effectif === 'Commande'
-      ? `${commande?.numeroCommande ?? `#${commandeClientId}`}`
+      ? `${commande?.titreCommande ?? commande?.numeroCommande ?? `#${commandeClientId}`}`
       : effectif === 'Marque'
         ? (client ? clientLabel(client) : `#${clientId}`)
         : effectif === 'Plateforme'
@@ -82,7 +82,7 @@ export function DestinationScopeFields<T extends FieldValues>({
 
   const secondary: string[] = []
   if (effectif !== 'Commande' && commande)
-    secondary.push(`Commande ${commande.numeroCommande}`)
+    secondary.push(`Commande ${commande.titreCommande ?? commande.numeroCommande}`)
   if (effectif !== 'Marque' && client) secondary.push(`Client ${clientLabel(client)}`)
   if (effectif !== 'Plateforme' && plateforme) secondary.push(`Plateforme ${plateforme.nom}`)
 

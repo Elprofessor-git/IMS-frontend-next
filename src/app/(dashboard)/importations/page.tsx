@@ -29,6 +29,7 @@ import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_IMPORTATION, MODE_EXPEDITION } from '@/types/fournisseur'
 import type { Importation, LigneImportation } from '@/types/importation'
 import type { CommandeClient } from '@/types/commande'
+import { libelleCommande } from '@/lib/labels'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
@@ -122,19 +123,6 @@ function ligneMatchePlateforme(
 function ligneMatcheCommande(l: LigneImportation, commandeId: string): boolean {
   if (!commandeId) return true
   return l.commandeClientId === Number(commandeId)
-}
-
-// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
-// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
-// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
-function libelleCommande(
-  id: number | null | undefined,
-  commandes: CommandeClient[] | undefined,
-): string | null {
-  const c = commandes?.find((c) => c.id === id)
-  if (!c) return id ? `#${id}` : null
-  const nom = c.titreCommande || c.client?.nom || null
-  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 function ligneMatcheArticle(l: LigneImportation, terme: string): boolean {
@@ -421,6 +409,13 @@ export default function ImportationsPage() {
         ),
       },
       {
+        key: 'unite',
+        header: 'Unité',
+        cell: ({ ligne }) => (
+          <span className="text-sm text-muted-foreground">{ligne?.unite ?? '—'}</span>
+        ),
+      },
+      {
         key: 'quantite',
         header: 'Quantité',
         cardPrimary: true,
@@ -510,6 +505,7 @@ export default function ImportationsPage() {
       Couleur: ligne?.couleur ?? '',
       Dimension: ligne?.dimension ?? '',
       Nature: ligne?.nature ?? '',
+      Unité: ligne?.unite ?? '',
       Quantité: ligne?.quantite ?? 0,
       'Prix unitaire': ligne?.prixUnitaire ?? 0,
       'Montant ligne': ligne?.montantLigne ?? 0,

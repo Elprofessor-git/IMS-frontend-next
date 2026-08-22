@@ -49,6 +49,7 @@ import {
 import { MODE_EXPEDITION } from '@/types/fournisseur'
 import type { LigneImportation } from '@/types/importation'
 import type { CommandeClient } from '@/types/commande'
+import { libelleCommande } from '@/lib/labels'
 import {
   ligneImportationSchema,
   toLigneImportationPayload,
@@ -70,19 +71,6 @@ const DESTINATION_LABEL_BY_NUMBER: Record<number, string> = {
   1: 'Marque',
   2: 'Plateforme',
   3: 'Stock libre',
-}
-
-// Libellé d'une commande pour un id donné : les utilisateurs identifient une commande
-// par son NOM (titre de la commande, sinon le client) — le numéro reste en secours.
-// Même logique partout : colonnes « Commande destinée », exports CSV et pages détail.
-function libelleCommande(
-  id: number | null | undefined,
-  commandes: CommandeClient[] | undefined,
-): string | null {
-  const c = commandes?.find((c) => c.id === id)
-  if (!c) return id ? `#${id}` : null
-  const nom = c.titreCommande || c.client?.nom || null
-  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 function destinationLabel(
@@ -155,6 +143,7 @@ const EMPTY_LIGNE_FORM = {
   codeCouleur: null,
   dimension: null,
   nature: null,
+  unite: null,
   devise: 'EUR',
   notes: null,
 }
@@ -172,6 +161,7 @@ function ligneToFormValues(l: LigneImportation): LigneImportationSchema {
     codeCouleur: l.codeCouleur,
     dimension: l.dimension,
     nature: l.nature,
+    unite: l.unite,
     devise: l.devise ?? 'EUR',
     notes: l.notes,
   }
@@ -199,6 +189,7 @@ function LigneDialog({
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<LigneImportationSchema>({
     resolver: zodResolver(ligneImportationSchema),
@@ -240,7 +231,13 @@ function LigneDialog({
               render={({ field }) => (
                 <ArticleSelect
                   value={field.value || null}
-                  onChange={(id) => field.onChange(id ?? 0)}
+                  onChange={(id, article) => {
+                    field.onChange(id ?? 0)
+                    // Pré-remplissage de l'unité depuis l'article (modifiable manuellement)
+                    if (article?.unite) {
+                      setValue('unite', article.unite)
+                    }
+                  }}
                 />
               )}
             />
@@ -301,6 +298,13 @@ function LigneDialog({
             <div className="grid gap-2">
               <Label htmlFor="imp-devise">Devise</Label>
               <Input id="imp-devise" {...register('devise')} maxLength={10} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="imp-unite">Unité</Label>
+              <Input id="imp-unite" placeholder="m, kg, pièce…" {...register('unite')} />
             </div>
           </div>
 
@@ -749,6 +753,7 @@ export default function ImportationDetailPage({
                   <TableRow>
                     <TableHead>Article</TableHead>
                     <TableHead>Destination</TableHead>
+                    <TableHead>Unité</TableHead>
                     <TableHead className="text-right">Qté</TableHead>
                     {importation.statut >= 2 && (
                       <TableHead className="text-right">Reçue</TableHead>
@@ -766,7 +771,7 @@ export default function ImportationDetailPage({
                   {importation.lignesImportation.length === 0 && (
                     <TableRow>
                       <TableCell
-                        colSpan={(importation.statut === 0 || importation.statut === 2) ? 9 : importation.statut >= 2 ? 8 : 7}
+                        colSpan={(importation.statut === 0 || importation.statut === 2) ? 10 : importation.statut >= 2 ? 9 : 8}
                         className="py-10 text-center text-muted-foreground"
                       >
                         Aucune ligne.{importation.statut === 0 && ' Ajoutez des articles.'}
@@ -794,6 +799,9 @@ export default function ImportationDetailPage({
                         <Badge variant={l.typeDestination === 3 ? 'secondary' : 'outline'}>
                           {destinationLabel(l, commandes)}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {l.unite ?? '—'}
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
                       {importation.statut >= 2 && (

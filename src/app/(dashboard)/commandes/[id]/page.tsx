@@ -379,6 +379,7 @@ export default function CommandeDetailPage({
   const [marge, setMarge] = useState('5')
   const [notesEdit, setNotesEdit] = useState('')
   const [dateLivraisonEdit, setDateLivraisonEdit] = useState('')
+  const [titreEdit, setTitreEdit] = useState('')
   const [tab, setTab] = useState('ressources')
 
   const { data: commande, isLoading } = useGetCommande(commandeId)
@@ -422,8 +423,8 @@ export default function CommandeDetailPage({
   return (
     <div>
       <PageHeader
-        title={commande.numeroCommande}
-        description={`${commande.client?.nom ?? `Client #${commande.clientId}`} · créée le ${new Date(commande.dateCommande).toLocaleDateString('fr-FR')}`}
+        title={commande.titreCommande ?? commande.numeroCommande}
+        description={`${commande.numeroCommande} · ${commande.client?.nom ?? `Client #${commande.clientId}`} · créée le ${new Date(commande.dateCommande).toLocaleDateString('fr-FR')}`}
         backHref="/commandes"
         action={
           <div className="flex flex-wrap items-center gap-2">
@@ -550,6 +551,15 @@ export default function CommandeDetailPage({
                   <CardHeader><CardTitle className="text-base">Modifier</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid gap-2">
+                      <Label htmlFor="edit-titre">Titre de la commande</Label>
+                      <Input
+                        id="edit-titre"
+                        defaultValue={commande.titreCommande ?? ''}
+                        onChange={(e) => setTitreEdit(e.target.value)}
+                        className="max-w-xs"
+                      />
+                    </div>
+                    <div className="grid gap-2">
                       <Label htmlFor="edit-livraison">Livraison souhaitée</Label>
                       <Input
                         id="edit-livraison"
@@ -573,9 +583,12 @@ export default function CommandeDetailPage({
                       disabled={updateMutation.isPending}
                       onClick={() =>
                         updateMutation.mutate({
-                          ...commande,
-                          dateLivraisonSouhaitee: dateLivraisonEdit || commande.dateLivraisonSouhaitee,
-                          notesSpeciales: notesEdit || commande.notesSpeciales,
+                          id: commandeId,
+                          data: {
+                            titreCommande: titreEdit || (commande.titreCommande ?? null),
+                            dateLivraisonSouhaitee: dateLivraisonEdit || commande.dateLivraisonSouhaitee,
+                            notesSpeciales: notesEdit || commande.notesSpeciales,
+                          },
                         })
                       }
                     >

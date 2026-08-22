@@ -46,6 +46,7 @@ export const ligneImportationSchema = z.object({
   codeCouleur: z.string().max(50).nullable(),
   dimension: z.string().max(100).nullable(),
   nature: z.string().max(100).nullable(),
+  unite: z.string().max(50).nullable(),
   devise: z.string().max(10).nullable(),
   notes: z.string().max(1000).nullable(),
 })
@@ -66,6 +67,7 @@ export function toLigneImportationPayload(data: LigneImportationSchema) {
     codeCouleur: data.codeCouleur || null,
     dimension: data.dimension || null,
     nature: data.nature || null,
+    unite: data.unite || null,
     devise: data.devise || null,
     notes: data.notes || null,
   }

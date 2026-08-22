@@ -57,6 +57,7 @@ const LIGNE_DEFAULTS = {
   dimension: null,
   nature: null,
   devise: null,
+  unite: null,
   notes: null,
 }
 
@@ -372,7 +373,12 @@ export default function NouvelleImportationPage() {
                                 render={({ field: f }) => (
                                   <ArticleSelect
                                     value={f.value || null}
-                                    onChange={(id) => f.onChange(id ?? 0)}
+                                    onChange={(id, article) => {
+                                      f.onChange(id ?? 0)
+                                      if (article?.unite) {
+                                        setValue(`lignes.${i}.unite`, article.unite)
+                                      }
+                                    }}
                                   />
                                 )}
                               />
@@ -434,8 +440,8 @@ export default function NouvelleImportationPage() {
                             </div>
                           </div>
 
-                          {/* Couleur · Dimension · Nature */}
-                          <div className="grid grid-cols-3 gap-3">
+                          {/* Couleur · Dimension · Nature · Unité */}
+                          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                             <div className="grid gap-2">
                               <Label>Couleur</Label>
                               <Input {...register(`lignes.${i}.couleur`)} />
@@ -447,6 +453,10 @@ export default function NouvelleImportationPage() {
                             <div className="grid gap-2">
                               <Label>Nature</Label>
                               <Input {...register(`lignes.${i}.nature`)} />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label>Unité</Label>
+                              <Input placeholder="m, kg, pièce…" {...register(`lignes.${i}.unite`)} />
                             </div>
                           </div>
 

@@ -120,3 +120,10 @@ export type CalculerResponse = {
   lignesCalculees: number
   toutSuffisant: boolean
 }
+
+// Payload PUT /api/CommandeClient/{id} : en-tête uniquement (3 champs modifiables si statut <= 1).
+export type UpdateCommandePayload = {
+  titreCommande: string | null
+  dateLivraisonSouhaitee: string | null
+  notesSpeciales: string | null
+}

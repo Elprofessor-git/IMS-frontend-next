@@ -55,6 +55,7 @@ const LIGNE_DEFAULTS = {
   taille: null,
   dimension: null,
   devise: null,
+  unite: null,
   descriptionSpecifique: null,
   notes: null,
 }
@@ -301,6 +302,10 @@ export default function NouvelAchatPage() {
                                     if (dernierPrix > 0) {
                                       setValue(`lignes.${i}.prixUnitaire`, dernierPrix)
                                     }
+                                    // Pré-remplissage de l'unité depuis l'article
+                                    if (article?.unite) {
+                                      setValue(`lignes.${i}.unite`, article.unite)
+                                    }
                                   }}
                                 />
                               )}
@@ -358,8 +363,8 @@ export default function NouvelAchatPage() {
                             </div>
                           </div>
 
-                          {/* Couleur · Taille */}
-                          <div className="grid grid-cols-2 gap-3">
+                          {/* Couleur · Taille · Unité */}
+                          <div className="grid grid-cols-3 gap-3">
                             <div className="grid gap-2">
                               <Label>Couleur</Label>
                               <Input {...register(`lignes.${i}.couleur`)} />
@@ -367,6 +372,10 @@ export default function NouvelAchatPage() {
                             <div className="grid gap-2">
                               <Label>Taille</Label>
                               <Input {...register(`lignes.${i}.taille`)} />
+                            </div>
+                            <div className="grid gap-2">
+                              <Label>Unité</Label>
+                              <Input placeholder="m, kg, pièce…" {...register(`lignes.${i}.unite`)} />
                             </div>
                           </div>
 

@@ -9,6 +9,7 @@ import type {
   ResultatCalcul,
   ValiderRessourcesResponse,
   CalculerResponse,
+  UpdateCommandePayload,
 } from '@/types/commande'
 import type { TailleItem, BomItem } from '@/lib/validations/commande'
 import type { ApiError } from '@/types'
@@ -46,8 +47,8 @@ export function useCreateCommande() {
 export function useUpdateCommande() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: CommandeClient) =>
-      apiClient.put<void>(`/api/CommandeClient/${data.id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: UpdateCommandePayload }) =>
+      apiClient.put<void>(`/api/CommandeClient/${id}`, data),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: [...KEY, vars.id] })

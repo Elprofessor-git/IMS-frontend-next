@@ -37,6 +37,7 @@ export const ligneAchatSchema = z.object({
   taille: z.string().max(50).nullable(),
   dimension: z.string().max(100).nullable(),
   devise: z.string().max(10).nullable(),
+  unite: z.string().max(50).nullable(),
   descriptionSpecifique: z.string().max(500).nullable(),
   notes: z.string().max(1000).nullable(),
 })
@@ -59,6 +60,7 @@ export function toLigneAchatPayload(data: LigneAchatSchema) {
     taille: data.taille || null,
     dimension: data.dimension || null,
     devise: data.devise || null,
+    unite: data.unite || null,
     descriptionSpecifique: data.descriptionSpecifique || null,
     notes: data.notes || null,
   }

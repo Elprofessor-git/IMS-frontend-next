@@ -27,6 +27,7 @@ export type LigneAchat = {
   devise: string | null
   descriptionSpecifique: string | null
   notes: string | null
+  unite: string | null
   dateCreation: string
   article: LigneAchatArticle | null
 }
@@ -39,6 +40,7 @@ export type AchatFournisseur = {
 export type AchatCommandeClient = {
   id: number
   numeroCommande: string | null
+  titreCommande: string | null
   client: {
     id: number
     nom: string

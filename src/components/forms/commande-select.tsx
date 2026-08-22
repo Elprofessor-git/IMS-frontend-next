@@ -7,10 +7,9 @@ import { cn } from '@/lib/utils'
 import type { CommandeClient } from '@/types/commande'
 
 export function commandeLabel(c: CommandeClient): string {
-  const parts: string[] = [c.numeroCommande]
-  if (c.client?.nom) parts.push(c.client.nom)
-  if (c.client?.plateforme?.nom) parts.push(c.client.plateforme.nom)
-  return parts.join(' — ')
+  const title = c.titreCommande || c.client?.nom || c.numeroCommande
+  const date = new Date(c.dateCommande).toLocaleDateString('fr-FR')
+  return `${title} — ${date}`
 }
 
 interface CommandeSelectProps {
@@ -108,7 +107,7 @@ export function CommandeSelect({
         <input
           autoFocus
           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground"
-          placeholder="Rechercher par n°, client, plateforme…"
+          placeholder="Rechercher par titre, client…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

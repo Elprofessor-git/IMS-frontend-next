@@ -25,6 +25,7 @@ export type LigneImportation = {
   montantLigne: number
   devise: string | null
   notes: string | null
+  unite: string | null
   estAffecteStock: boolean
   typeDestination: number // 0=Commande 1=Marque 2=Plateforme 3=StockLibre
   dateCreation: string
