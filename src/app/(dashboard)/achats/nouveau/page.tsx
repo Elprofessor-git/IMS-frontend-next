@@ -77,6 +77,7 @@ export default function NouvelAchatPage() {
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CreationSchema>({
     resolver: zodResolver(creationSchema),
@@ -292,7 +293,15 @@ export default function NouvelAchatPage() {
                               render={({ field: f }) => (
                                 <ArticleSelect
                                   value={f.value || null}
-                                  onChange={(id) => f.onChange(id ?? 0)}
+                                  onChange={(id, article) => {
+                                    f.onChange(id ?? 0)
+                                    // Pré-remplissage du prix avec le dernier prix connu
+                                    // de l'article (achats uniquement) — champ librement modifiable.
+                                    const dernierPrix = Number(article?.prixUnitaireMoyen ?? 0)
+                                    if (dernierPrix > 0) {
+                                      setValue(`lignes.${i}.prixUnitaire`, dernierPrix)
+                                    }
+                                  }}
                                 />
                               )}
                             />

@@ -48,6 +48,22 @@ export type ArticleStockTotal = {
   quantiteDisponible: number
 }
 
+// Source d'un prix : saisie manuelle, ligne d'achat ou ligne d'importation
+export type HistoriquePrixSource = 'Manuel' | 'LigneAchat' | 'LigneImportation'
+
+export type HistoriquePrixArticle = {
+  id: number
+  articleId: number
+  prixUnitaire: number
+  devise: string | null
+  dateEffective: string
+  source: HistoriquePrixSource
+  ligneAchatId: number | null
+  ligneImportationId: number | null
+  numeroAchat: string | null
+  referenceImportation: string | null
+}
+
 export type PaginatedResponse<T> = {
   data: T[]
   pageNumber: number

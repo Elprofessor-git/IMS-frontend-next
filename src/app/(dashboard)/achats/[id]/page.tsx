@@ -195,9 +195,15 @@ function LigneDialog({
               render={({ field }) => (
                 <ArticleSelect
                   value={field.value || null}
-                  onChange={(id) => {
+                  onChange={(id, article) => {
                     field.onChange(id ?? 0)
                     if (id) setValue('articleId', id)
+                    // Pré-remplissage du prix avec le dernier prix connu de l'article
+                    // (achats uniquement) — champ librement modifiable pour cette ligne.
+                    const dernierPrix = Number(article?.prixUnitaireMoyen ?? 0)
+                    if (dernierPrix > 0) {
+                      setValue('prixUnitaire', dernierPrix)
+                    }
                   }}
                 />
               )}

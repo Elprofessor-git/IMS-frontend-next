@@ -4,13 +4,21 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, UserCheck, UserX, Info, Warehouse } from 'lucide-react'
+import { AlertTriangle, UserCheck, UserX, Info, Warehouse, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shared/page-header'
@@ -24,7 +32,21 @@ import {
   useDesactiverArticle,
   useActiverArticle,
   useGetArticleStockTotal,
+  useGetHistoriquePrix,
 } from '@/hooks/use-articles'
+import type { HistoriquePrixSource } from '@/types/article'
+
+const SOURCE_PRIX_CONFIG: Record<HistoriquePrixSource, { label: string; badgeClassName?: string; badgeVariant?: 'secondary' }> = {
+  Manuel: { label: 'Manuel', badgeVariant: 'secondary' },
+  LigneAchat: {
+    label: 'Achat',
+    badgeClassName: 'border-green-200 bg-green-100 text-green-800',
+  },
+  LigneImportation: {
+    label: 'Import',
+    badgeClassName: 'border-blue-200 bg-blue-100 text-blue-800',
+  },
+}
 
 export default function EditArticlePage({
   params,
@@ -42,6 +64,11 @@ export default function EditArticlePage({
     isLoading: stockLoading,
     isError: stockError,
   } = useGetArticleStockTotal(articleId, activeTab === 'stock')
+
+  const {
+    data: historiquePrix,
+    isLoading: historiquePrixLoading,
+  } = useGetHistoriquePrix(articleId, activeTab === 'prix')
 
   const updateMutation = useUpdateArticle()
   const deleteMutation = useDeleteArticle()
@@ -165,6 +192,15 @@ export default function EditArticlePage({
             )}
             {isAlerte && (
               <span className="inline-block size-2 rounded-full bg-orange-500" />
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="prix" className="gap-1.5">
+            <History className="size-4" />
+            Historique des prix
+            {(historiquePrix?.length ?? 0) > 0 && (
+              <span className="ml-1.5 rounded-full bg-muted px-1.5 text-xs">
+                {historiquePrix!.length}
+              </span>
             )}
           </TabsTrigger>
         </TabsList>
@@ -343,6 +379,90 @@ export default function EditArticlePage({
               </div>
             </div>
           ) : null}
+        </TabsContent>
+
+        {/* ── ONGLET HISTORIQUE DES PRIX ── */}
+        <TabsContent value="prix">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                Historique des prix
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  — dernier prix connu :{' '}
+                  <span className="font-mono font-medium text-foreground">
+                    {Number(article.prixUnitaireMoyen).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                  </span>
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {historiquePrixLoading ? (
+                <Skeleton className="h-40 w-full" />
+              ) : !historiquePrix || historiquePrix.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Aucun prix enregistré — l&apos;historique se remplit à la création de lignes
+                  d&apos;achat/importation ou lors d&apos;une saisie manuelle du prix.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date effective</TableHead>
+                      <TableHead className="text-right">Prix unitaire</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Référence</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {historiquePrix.map((h) => {
+                      const sourceCfg = SOURCE_PRIX_CONFIG[h.source] ?? SOURCE_PRIX_CONFIG.Manuel
+                      return (
+                        <TableRow key={h.id}>
+                          <TableCell className="whitespace-nowrap text-sm">
+                            {new Date(h.dateEffective).toLocaleString('fr-FR', {
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            })}
+                          </TableCell>
+                          <TableCell className="text-right font-mono font-medium">
+                            {Number(h.prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                            {h.devise ? ` ${h.devise}` : ''}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={sourceCfg.badgeVariant ?? 'outline'}
+                              className={sourceCfg.badgeClassName}
+                            >
+                              {sourceCfg.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {h.ligneAchatId && h.numeroAchat ? (
+                              <a
+                                href={`/achats/${h.ligneAchatId}`}
+                                className="font-mono hover:underline"
+                              >
+                                {h.numeroAchat}
+                              </a>
+                            ) : h.ligneImportationId && h.referenceImportation ? (
+                              <a
+                                href={`/importations/${h.ligneImportationId}`}
+                                className="font-mono hover:underline"
+                              >
+                                {h.referenceImportation}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

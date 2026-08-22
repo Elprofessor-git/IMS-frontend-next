@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
-import type { Article, ArticleStockTotal, PaginatedResponse } from '@/types/article'
+import type { Article, ArticleStockTotal, HistoriquePrixArticle, PaginatedResponse } from '@/types/article'
 import type { ArticleSchema } from '@/lib/validations/article'
 import type { ApiError } from '@/types'
 
@@ -51,6 +51,15 @@ export function useGetArticleStockTotal(id: number, enabled: boolean) {
     queryFn: () => apiClient.get<ArticleStockTotal>(`/api/Article/${id}/StockTotal`),
     enabled: id > 0 && enabled,
     retry: false, // 404 = no stock, don't retry
+  })
+}
+
+// Historique des prix de l'article (dernier prix connu tracé à chaque achat/importation/saisie manuelle)
+export function useGetHistoriquePrix(articleId: number, enabled = true) {
+  return useQuery<HistoriquePrixArticle[]>({
+    queryKey: [...KEY, articleId, 'historiquePrix'],
+    queryFn: () => apiClient.get<HistoriquePrixArticle[]>(`/api/Article/${articleId}/HistoriquePrix`),
+    enabled: articleId > 0 && enabled,
   })
 }
 
