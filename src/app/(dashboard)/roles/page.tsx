@@ -62,13 +62,13 @@ const roleSchema = z.object({
 type RoleSchema = z.infer<typeof roleSchema>
 
 const PERM_ECRITURE = [
-  { key: 'peutGererStock', label: 'Gérer le stock' },
+  { key: 'peutValiderStock', label: 'Gérer le stock' },
   { key: 'peutGererCommandes', label: 'Gérer les commandes clients' },
   { key: 'peutGererTaches', label: 'Gérer les tâches' },
   { key: 'peutGererClients', label: 'Gérer les clients' },
   { key: 'peutGererFournisseurs', label: 'Gérer les fournisseurs' },
-  { key: 'peutGererAchats', label: 'Gérer les achats' },
-  { key: 'peutGererImportations', label: 'Gérer les importations' },
+  { key: 'peutConfirmerAchats', label: 'Gérer les achats' },
+  { key: 'peutValiderImportations', label: 'Gérer les importations' },
   { key: 'peutGererUtilisateurs', label: 'Gérer les utilisateurs' },
   { key: 'peutGererMouvements', label: 'Gérer les mouvements de stock' },
   { key: 'peutGererPlateformes', label: 'Gérer les plateformes' },
@@ -81,14 +81,11 @@ const PERM_LECTURE = [
   { key: 'peutVoirFournisseurs', label: 'Voir les fournisseurs' },
   { key: 'peutVoirPlateformes', label: 'Voir les plateformes' },
   { key: 'peutVoirTaches', label: 'Voir les tâches' },
+  { key: 'peutGererStock', label: 'Voir le stock' },
+  { key: 'peutGererAchats', label: 'Voir les achats' },
+  { key: 'peutGererImportations', label: 'Voir les importations' },
   { key: 'peutVoirUtilisateurs', label: 'Voir les utilisateurs' },
   { key: 'peutVoirRoles', label: 'Voir les rôles' },
-] as const
-
-const PERM_SPECIALES = [
-  { key: 'peutValiderStock', label: 'Valider les entrées de stock' },
-  { key: 'peutConfirmerAchats', label: 'Confirmer les achats' },
-  { key: 'peutValiderImportations', label: 'Valider les importations' },
 ] as const
 
 const DEFAULT_VALUES: RoleSchema = {
@@ -257,24 +254,6 @@ function RoleDialog({
                   ))}
                 </div>
               </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium">Permissions spéciales</p>
-                <div className="grid grid-cols-1 gap-2">
-                  {PERM_SPECIALES.map(({ key, label }) => (
-                    <div key={key} className="flex items-center gap-2">
-                      <Checkbox
-                        id={key}
-                        checked={watch(key)}
-                        onCheckedChange={(v) => setValue(key, !!v)}
-                      />
-                      <Label htmlFor={key} className="font-normal cursor-pointer">
-                        {label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </>
           )}
 
@@ -362,13 +341,13 @@ export default function RolesPage() {
 
             {roles?.map((r) => {
               const nbEcriture = [
-                r.peutGererStock,
+                r.peutValiderStock,
                 r.peutGererCommandes,
                 r.peutGererTaches,
                 r.peutGererClients,
                 r.peutGererFournisseurs,
-                r.peutGererAchats,
-                r.peutGererImportations,
+                r.peutConfirmerAchats,
+                r.peutValiderImportations,
                 r.peutGererUtilisateurs,
                 r.peutGererMouvements,
                 r.peutGererPlateformes,
@@ -381,6 +360,9 @@ export default function RolesPage() {
                 r.peutVoirFournisseurs,
                 r.peutVoirPlateformes,
                 r.peutVoirTaches,
+                r.peutGererStock,
+                r.peutGererAchats,
+                r.peutGererImportations,
                 r.peutVoirUtilisateurs,
                 r.peutVoirRoles,
               ].filter(Boolean).length
@@ -408,7 +390,7 @@ export default function RolesPage() {
                     {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 10`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 8`}
+                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 11`}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">
