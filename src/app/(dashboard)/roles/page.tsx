@@ -58,6 +58,8 @@ const roleSchema = z.object({
   peutValiderStock: z.boolean(),
   peutConfirmerAchats: z.boolean(),
   peutValiderImportations: z.boolean(),
+  peutVoirDashboard: z.boolean(),
+  peutVoirRapports: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
@@ -83,6 +85,8 @@ const PERM_LECTURE = [
   { key: 'peutGererStock', label: 'Voir le stock' },
   { key: 'peutGererAchats', label: 'Voir les achats' },
   { key: 'peutGererImportations', label: 'Voir les importations' },
+  { key: 'peutVoirDashboard', label: 'Voir le dashboard' },
+  { key: 'peutVoirRapports', label: 'Voir les rapports' },
 ] as const
 
 const DEFAULT_VALUES: RoleSchema = {
@@ -110,6 +114,8 @@ const DEFAULT_VALUES: RoleSchema = {
   peutValiderStock: false,
   peutConfirmerAchats: false,
   peutValiderImportations: false,
+  peutVoirDashboard: true,
+  peutVoirRapports: true,
 }
 
 function roleToSchema(r: Role): RoleSchema {
@@ -138,6 +144,8 @@ function roleToSchema(r: Role): RoleSchema {
     peutValiderStock: r.peutValiderStock,
     peutConfirmerAchats: r.peutConfirmerAchats,
     peutValiderImportations: r.peutValiderImportations,
+    peutVoirDashboard: r.peutVoirDashboard,
+    peutVoirRapports: r.peutVoirRapports,
   }
 }
 
@@ -202,6 +210,9 @@ function RoleDialog({
 
           <div className="space-y-3">
             <p className="text-sm font-medium">Administration</p>
+            <p className="text-xs text-muted-foreground">
+              Seul un administrateur peut gérer les rôles et les utilisateurs.
+            </p>
             <div className="flex items-center gap-2">
               <Checkbox
                 id="estAdministrateur"
@@ -359,6 +370,8 @@ export default function RolesPage() {
                 r.peutGererStock,
                 r.peutGererAchats,
                 r.peutGererImportations,
+                r.peutVoirDashboard,
+                r.peutVoirRapports,
               ].filter(Boolean).length
 
               return (
@@ -384,7 +397,7 @@ export default function RolesPage() {
                     {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 9`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 9`}
+                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 11`}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">
