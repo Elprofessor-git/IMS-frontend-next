@@ -12,6 +12,17 @@ export function commandeLabel(c: CommandeClient): string {
   return `${title} — ${date}`
 }
 
+export function CommandeLabel({ commande }: { commande: CommandeClient }) {
+  const title = commande.titreCommande || commande.client?.nom || commande.numeroCommande
+  const date = new Date(commande.dateCommande).toLocaleDateString('fr-FR')
+  return (
+    <span className="truncate">
+      {title}
+      <span className="ml-1.5 text-[13px] text-muted-foreground">{date}</span>
+    </span>
+  )
+}
+
 interface CommandeSelectProps {
   value: number | null
   onChange: (id: number | null) => void
@@ -89,7 +100,7 @@ export function CommandeSelect({
             !selected && 'text-muted-foreground',
           )}
         >
-          <span className="truncate">{selected ? commandeLabel(selected) : placeholder}</span>
+          <span className="truncate">{selected ? <CommandeLabel commande={selected} /> : placeholder}</span>
           <div className="ml-2 flex shrink-0 items-center gap-1">
             {value !== null && (
               <X
@@ -149,7 +160,7 @@ export function CommandeSelect({
                         value === c.id ? 'opacity-100' : 'opacity-0',
                       )}
                     />
-                    <span>{commandeLabel(c)}</span>
+                    <span><CommandeLabel commande={c} /></span>
                   </li>
                 ))}
               </ul>

@@ -800,7 +800,7 @@ export default function ImportationDetailPage({
                           {destinationLabel(l, commandes)}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="text-sm text-muted-foreground whitespace-normal break-words max-w-[160px]">
                         {l.unite ?? '—'}
                       </TableCell>
                       <TableCell className="text-right font-mono">{Number(l.quantite)}</TableCell>
