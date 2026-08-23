@@ -9,7 +9,6 @@ export type Plateforme = {
   estActif: boolean
   // Inclus uniquement en GET liste/détail (IgnoreCycles brise la ref circulaire côté clients)
   clients: PlateformeClientSummary[]
-  marques: never[]
 }
 
 // Sous-objet Client tel qu'il apparaît dans la réponse Plateforme

@@ -68,7 +68,7 @@ const IMPORTATION_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
 // TypeDestinationImportation (backend, sérialisé en nombre) : Commande=0, Marque=1, Plateforme=2, StockLibre=3
 const DESTINATION_LABEL_BY_NUMBER: Record<number, string> = {
   0: 'Commande',
-  1: 'Marque',
+  1: 'Client',
   2: 'Plateforme',
   3: 'Stock libre',
 }

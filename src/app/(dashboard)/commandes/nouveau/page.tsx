@@ -57,7 +57,6 @@ export default function NouvelleCommandePage() {
     resolver: zodResolver(createSchema),
     defaultValues: {
       clientId: 0,
-      marqueId: null,
       titreCommande: null,
       descriptionCommande: null,
       dateLivraisonSouhaitee: null,
@@ -160,18 +159,6 @@ export default function NouvelleCommandePage() {
                   {errors.clientId && (
                     <p className="text-sm text-destructive">{errors.clientId.message}</p>
                   )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="marqueId">ID Marque (optionnel)</Label>
-                  <Input
-                    id="marqueId"
-                    type="number"
-                    min="1"
-                    placeholder="Ex : 3"
-                    {...register('marqueId', {
-                      setValueAs: (v) => (v === '' || v === null ? null : Number(v)),
-                    })}
-                  />
                 </div>
               </div>
 

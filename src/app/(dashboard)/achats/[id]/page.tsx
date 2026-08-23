@@ -74,7 +74,7 @@ const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
 
 const DESTINATION_LABELS: Record<number, string> = {
   0: 'Commande',
-  1: 'Marque',
+  1: 'Client',
   2: 'Plateforme',
   3: 'Libre',
 }

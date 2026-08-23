@@ -187,11 +187,11 @@ export default function RapportAchatsPage() {
       .sort((a, b) => b.montant - a.montant)
   }, [filtered])
 
-  // ── Agrégation par marque (= commandeClient.client.nom) ───────────────────────
-  const byMarque = useMemo(() => {
+  // ── Agrégation par client (= commandeClient.client.nom) ───────────────────────
+  const byClient = useMemo(() => {
     const map = new Map<string, { nom: string; count: number; montant: number }>()
     for (const a of filtered) {
-      const nom = a.commandeClient?.client?.nom ?? 'Sans marque'
+      const nom = a.commandeClient?.client?.nom ?? 'Sans client'
       const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
       row.count++
       row.montant += a.montantTotal ?? 0
@@ -508,7 +508,7 @@ export default function RapportAchatsPage() {
                   <Skeleton key={i} className="h-8 w-full" />
                 ))}
               </div>
-            ) : byMarque.length === 0 ? (
+            ) : byClient.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 Aucune donnée pour cette période.
               </p>
@@ -516,14 +516,14 @@ export default function RapportAchatsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Marque / Client</TableHead>
+                    <TableHead>Client</TableHead>
                     <TableHead className="text-right">Achats</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead className="text-right">%</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {byMarque.map((row) => (
+                  {byClient.map((row) => (
                     <TableRow key={row.nom}>
                       <TableCell className="font-medium">{row.nom}</TableCell>
                       <TableCell className="text-right tabular-nums">{row.count}</TableCell>

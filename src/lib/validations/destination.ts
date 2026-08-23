@@ -1,8 +1,8 @@
 // Destination de ligne d'achat/importation : 3 niveaux combinables et indépendants
-// (Plateforme / Marque-Client / Commande client) + Stock libre (implicite si aucun niveau).
+// (Plateforme / Client / Commande client) + Stock libre (implicite si aucun niveau).
 // L'exclusivité N'EST PAS imposée par le formulaire : plusieurs FK peuvent être renseignées.
 // Le niveau "effectif" (celui compté dans ValiderRessources/Calculer, seaux a1/a2/a3)
-// est dérivé par priorité : Commande > Marque (client) > Plateforme > StockLibre.
+// est dérivé par priorité : Commande > Client > Plateforme > StockLibre.
 
 export type DestinationEnum = 'Commande' | 'Marque' | 'Plateforme' | 'StockLibre'
 
@@ -22,12 +22,12 @@ export const TYPE_DESTINATION: Record<DestinationEnum, number> = {
 
 export const DESTINATION_LABELS: Record<DestinationEnum, string> = {
   Commande: 'Commande',
-  Marque: 'Marque (client)',
+  Marque: 'Client',
   Plateforme: 'Plateforme',
   StockLibre: 'Stock libre',
 }
 
-// Niveau effectif selon la priorité Commande > Marque (client) > Plateforme > StockLibre.
+// Niveau effectif selon la priorité Commande > Client > Plateforme > StockLibre.
 // StockLibre = aucun niveau renseigné (reste exclusif des 3 autres par construction).
 export function destinationEffectif(v: ScopeValues): DestinationEnum {
   if (v.commandeClientId != null) return 'Commande'

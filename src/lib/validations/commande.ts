@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 export const commandeSchema = z.object({
   clientId: z.number().int().min(1, 'Client requis'),
-  marqueId: z.number().int().nullable(),
   titreCommande: z.string().max(200).nullable(),
   descriptionCommande: z.string().max(1000).nullable(),
   dateLivraisonSouhaitee: z.string().nullable(),
@@ -17,7 +16,6 @@ export type CommandeSchema = z.infer<typeof commandeSchema>
 export function toCommandePayload(data: CommandeSchema) {
   return {
     ...data,
-    marqueId: data.marqueId || null,
     titreCommande: data.titreCommande || null,
     descriptionCommande: data.descriptionCommande || null,
     dateLivraisonSouhaitee: data.dateLivraisonSouhaitee || null,

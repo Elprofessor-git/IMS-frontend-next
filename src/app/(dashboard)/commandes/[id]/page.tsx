@@ -491,12 +491,6 @@ export default function CommandeDetailPage({
                     <dt className="text-muted-foreground">Client</dt>
                     <dd className="font-semibold">{commande.client?.nom ?? `#${commande.clientId}`}</dd>
                   </div>
-                  {commande.marque && (
-                    <div>
-                      <dt className="text-muted-foreground">Marque</dt>
-                      <dd className="font-semibold">{commande.marque.nom}</dd>
-                    </div>
-                  )}
                   <div>
                     <dt className="text-muted-foreground">Statut</dt>
                     <dd>{STATUT_COMMANDE[commande.statut] ?? commande.statut}</dd>

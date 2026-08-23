@@ -111,10 +111,10 @@ export function DestinationScopeFields<T extends FieldValues>({
         />
       </div>
 
-      {/* Marque (client) */}
+      {/* Client */}
       <div className="grid gap-1.5">
         <Label className="text-muted-foreground">
-          Marque / Client <span>(optionnel)</span>
+          Client <span>(optionnel)</span>
         </Label>
         <Controller
           name={names.clientId}

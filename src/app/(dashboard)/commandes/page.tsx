@@ -76,7 +76,7 @@ export default function CommandesPage() {
             c.numeroCommande.toLowerCase().includes(t) ||
             (c.titreCommande?.toLowerCase().includes(t) ?? false) ||
             (c.client?.nom?.toLowerCase().includes(t) ?? false) ||
-            (c.marque?.nom?.toLowerCase().includes(t) ?? false)
+            (c.client?.plateforme?.nom?.toLowerCase().includes(t) ?? false)
           )
         }),
       ]),
@@ -103,14 +103,11 @@ export default function CommandesPage() {
       },
       {
         key: 'client',
-        header: 'Client / Marque',
+        header: 'Client',
         cardPrimary: true,
         cell: (c) => (
           <div className="text-sm">
             <p className="font-medium">{c.client?.nom ?? `#${c.clientId}`}</p>
-            {c.marque && (
-              <p className="text-muted-foreground">{c.marque.nom}</p>
-            )}
           </div>
         ),
       },
@@ -203,7 +200,7 @@ export default function CommandesPage() {
         <div className="grid w-full max-w-sm gap-1.5">
           <Label>Recherche</Label>
           <Input
-            placeholder="N° commande, titre, client, marque…"
+            placeholder="N° commande, titre, client, plateforme…"
             value={recherche}
             onChange={(e) => setRecherche(e.target.value)}
           />

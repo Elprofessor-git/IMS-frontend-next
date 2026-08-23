@@ -13,15 +13,6 @@ export const TYPE_BESOIN: Record<number, string> = {
   3: 'Autre',
 }
 
-export type Marque = {
-  id: number
-  nom: string
-  plateformeId: number
-  description: string | null
-  estActive: boolean
-  plateforme: { id: number; nom: string } | null
-}
-
 export type BesoinCommande = {
   id: number
   commandeClientId: number
@@ -82,7 +73,6 @@ export type CommandeClient = {
   id: number
   numeroCommande: string
   clientId: number
-  marqueId: number | null
   titreCommande: string | null
   descriptionCommande: string | null
   dateCommande: string
@@ -98,7 +88,6 @@ export type CommandeClient = {
   creePar: string | null
   modifiePar: string | null
   client: { id: number; nom: string; plateforme?: { id: number; nom: string } | null } | null
-  marque: Marque | null
   besoins: BesoinCommande[]
   configTailles: ConfigTaille[]
   bomLignes: BomLigne[]
