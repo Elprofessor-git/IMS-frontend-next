@@ -496,10 +496,10 @@ export default function RapportAchatsPage() {
           </CardContent>
         </Card>
 
-        {/* Par marque / client */}
+        {/* Par client */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Par marque / client</CardTitle>
+            <CardTitle className="text-base">Par client</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (

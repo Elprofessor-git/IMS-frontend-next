@@ -9,7 +9,7 @@ const CARDS = [
     href: '/rapports/achats',
     icon: ShoppingCart,
     title: "Rapport d'achats",
-    description: 'Analyse des achats par fournisseur, statut, marque et plateforme.',
+    description: 'Analyse des achats par fournisseur, statut, client et plateforme.',
   },
   {
     href: '/rapports/analytics',
