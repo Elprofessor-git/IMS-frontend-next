@@ -69,7 +69,6 @@ const PERM_ECRITURE = [
   { key: 'peutGererFournisseurs', label: 'Gérer les fournisseurs' },
   { key: 'peutConfirmerAchats', label: 'Gérer les achats' },
   { key: 'peutValiderImportations', label: 'Gérer les importations' },
-  { key: 'peutGererUtilisateurs', label: 'Gérer les utilisateurs' },
   { key: 'peutGererMouvements', label: 'Gérer les mouvements de stock' },
   { key: 'peutGererPlateformes', label: 'Gérer les plateformes' },
 ] as const
@@ -84,8 +83,6 @@ const PERM_LECTURE = [
   { key: 'peutGererStock', label: 'Voir le stock' },
   { key: 'peutGererAchats', label: 'Voir les achats' },
   { key: 'peutGererImportations', label: 'Voir les importations' },
-  { key: 'peutVoirUtilisateurs', label: 'Voir les utilisateurs' },
-  { key: 'peutVoirRoles', label: 'Voir les rôles' },
 ] as const
 
 const DEFAULT_VALUES: RoleSchema = {
@@ -348,7 +345,6 @@ export default function RolesPage() {
                 r.peutGererFournisseurs,
                 r.peutConfirmerAchats,
                 r.peutValiderImportations,
-                r.peutGererUtilisateurs,
                 r.peutGererMouvements,
                 r.peutGererPlateformes,
               ].filter(Boolean).length
@@ -363,8 +359,6 @@ export default function RolesPage() {
                 r.peutGererStock,
                 r.peutGererAchats,
                 r.peutGererImportations,
-                r.peutVoirUtilisateurs,
-                r.peutVoirRoles,
               ].filter(Boolean).length
 
               return (
@@ -387,10 +381,10 @@ export default function RolesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 10`}
+                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 9`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 11`}
+                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 9`}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">
