@@ -97,7 +97,7 @@ export function useRegisterUser() {
       prenom?: string
       email: string
       password: string
-      role: string
+      roleId?: number
     }) => apiClient.post<void>('/api/Auth/register', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })

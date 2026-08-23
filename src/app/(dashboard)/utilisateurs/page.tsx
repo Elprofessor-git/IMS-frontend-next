@@ -49,7 +49,7 @@ const EMPTY_FORM = {
   prenom: '',
   email: '',
   password: '',
-  role: 'User',
+  roleId: '0',
 }
 
 export default function UtilisateursPage() {
@@ -81,7 +81,7 @@ export default function UtilisateursPage() {
         prenom: form.prenom || undefined,
         email: form.email,
         password: form.password,
-        role: form.role,
+        roleId: parseInt(form.roleId) || undefined,
       },
       {
         onSuccess: () => setDialogOpen(false),
@@ -292,14 +292,18 @@ export default function UtilisateursPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="role">Rôle système *</Label>
-              <Select value={form.role} onValueChange={(v) => handleField('role', v)}>
+              <Label htmlFor="role">Rôle personnalisé *</Label>
+              <Select value={form.roleId} onValueChange={(v) => handleField('roleId', v)}>
                 <SelectTrigger id="role">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="User">Utilisateur</SelectItem>
-                  <SelectItem value="Admin">Administrateur</SelectItem>
+                  <SelectItem value="0">Aucun rôle</SelectItem>
+                  {roles?.filter(r => r.estActif).map((r) => (
+                    <SelectItem key={r.id} value={r.id.toString()}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

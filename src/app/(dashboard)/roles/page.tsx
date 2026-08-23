@@ -46,22 +46,43 @@ const roleSchema = z.object({
   peutGererImportations: z.boolean(),
   peutGererUtilisateurs: z.boolean(),
   peutGererMouvements: z.boolean(),
+  peutGererPlateformes: z.boolean(),
+  peutVoirMouvements: z.boolean(),
+  peutVoirCommandes: z.boolean(),
+  peutVoirClients: z.boolean(),
+  peutVoirFournisseurs: z.boolean(),
+  peutVoirPlateformes: z.boolean(),
+  peutVoirTaches: z.boolean(),
+  peutVoirUtilisateurs: z.boolean(),
+  peutVoirRoles: z.boolean(),
   peutValiderStock: z.boolean(),
   peutConfirmerAchats: z.boolean(),
   peutValiderImportations: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
-const PERM_MODULES = [
+const PERM_ECRITURE = [
   { key: 'peutGererStock', label: 'Gérer le stock' },
-  { key: 'peutGererCommandes', label: 'Gérer les commandes' },
+  { key: 'peutGererCommandes', label: 'Gérer les commandes clients' },
   { key: 'peutGererTaches', label: 'Gérer les tâches' },
   { key: 'peutGererClients', label: 'Gérer les clients' },
   { key: 'peutGererFournisseurs', label: 'Gérer les fournisseurs' },
   { key: 'peutGererAchats', label: 'Gérer les achats' },
   { key: 'peutGererImportations', label: 'Gérer les importations' },
   { key: 'peutGererUtilisateurs', label: 'Gérer les utilisateurs' },
-  { key: 'peutGererMouvements', label: 'Gérer les mouvements' },
+  { key: 'peutGererMouvements', label: 'Gérer les mouvements de stock' },
+  { key: 'peutGererPlateformes', label: 'Gérer les plateformes' },
+] as const
+
+const PERM_LECTURE = [
+  { key: 'peutVoirMouvements', label: 'Voir les mouvements' },
+  { key: 'peutVoirCommandes', label: 'Voir les commandes' },
+  { key: 'peutVoirClients', label: 'Voir les clients' },
+  { key: 'peutVoirFournisseurs', label: 'Voir les fournisseurs' },
+  { key: 'peutVoirPlateformes', label: 'Voir les plateformes' },
+  { key: 'peutVoirTaches', label: 'Voir les tâches' },
+  { key: 'peutVoirUtilisateurs', label: 'Voir les utilisateurs' },
+  { key: 'peutVoirRoles', label: 'Voir les rôles' },
 ] as const
 
 const PERM_SPECIALES = [
@@ -83,6 +104,15 @@ const DEFAULT_VALUES: RoleSchema = {
   peutGererImportations: false,
   peutGererUtilisateurs: false,
   peutGererMouvements: false,
+  peutGererPlateformes: false,
+  peutVoirMouvements: false,
+  peutVoirCommandes: false,
+  peutVoirClients: false,
+  peutVoirFournisseurs: false,
+  peutVoirPlateformes: false,
+  peutVoirTaches: false,
+  peutVoirUtilisateurs: false,
+  peutVoirRoles: false,
   peutValiderStock: false,
   peutConfirmerAchats: false,
   peutValiderImportations: false,
@@ -102,6 +132,15 @@ function roleToSchema(r: Role): RoleSchema {
     peutGererImportations: r.peutGererImportations,
     peutGererUtilisateurs: r.peutGererUtilisateurs,
     peutGererMouvements: r.peutGererMouvements,
+    peutGererPlateformes: r.peutGererPlateformes,
+    peutVoirMouvements: r.peutVoirMouvements,
+    peutVoirCommandes: r.peutVoirCommandes,
+    peutVoirClients: r.peutVoirClients,
+    peutVoirFournisseurs: r.peutVoirFournisseurs,
+    peutVoirPlateformes: r.peutVoirPlateformes,
+    peutVoirTaches: r.peutVoirTaches,
+    peutVoirUtilisateurs: r.peutVoirUtilisateurs,
+    peutVoirRoles: r.peutVoirRoles,
     peutValiderStock: r.peutValiderStock,
     peutConfirmerAchats: r.peutConfirmerAchats,
     peutValiderImportations: r.peutValiderImportations,
@@ -149,7 +188,7 @@ function RoleDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editing ? 'Modifier le rôle' : 'Nouveau rôle'}</DialogTitle>
         </DialogHeader>
@@ -184,9 +223,27 @@ function RoleDialog({
           {!isAdmin && (
             <>
               <div className="space-y-3">
-                <p className="text-sm font-medium">Modules</p>
+                <p className="text-sm font-medium">Écriture (Gérer)</p>
                 <div className="grid grid-cols-1 gap-2">
-                  {PERM_MODULES.map(({ key, label }) => (
+                  {PERM_ECRITURE.map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={key}
+                        checked={watch(key)}
+                        onCheckedChange={(v) => setValue(key, !!v)}
+                      />
+                      <Label htmlFor={key} className="font-normal cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Lecture (Voir)</p>
+                <div className="grid grid-cols-1 gap-2">
+                  {PERM_LECTURE.map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-2">
                       <Checkbox
                         id={key}
@@ -275,7 +332,8 @@ export default function RolesPage() {
               <TableHead>Nom</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead>Modules autorisés</TableHead>
+              <TableHead>Écriture</TableHead>
+              <TableHead>Lecture</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -283,7 +341,7 @@ export default function RolesPage() {
             {isLoading &&
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 5 }).map((_, j) => (
+                  {Array.from({ length: 6 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -293,7 +351,7 @@ export default function RolesPage() {
 
             {!isLoading && roles?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="p-0">
+                <TableCell colSpan={6} className="p-0">
                   <EmptyState
                     title="Aucun rôle configuré"
                     description="Créez un premier rôle et assignez les permissions métier."
@@ -303,7 +361,7 @@ export default function RolesPage() {
             )}
 
             {roles?.map((r) => {
-              const nbModules = [
+              const nbEcriture = [
                 r.peutGererStock,
                 r.peutGererCommandes,
                 r.peutGererTaches,
@@ -313,6 +371,18 @@ export default function RolesPage() {
                 r.peutGererImportations,
                 r.peutGererUtilisateurs,
                 r.peutGererMouvements,
+                r.peutGererPlateformes,
+              ].filter(Boolean).length
+
+              const nbLecture = [
+                r.peutVoirMouvements,
+                r.peutVoirCommandes,
+                r.peutVoirClients,
+                r.peutVoirFournisseurs,
+                r.peutVoirPlateformes,
+                r.peutVoirTaches,
+                r.peutVoirUtilisateurs,
+                r.peutVoirRoles,
               ].filter(Boolean).length
 
               return (
@@ -335,7 +405,10 @@ export default function RolesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbModules} / 9`}
+                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 10`}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 8`}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">
