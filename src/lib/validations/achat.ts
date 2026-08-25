@@ -32,6 +32,7 @@ export const ligneAchatSchema = z.object({
   commandeClientId: z.number().int().nullable(),
   clientId: z.number().int().nullable(),
   plateformeId: z.number().int().nullable(),
+  commandeClientIds: z.array(z.number().int()).nullable().optional(),
   couleur: z.string().max(50).nullable(),
   codeCouleur: z.string().max(50).nullable(),
   taille: z.string().max(50).nullable(),
@@ -51,10 +52,15 @@ export type LigneAchatSchema = z.infer<typeof ligneAchatSchema>
 export function toLigneAchatPayload(data: LigneAchatSchema) {
   return {
     ...data,
-    typeDestination: TYPE_DESTINATION[destinationEffectif(data)],
+    typeDestination: TYPE_DESTINATION[destinationEffectif({
+      ...data,
+      commandeClientIds: data.commandeClientIds ?? null,
+    })],
     commandeClientId: data.commandeClientId || null,
     clientId: data.clientId || null,
     plateformeId: data.plateformeId || null,
+    commandeClientIds: (data.commandeClientIds && data.commandeClientIds.length >= 2)
+      ? data.commandeClientIds : null,
     couleur: data.couleur || null,
     codeCouleur: data.codeCouleur || null,
     taille: data.taille || null,

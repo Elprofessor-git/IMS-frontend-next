@@ -71,6 +71,7 @@ const DESTINATION_LABEL_BY_NUMBER: Record<number, string> = {
   1: 'Client',
   2: 'Plateforme',
   3: 'Stock libre',
+  4: 'Groupe de commandes',
 }
 
 function destinationLabel(
@@ -138,6 +139,7 @@ const EMPTY_LIGNE_FORM = {
   commandeClientId: null,
   clientId: null,
   plateformeId: null,
+  commandeClientIds: [],
   designation: null,
   couleur: null,
   codeCouleur: null,
@@ -156,6 +158,7 @@ function ligneToFormValues(l: LigneImportation): LigneImportationSchema {
     commandeClientId: l.commandeClientId,
     clientId: l.clientId,
     plateformeId: l.plateformeId,
+    commandeClientIds: [],
     designation: l.designation,
     couleur: l.couleur,
     codeCouleur: l.codeCouleur,

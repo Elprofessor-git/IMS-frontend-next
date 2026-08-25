@@ -41,6 +41,7 @@ export const ligneImportationSchema = z.object({
   commandeClientId: z.number().int().nullable(),
   clientId: z.number().int().nullable(),
   plateformeId: z.number().int().nullable(),
+  commandeClientIds: z.array(z.number().int()).nullable().optional(),
   designation: z.string().max(200).nullable(),
   couleur: z.string().max(50).nullable(),
   codeCouleur: z.string().max(50).nullable(),
@@ -58,10 +59,15 @@ export type LigneImportationSchema = z.infer<typeof ligneImportationSchema>
 export function toLigneImportationPayload(data: LigneImportationSchema) {
   return {
     ...data,
-    typeDestination: TYPE_DESTINATION[destinationEffectif(data)],
+    typeDestination: TYPE_DESTINATION[destinationEffectif({
+      ...data,
+      commandeClientIds: data.commandeClientIds ?? null,
+    })],
     commandeClientId: data.commandeClientId || null,
     clientId: data.clientId || null,
     plateformeId: data.plateformeId || null,
+    commandeClientIds: (data.commandeClientIds && data.commandeClientIds.length >= 2)
+      ? data.commandeClientIds : null,
     designation: data.designation || null,
     couleur: data.couleur || null,
     codeCouleur: data.codeCouleur || null,

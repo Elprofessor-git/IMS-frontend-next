@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { CommandeSelect } from '@/components/forms/commande-select'
+import { CommandesMultiSelect } from '@/components/forms/commandes-multi-select'
 import {
   destinationEffectif,
   DESTINATION_LABELS,
@@ -19,7 +20,7 @@ import type { CommandeClient } from '@/types/commande'
 import type { Client } from '@/types/client'
 import type { Plateforme } from '@/types/plateforme'
 
-type ScopeKey = 'commandeClientId' | 'clientId' | 'plateformeId'
+type ScopeKey = 'commandeClientIds' | 'commandeClientId' | 'clientId' | 'plateformeId'
 
 function clientLabel(c: Pick<Client, 'nom' | 'prenom' | 'nomEntreprise'>): string {
   return c.nomEntreprise ?? `${c.nom} ${c.prenom ?? ''}`.trim()
@@ -28,6 +29,7 @@ function clientLabel(c: Pick<Client, 'nom' | 'prenom' | 'nomEntreprise'>): strin
 function scopePaths<T extends FieldValues>(path?: string): Record<ScopeKey, Path<T>> {
   const prefix = path && path.length > 0 ? `${path}.` : ''
   return {
+    commandeClientIds: `${prefix}commandeClientIds` as Path<T>,
     commandeClientId: `${prefix}commandeClientId` as Path<T>,
     clientId: `${prefix}clientId` as Path<T>,
     plateformeId: `${prefix}plateformeId` as Path<T>,
@@ -51,6 +53,10 @@ export function DestinationScopeFields<T extends FieldValues>({
 }: DestinationScopeFieldsProps<T>) {
   const names = scopePaths<T>(path)
 
+  const commandeClientIds = useWatch({ control, name: names.commandeClientIds }) as
+    | number[]
+    | null
+    | undefined
   const commandeClientId = useWatch({ control, name: names.commandeClientId }) as
     | number
     | null
@@ -62,25 +68,36 @@ export function DestinationScopeFields<T extends FieldValues>({
     | undefined
 
   const effectif = destinationEffectif({
+    commandeClientIds: commandeClientIds ?? null,
     commandeClientId: commandeClientId ?? null,
     clientId: clientId ?? null,
     plateformeId: plateformeId ?? null,
   })
 
+  const groupeLabel = commandeClientIds && commandeClientIds.length >= 2
+    ? commandeClientIds.map(id => {
+        const c = commandes?.find(cc => cc.id === id)
+        return c ? (c.titreCommande ?? c.numeroCommande ?? `#${id}`) : `#${id}`
+      }).join(', ')
+    : null
   const commande = commandes?.find((c) => c.id === commandeClientId)
   const client = clients?.find((c) => c.id === clientId)
   const plateforme = plateformes?.find((p) => p.id === plateformeId)
 
   const effectiveLabel =
-    effectif === 'Commande'
-      ? `${commande?.titreCommande ?? commande?.numeroCommande ?? `#${commandeClientId}`}`
-      : effectif === 'Marque'
-        ? (client ? clientLabel(client) : `#${clientId}`)
-        : effectif === 'Plateforme'
-          ? (plateforme?.nom ?? `#${plateformeId}`)
-          : ''
+    effectif === 'GroupeCommandes'
+      ? (groupeLabel ?? `Groupe`)
+      : effectif === 'Commande'
+        ? `${commande?.titreCommande ?? commande?.numeroCommande ?? `#${commandeClientId}`}`
+        : effectif === 'Marque'
+          ? (client ? clientLabel(client) : `#${clientId}`)
+          : effectif === 'Plateforme'
+            ? (plateforme?.nom ?? `#${plateformeId}`)
+            : ''
 
   const secondary: string[] = []
+  if (effectif !== 'GroupeCommandes' && commandeClientIds && commandeClientIds.length >= 2)
+    secondary.push(`Groupe [${groupeLabel}]`)
   if (effectif !== 'Commande' && commande)
     secondary.push(`Commande ${commande.titreCommande ?? commande.numeroCommande}`)
   if (effectif !== 'Marque' && client) secondary.push(`Client ${clientLabel(client)}`)
@@ -91,6 +108,25 @@ export function DestinationScopeFields<T extends FieldValues>({
       <p className="text-xs font-medium text-muted-foreground">
         Destination (niveaux combinables et indépendants)
       </p>
+
+      {/* Groupe de commandes */}
+      <div className="grid gap-1.5">
+        <Label className="text-muted-foreground">
+          Groupe de commandes <span>(optionnel — multi-sélection ≥ 2)</span>
+        </Label>
+        <Controller
+          name={names.commandeClientIds}
+          control={control}
+          render={({ field: f }) => (
+            <CommandesMultiSelect
+              value={f.value ?? []}
+              onChange={(ids) => f.onChange(ids)}
+              commandes={commandes ?? []}
+              placeholder="Aucune commande — sélectionner ≥ 2 commandes…"
+            />
+          )}
+        />
+      </div>
 
       {/* Commande client */}
       <div className="grid gap-1.5">
@@ -175,7 +211,7 @@ export function DestinationScopeFields<T extends FieldValues>({
           <span className="font-medium text-muted-foreground">Niveau effectif :</span>
           <Badge
             variant={
-              effectif === 'Commande'
+              effectif === 'GroupeCommandes' || effectif === 'Commande'
                 ? 'default'
                 : effectif === 'StockLibre'
                   ? 'secondary'
@@ -189,7 +225,7 @@ export function DestinationScopeFields<T extends FieldValues>({
         </div>
         {effectif === 'StockLibre' ? (
           <p className="mt-1 text-muted-foreground">
-            Aucun niveau renseigné — la ligne est en stock libre (hors seaux de couverture a1/a2/a3).
+            Aucun niveau renseigné — la ligne est en stock libre (hors couverture physique).
           </p>
         ) : secondary.length > 0 ? (
           <p className="mt-1 text-muted-foreground">

@@ -50,6 +50,7 @@ const LIGNE_DEFAULTS = {
   commandeClientId: null,
   clientId: null,
   plateformeId: null,
+  commandeClientIds: [],
   couleur: null,
   codeCouleur: null,
   taille: null,
