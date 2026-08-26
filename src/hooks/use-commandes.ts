@@ -103,6 +103,7 @@ export function useSetTailles() {
         tailles,
       ),
     onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: [...KEY, vars.commandeId] })
       toast.success('Tailles enregistrées')
     },
@@ -120,6 +121,7 @@ export function useSetBom() {
         bom,
       ),
     onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: [...KEY, vars.commandeId] })
       toast.success('BOM enregistrée')
     },
