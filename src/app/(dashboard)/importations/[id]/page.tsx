@@ -392,12 +392,17 @@ function ReceptionPartielDialog({
             id="quantite-reception"
             type="number"
             min="0.01"
-            max={reliquat}
             step="0.01"
             value={quantite}
             onChange={(e) => setQuantite(Number(e.target.value))}
           />
-          <p className="text-xs text-muted-foreground">Reliquat restant&nbsp;: {reliquat}</p>
+          {quantite > reliquat ? (
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              Sur-réception : {Number((quantite - reliquat).toFixed(2))} unités au-delà du reliquat
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground">Reliquat restant&nbsp;: {reliquat}</p>
+          )}
         </div>
         <div className="mt-6 flex justify-end gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onClose}>
@@ -406,7 +411,7 @@ function ReceptionPartielDialog({
           <Button
             type="button"
             size="sm"
-            disabled={recevoirM.isPending || quantite <= 0 || quantite > reliquat}
+            disabled={recevoirM.isPending || quantite <= 0}
             onClick={onSubmit}
           >
             {recevoirM.isPending ? 'Enregistrement…' : 'Réceptionner'}
