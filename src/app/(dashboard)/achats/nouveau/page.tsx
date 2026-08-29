@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { DeviseSelect } from '@/components/forms/devise-select'
 import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { apiClient } from '@/lib/api-client'
 import {
@@ -87,7 +88,7 @@ export default function NouvelAchatPage() {
       fournisseurId: 0,
       commandeClientId: null,
       dateLivraisonPrevue: null,
-      devise: 'EUR',
+      devise: 'TND',
       conditionsPaiement: null,
       notesAchat: null,
       creePar: null,
@@ -101,7 +102,7 @@ export default function NouvelAchatPage() {
   const parentDevise = watch('devise')
 
   function addLigne() {
-    append({ ...LIGNE_DEFAULTS, devise: parentDevise || 'EUR' })
+    append({ ...LIGNE_DEFAULTS, devise: parentDevise || 'TND' })
   }
 
   const totalEstime = (watchedLignes ?? []).reduce(
@@ -223,7 +224,13 @@ export default function NouvelAchatPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="devise">Devise</Label>
-                  <Input id="devise" {...register('devise')} placeholder="EUR" maxLength={10} />
+                  <Controller
+                    name="devise"
+                    control={control}
+                    render={({ field }) => (
+                      <DeviseSelect value={field.value ?? null} onChange={field.onChange} />
+                    )}
+                  />
                 </div>
               </div>
 
@@ -356,10 +363,15 @@ export default function NouvelAchatPage() {
                             </div>
                             <div className="grid gap-2">
                               <Label>Devise</Label>
-                              <Input
-                                {...register(`lignes.${i}.devise`)}
-                                placeholder={parentDevise || 'EUR'}
-                                maxLength={10}
+                              <Controller
+                                name={`lignes.${i}.devise`}
+                                control={control}
+                                render={({ field }) => (
+                                  <DeviseSelect
+                                    value={field.value ?? null}
+                                    onChange={field.onChange}
+                                  />
+                                )}
                               />
                             </div>
                           </div>

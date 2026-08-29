@@ -26,6 +26,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { DeviseSelect } from '@/components/forms/devise-select'
 import { DocumentSection } from '@/components/documents/document-section'
 import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { useGetCommandes } from '@/hooks/use-commandes'
@@ -307,7 +308,13 @@ function LigneDialog({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="imp-devise">Devise</Label>
-              <Input id="imp-devise" {...register('devise')} maxLength={10} />
+              <Controller
+                name="devise"
+                control={control}
+                render={({ field }) => (
+                  <DeviseSelect value={field.value ?? null} onChange={field.onChange} />
+                )}
+              />
             </div>
           </div>
 

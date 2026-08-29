@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { DeviseSelect } from '@/components/forms/devise-select'
 import {
   commandeSchema,
   toCommandePayload,
@@ -183,7 +184,13 @@ export default function NouvelleCommandePage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="devise">Devise</Label>
-                  <Input id="devise" {...register('devise')} maxLength={10} placeholder="EUR" />
+                  <Controller
+                    name="devise"
+                    control={control}
+                    render={({ field }) => (
+                      <DeviseSelect value={field.value ?? null} onChange={field.onChange} />
+                    )}
+                  />
                 </div>
               </div>
 

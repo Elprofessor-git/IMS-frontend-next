@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { DeviseSelect } from '@/components/forms/devise-select'
 import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { apiClient } from '@/lib/api-client'
 import {
@@ -286,7 +287,13 @@ export default function NouvelleImportationPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="devise">Devise</Label>
-                  <Input id="devise" {...register('devise')} placeholder="EUR" maxLength={10} />
+                  <Controller
+                    name="devise"
+                    control={control}
+                    render={({ field }) => (
+                      <DeviseSelect value={field.value ?? null} onChange={field.onChange} />
+                    )}
+                  />
                 </div>
               </div>
 
