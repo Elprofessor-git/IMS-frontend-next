@@ -78,7 +78,7 @@ export default function AnalyticsPage() {
   const { montantMoyen, nbAchats } = useMemo(() => {
     const actifs = achats?.filter((a) => a.statut !== 4) ?? []
     if (!actifs.length) return { montantMoyen: 0, nbAchats: 0 }
-    const total = actifs.reduce((s, a) => s + a.montantTotal, 0)
+    const total = actifs.reduce((s, a) => s + a.montantTotalTND, 0)
     return { montantMoyen: total / actifs.length, nbAchats: actifs.length }
   }, [achats])
 
@@ -131,7 +131,7 @@ export default function AnalyticsPage() {
       const montant =
         achats
           ?.filter((a) => a.statut !== 4 && a.dateAchat?.startsWith(key))
-          .reduce((s, a) => s + a.montantTotal, 0) ?? 0
+          .reduce((s, a) => s + a.montantTotalTND, 0) ?? 0
       return { mois: label, montant }
     })
   }, [achats])
@@ -166,7 +166,7 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
-          title="Montant moyen / achat"
+          title="Montant moyen / achat (TND)"
           value={nbAchats > 0 ? formatCurrency(montantMoyen) : '0'}
           subtitle={`${nbAchats} achat${nbAchats > 1 ? 's' : ''} actifs`}
           icon={ShoppingCart}
@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
               ? formatCurrency(chartData.at(-1)!.montant)
               : '0'
           }
-          subtitle="Montant non annulé"
+          subtitle="Montant non annulé, en TND"
           icon={TrendingUp}
           tone="bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300"
         />
@@ -252,7 +252,7 @@ export default function AnalyticsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Montant des achats par mois</CardTitle>
+          <CardTitle className="text-base">Montant des achats par mois (TND)</CardTitle>
           <p className="text-sm text-muted-foreground">6 derniers mois · hors achats annulés</p>
         </CardHeader>
         <CardContent>
@@ -268,7 +268,7 @@ export default function AnalyticsPage() {
                   }
                 />
                 <Tooltip
-                  formatter={(value) => [formatCurrency(Number(value)), 'Montant']}
+                  formatter={(value) => [formatCurrency(Number(value)), 'Montant (TND)']}
                 />
                 <Bar dataKey="montant" fill="#1E5FBF" radius={[4, 4, 0, 0]} />
               </BarChart>

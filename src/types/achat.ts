@@ -26,6 +26,7 @@ export type LigneAchat = {
   statutLigne: number // 0=EnAttente 1=PartielleEnCours 2=Complete 3=ClotureeForcee
   prixUnitaire: number
   montantLigne: number
+  montantLigneTND: number
   devise: string | null
   descriptionSpecifique: string | null
   notes: string | null
@@ -60,6 +61,7 @@ export type Achat = {
   dateLivraisonPrevue: string | null
   dateLivraisonReelle: string | null
   montantTotal: number
+  montantTotalTND: number
   devise: string | null
   conditionsPaiement: string | null
   notesAchat: string | null

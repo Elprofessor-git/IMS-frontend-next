@@ -25,6 +25,7 @@ export type LigneImportation = {
   statutLigne: number // 0=EnAttente 1=PartielleEnCours 2=Complete 3=ClotureeForcee
   prixUnitaire: number
   montantLigne: number
+  montantLigneTND: number
   devise: string | null
   notes: string | null
   unite: string | null
@@ -67,6 +68,7 @@ export type Importation = {
   dateReceptionReelle: string | null
   modeExpedition: number // 0=Maritime 1=Aerien 2=Terrestre 3=Express 4=Autre
   montantTotal: number
+  montantTotalTND: number
   devise: string | null
   cheminFacture: string | null
   cheminBonLivraison: string | null

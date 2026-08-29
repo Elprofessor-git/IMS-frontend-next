@@ -164,13 +164,13 @@ export default function DashboardPage() {
     [achats, currentMonthKey],
   )
   const montantDuMois = useMemo(
-    () => achatsDuMois.reduce((s, a) => s + (a.montantTotal ?? 0), 0),
+    () => achatsDuMois.reduce((s, a) => s + (a.montantTotalTND ?? 0), 0),
     [achatsDuMois],
   )
 
-  // ── KPI : stock valorisé (quantite × prixUnitaire par entrée) ────────────────
+  // ── KPI : stock valorisé (quantite × prixUnitaireTND par entrée, montants TND) ─
   const stockValorise = useMemo(
-    () => stocks?.reduce((s, st) => s + st.quantite * st.prixUnitaire, 0) ?? 0,
+    () => stocks?.reduce((s, st) => s + st.quantite * st.prixUnitaireTND, 0) ?? 0,
     [stocks],
   )
 
@@ -191,7 +191,7 @@ export default function DashboardPage() {
       const total =
         achats
           ?.filter((a) => a.dateAchat?.startsWith(key))
-          .reduce((s, a) => s + (a.montantTotal ?? 0), 0) ?? 0
+          .reduce((s, a) => s + (a.montantTotalTND ?? 0), 0) ?? 0
       return { month: label, total }
     })
   }, [achats])
@@ -262,7 +262,7 @@ export default function DashboardPage() {
         <KpiCard
           title="Achats ce mois"
           value={fmtNaked(montantDuMois)}
-          sub={`${achatsDuMois.length} ordre(s)`}
+          sub={`${achatsDuMois.length} ordre(s) — en TND`}
           icon={<ShoppingCart className="size-5" />}
           tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
           loading={loadingAchats}
@@ -270,7 +270,7 @@ export default function DashboardPage() {
         <KpiCard
           title="Stock valorisé"
           value={fmtNaked(stockValorise)}
-          sub={`${stocks?.length ?? 0} entrées`}
+          sub={`${stocks?.length ?? 0} entrées — en TND`}
           icon={<Package className="size-5" />}
           tone="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
           loading={loadingStocks}
@@ -518,7 +518,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="text-sm font-medium tabular-nums">
-                        {formatMontant(a.montantTotal, a.devise)}
+                        {formatMontant(a.montantTotalTND, 'TND')}
                       </span>
                       <Badge
                         variant={ACHAT_BADGE_VARIANT[a.statut] ?? 'secondary'}

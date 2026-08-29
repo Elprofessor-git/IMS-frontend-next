@@ -210,7 +210,7 @@ export default function RapportAchatsPage() {
 
   // ── KPIs résumé ───────────────────────────────────────────────────────────────
   const totalMontant = useMemo(
-    () => filtered.reduce((s, a) => s + (a.montantTotal ?? 0), 0),
+    () => filtered.reduce((s, a) => s + (a.montantTotalTND ?? 0), 0),
     [filtered],
   )
   const nbFournisseurs = useMemo(
@@ -226,7 +226,7 @@ export default function RapportAchatsPage() {
       const nom = a.fournisseur?.nomEntreprise ?? `Fournisseur #${a.fournisseurId}`
       const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
       row.count++
-      row.montant += a.montantTotal ?? 0
+      row.montant += a.montantTotalTND ?? 0
       map.set(nom, row)
     }
     return [...map.values()].sort((a, b) => b.montant - a.montant)
@@ -247,7 +247,7 @@ export default function RapportAchatsPage() {
       }
       const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
       row.count++
-      row.montant += a.montantTotal ?? 0
+      row.montant += a.montantTotalTND ?? 0
       map.set(nom, row)
     }
     return [...map.values()].sort((a, b) => b.montant - a.montant)
@@ -264,7 +264,7 @@ export default function RapportAchatsPage() {
         const nom = resoudrePlateforme(null, a, plateformes, commandes, clients)
         const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
         row.count++
-        row.montant += a.montantTotal ?? 0
+        row.montant += a.montantTotalTND ?? 0
         map.set(nom, row)
         continue
       }
@@ -272,7 +272,7 @@ export default function RapportAchatsPage() {
         const nom = resoudrePlateforme(l, a, plateformes, commandes, clients)
         const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
         row.count++
-        row.montant += l.montantLigne ?? 0
+        row.montant += l.montantLigneTND ?? 0
         map.set(nom, row)
       }
     }
@@ -298,7 +298,7 @@ export default function RapportAchatsPage() {
         }
         row.count++
         row.quantite += l.quantite ?? 0
-        row.montant += l.montantLigne ?? 0
+        row.montant += l.montantLigneTND ?? 0
         map.set(l.articleId, row)
       }
     }
@@ -326,7 +326,7 @@ export default function RapportAchatsPage() {
           Dimension: l?.dimension ?? '',
           Quantité: l?.quantite ?? 0,
           'Prix unitaire': l?.prixUnitaire ?? 0,
-          'Montant ligne': l?.montantLigne ?? 0,
+          'Montant ligne (TND)': l?.montantLigneTND ?? 0,
           Devise: l?.devise ?? a.devise ?? 'EUR',
           Plateforme: plateforme,
           'Commande destinée': l?.commandeClientId
@@ -438,7 +438,7 @@ export default function RapportAchatsPage() {
             tone="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
           />
           <KpiCard
-            title="Montant total"
+            title="Montant total (TND)"
             value={fmtNaked(totalMontant)}
             icon={Wallet}
             tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
@@ -450,7 +450,7 @@ export default function RapportAchatsPage() {
             tone="bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300"
           />
           <KpiCard
-            title="Moyenne / achat"
+            title="Moyenne / achat (TND)"
             value={fmtNaked(montantMoyen)}
             icon={TrendingUp}
             tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
@@ -489,7 +489,7 @@ export default function RapportAchatsPage() {
                     <TableHead>#</TableHead>
                     <TableHead>Fournisseur</TableHead>
                     <TableHead className="text-right">Achats</TableHead>
-                    <TableHead className="text-right">Montant</TableHead>
+                    <TableHead className="text-right">Montant (TND)</TableHead>
                     <TableHead>Part</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -544,7 +544,7 @@ export default function RapportAchatsPage() {
                     <TableHead>Article</TableHead>
                     <TableHead className="text-right">Lignes</TableHead>
                     <TableHead className="text-right">Qté</TableHead>
-                    <TableHead className="text-right">Montant</TableHead>
+                    <TableHead className="text-right">Montant (TND)</TableHead>
                     <TableHead>Part</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -597,7 +597,7 @@ export default function RapportAchatsPage() {
                   <TableRow>
                     <TableHead>Client</TableHead>
                     <TableHead className="text-right">Achats</TableHead>
-                    <TableHead className="text-right">Montant</TableHead>
+                    <TableHead className="text-right">Montant (TND)</TableHead>
                     <TableHead className="text-right">%</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -645,7 +645,7 @@ export default function RapportAchatsPage() {
                   <TableRow>
                     <TableHead>Plateforme</TableHead>
                     <TableHead className="text-right">Lignes</TableHead>
-                    <TableHead className="text-right">Montant</TableHead>
+                    <TableHead className="text-right">Montant (TND)</TableHead>
                     <TableHead className="text-right">%</TableHead>
                   </TableRow>
                 </TableHeader>

@@ -28,6 +28,7 @@ export type Stock = {
   typeStock: number // 0=Libre 1=Reserve 2=Importe
   commandeClientId: number | null
   prixUnitaire: number
+  prixUnitaireTND: number
   devise: string | null
   dateEntree: string
   datePeremption: string | null

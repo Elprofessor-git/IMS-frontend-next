@@ -344,7 +344,7 @@ export default function EditFournisseurPage({
                     <p className="text-2xl font-bold">
                       {fmtMontantNaked(historique.statistiques.montantTotalAchats)}
                     </p>
-                    <p className="text-sm text-muted-foreground">Total achats</p>
+                    <p className="text-sm text-muted-foreground">Total achats (TND)</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -368,7 +368,7 @@ export default function EditFournisseurPage({
                     <p className="text-2xl font-bold">
                       {fmtMontantNaked(historique.statistiques.montantTotalImportations)}
                     </p>
-                    <p className="text-sm text-muted-foreground">Total importations</p>
+                    <p className="text-sm text-muted-foreground">Total importations (TND)</p>
                   </CardContent>
                 </Card>
                 <Card>
