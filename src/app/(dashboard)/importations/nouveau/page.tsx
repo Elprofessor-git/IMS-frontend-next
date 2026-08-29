@@ -468,6 +468,7 @@ export default function NouvelleImportationPage() {
                             commandes={commandes}
                             clients={clients}
                             plateformes={plateformes}
+                            setValue={setValue}
                           />
 
                           {/* Montant ligne */}

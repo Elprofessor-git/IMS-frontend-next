@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
 import { PaginationBar } from '@/components/shared/pagination'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { CommandeSelect } from '@/components/forms/commande-select'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
 import { useClientPagination } from '@/hooks/use-client-pagination'
@@ -28,7 +29,6 @@ import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_IMPORTATION, MODE_EXPEDITION } from '@/types/fournisseur'
 import type { Importation, LigneImportation } from '@/types/importation'
-import type { CommandeClient } from '@/types/commande'
 import { libelleCommande } from '@/lib/labels'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
@@ -642,23 +642,14 @@ export default function ImportationsPage() {
           </div>
           <div className="grid gap-1.5">
             <Label>Commande</Label>
-            <Select
-              value={filters.commandeId}
-              onValueChange={(v) => setFilter('commandeId', v)}
-            >
-              <SelectTrigger className="w-52">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Toutes les commandes</SelectItem>
-                {commandes?.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.numeroCommande}
-                    {c.titreCommande ? ` · ${c.titreCommande}` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="w-52">
+              <CommandeSelect
+                value={filters.commandeId ? Number(filters.commandeId) : null}
+                onChange={(id) => setFilter('commandeId', id ? String(id) : '')}
+                commandes={commandes ?? []}
+                placeholder="Toutes les commandes — rechercher…"
+              />
+            </div>
           </div>
           <div className="grid gap-1.5">
             <Label>Article / Réf.</Label>

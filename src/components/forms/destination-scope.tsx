@@ -1,6 +1,6 @@
 'use client'
 
-import { Controller, useWatch, type Control, type FieldValues, type Path } from 'react-hook-form'
+import { Controller, useWatch, type Control, type FieldValues, type Path, type UseFormSetValue } from 'react-hook-form'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -42,6 +42,11 @@ interface DestinationScopeFieldsProps<T extends FieldValues> {
   commandes?: CommandeClient[] | null
   clients?: Client[] | null
   plateformes?: Plateforme[] | null
+  /**
+   * Auto-remplissage Client/Plateforme depuis la Commande (ou la Plateforme
+   * depuis le Client) lors d'une SÉLECTION utilisateur. Non déclenché sur null.
+   */
+  setValue?: UseFormSetValue<T>
 }
 
 export function DestinationScopeFields<T extends FieldValues>({
@@ -50,6 +55,7 @@ export function DestinationScopeFields<T extends FieldValues>({
   commandes,
   clients,
   plateformes,
+  setValue,
 }: DestinationScopeFieldsProps<T>) {
   const names = scopePaths<T>(path)
 
@@ -84,6 +90,36 @@ export function DestinationScopeFields<T extends FieldValues>({
   const client = clients?.find((c) => c.id === clientId)
   const plateforme = plateformes?.find((p) => p.id === plateformeId)
 
+  // Auto-remplissage (Section E) : déclenché SUR SÉLECTION utilisateur uniquement
+  // (pas sur reset/édition), pour ne pas écraser les valeurs sauvegardées d'une ligne.
+  // Le cast `as never` contourne la contrainte PathValueImpl sur un type T générique ;
+  // la valeur écrite reste un number (id), cohérent avec le schéma des champs ciblés.
+  const setChamp = (name: Path<T>, value: number) => {
+    if (!setValue) return
+    setValue(name, value as never)
+  }
+
+  const autorenseignerPlateforme = (
+    idClient: number | null | undefined,
+  ) => {
+    if (idClient == null) return
+    const cl = clients?.find((c) => c.id === idClient)
+    if (!cl) return
+    if (cl.plateformeId) setChamp(names.plateformeId, cl.plateformeId)
+    else if (cl.plateforme?.id) setChamp(names.plateformeId, cl.plateforme.id)
+  }
+
+  const autorenseignerDepuisCommande = (
+    idCommande: number | null | undefined,
+  ) => {
+    if (idCommande == null) return
+    const cmd = commandes?.find((c) => c.id === idCommande)
+    if (!cmd) return
+    // La commande porte un client : on renseigne le client, puis sa plateforme.
+    setChamp(names.clientId, cmd.clientId)
+    autorenseignerPlateforme(cmd.clientId)
+  }
+
   const effectiveLabel =
     effectif === 'GroupeCommandes'
       ? (groupeLabel ?? `Groupe`)
@@ -92,7 +128,7 @@ export function DestinationScopeFields<T extends FieldValues>({
         : effectif === 'Marque'
           ? (client ? clientLabel(client) : `#${clientId}`)
           : effectif === 'Plateforme'
-            ? (plateforme?.nom ?? `#${plateformeId}`)
+            ? (plateforme?.nom ?? `Plf #${plateformeId}`)
             : ''
 
   const secondary: string[] = []
@@ -139,7 +175,10 @@ export function DestinationScopeFields<T extends FieldValues>({
           render={({ field: f }) => (
             <CommandeSelect
               value={f.value ?? null}
-              onChange={(id) => f.onChange(id)}
+              onChange={(id) => {
+                f.onChange(id)
+                autorenseignerDepuisCommande(id)
+              }}
               commandes={commandes ?? []}
               placeholder="Aucune commande — sélectionner…"
             />
@@ -158,7 +197,11 @@ export function DestinationScopeFields<T extends FieldValues>({
           render={({ field: f }) => (
             <Select
               value={f.value ? String(f.value) : '0'}
-              onValueChange={(v) => f.onChange(v === '0' ? null : Number(v))}
+              onValueChange={(v) => {
+                const id = v === '0' ? null : Number(v)
+                f.onChange(id)
+                autorenseignerPlateforme(id)
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Aucun client — sélectionner…" />

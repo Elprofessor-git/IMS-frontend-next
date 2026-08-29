@@ -286,6 +286,7 @@ function LigneDialog({
             commandes={commandes}
             clients={clients}
             plateformes={plateformes}
+            setValue={setValue}
           />
 
           <div className="grid gap-2">
@@ -769,7 +770,7 @@ export default function AchatDetailPage({
           <div className="space-y-4">
             <PermissionGate module="achats" mode="write">
               {achat.statut === 0 && (
-                <div className="flex justify-end">
+                <div className="sticky top-0 z-10 flex justify-end bg-background py-2">
                   <Button size="sm" onClick={ouvrirAjoutLigne}>
                     <Plus className="size-4" />
                     Ajouter une ligne

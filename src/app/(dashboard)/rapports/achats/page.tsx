@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react'
 import { Download, X, ShoppingCart, Wallet, Building2, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,7 +26,13 @@ import { PageHeader } from '@/components/shared/page-header'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { useGetAchats } from '@/hooks/use-achats'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
+import { useGetClients } from '@/hooks/use-clients'
+import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_ACHAT } from '@/types/fournisseur'
+import type { Achat, LigneAchat } from '@/types/achat'
+import type { Client } from '@/types/client'
+import type { CommandeClient } from '@/types/commande'
+import type { Plateforme } from '@/types/plateforme'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -68,19 +73,6 @@ function exportCsv(rows: Record<string, string | number | null | undefined>[], f
   URL.revokeObjectURL(url)
 }
 
-// ── Badge statut ───────────────────────────────────────────────────────────────
-
-const STATUT_VARIANT: Record<number, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  0: 'secondary',
-  1: 'outline',
-  2: 'default',
-  3: 'outline',
-  4: 'destructive',
-}
-const STATUT_CLASS: Record<number, string> = {
-  3: 'border-green-200 bg-green-100 text-green-800',
-}
-
 // ── Barre visuelle relative ────────────────────────────────────────────────────
 
 function BarCell({ value, max }: { value: number; max: number }) {
@@ -93,6 +85,75 @@ function BarCell({ value, max }: { value: number; max: number }) {
       <span className="text-xs tabular-nums text-muted-foreground">{pct.toFixed(0)}%</span>
     </div>
   )
+}
+
+// ── Résolution plateforme / client par ligne d'achat ───────────────────────────
+// Utilisé par byClient, byPlateforme et l'export CSV pour résoudre les lignes
+// destinées à une commande (0), un client (1) ou une plateforme (2).
+
+function resoudrePlateforme(
+  l: LigneAchat | null,
+  a: Achat,
+  plateformes?: Plateforme[],
+  commandes?: CommandeClient[],
+  clients?: Client[],
+): string {
+  const pfById = (id: number) =>
+    plateformes?.find((p) => p.id === id)?.nom ?? `Plf #${id}`
+  if (!l) {
+    // Achat sans lignes → on résout via l'en-tête (commande liée)
+    return a.commandeClient?.client?.plateforme?.nom ?? 'Sans plateforme'
+  }
+  switch (l.typeDestination) {
+    case 2:
+      return l.plateformeId ? pfById(l.plateformeId) : 'Sans plateforme'
+    case 1: {
+      if (!l.clientId) return 'Sans plateforme'
+      const cl = clients?.find((c) => c.id === l.clientId)
+      if (!cl) return 'Sans plateforme'
+      const pfId = cl.plateformeId
+      if (pfId) return pfById(pfId)
+      return cl.plateforme?.nom ?? 'Sans plateforme'
+    }
+    case 0: {
+      if (!l.commandeClientId) return 'Sans plateforme'
+      const c = commandes?.find((cc) => cc.id === l.commandeClientId)
+      return c?.client?.plateforme?.nom ?? 'Sans plateforme'
+    }
+    case 3:
+    case 4:
+    default:
+      return 'Sans plateforme'
+  }
+}
+
+function resoudreClient(
+  l: LigneAchat | null,
+  a: Achat,
+  commandes?: CommandeClient[],
+  clients?: Client[],
+): string {
+  if (!l) {
+    return a.commandeClient?.client?.nom ?? 'Sans client'
+  }
+  switch (l.typeDestination) {
+    case 1: {
+      if (!l.clientId) return 'Sans client'
+      const cl = clients?.find((c) => c.id === l.clientId)
+      if (!cl) return 'Sans client'
+      return cl.nomEntreprise ?? cl.nom ?? `Client #${l.clientId}`
+    }
+    case 0: {
+      if (!l.commandeClientId) return 'Sans client'
+      const c = commandes?.find((cc) => cc.id === l.commandeClientId)
+      return c?.client?.nom ?? 'Sans client'
+    }
+    case 2:
+    case 3:
+    case 4:
+    default:
+      return 'Sans client'
+  }
 }
 
 // ── Carte KPI (même style que le rapport Analytics) ────────────────────────────
@@ -130,6 +191,8 @@ function KpiCard({
 export default function RapportAchatsPage() {
   const { data: achats, isLoading } = useGetAchats()
   const { data: plateformes } = useGetPlateformes()
+  const { data: clients } = useGetClients()
+  const { data: commandes } = useGetCommandes()
 
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
@@ -171,44 +234,36 @@ export default function RapportAchatsPage() {
     return [...map.values()].sort((a, b) => b.montant - a.montant)
   }, [filtered])
 
-  const maxFournisseurMontant = byFournisseur[0]?.montant ?? 0
-
-  // ── Agrégation par statut ─────────────────────────────────────────────────────
-  const byStatut = useMemo(() => {
-    const map = new Map<number, { count: number; montant: number }>()
+  // ── Agrégation par client (résolue ligne par ligne selon typeDestination) ─────
+  const byClient = useMemo(() => {    const map = new Map<string, { nom: string; count: number; montant: number }>()
     for (const a of filtered) {
-      const row = map.get(a.statut) ?? { count: 0, montant: 0 }
-      row.count++
-      row.montant += a.montantTotal ?? 0
-      map.set(a.statut, row)
-    }
-    return [...map.entries()]
-      .map(([statut, row]) => ({ statut, ...row }))
-      .sort((a, b) => b.montant - a.montant)
-  }, [filtered])
-
-  // ── Agrégation par client (= commandeClient.client.nom) ───────────────────────
-  const byClient = useMemo(() => {
-    const map = new Map<string, { nom: string; count: number; montant: number }>()
-    for (const a of filtered) {
-      const nom = a.commandeClient?.client?.nom ?? 'Sans client'
+      const lignes = a.lignesAchat?.length ? a.lignesAchat : []
+      let nom = 'Sans client'
+      if (lignes.length === 0) {
+        nom = resoudreClient(null, a, commandes, clients)
+      } else {
+        const ligne = lignes.find(
+          (l) => l.typeDestination === 0 || l.typeDestination === 1,
+        )
+        if (ligne) nom = resoudreClient(ligne, a, commandes, clients)
+      }
       const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
       row.count++
       row.montant += a.montantTotal ?? 0
       map.set(nom, row)
     }
     return [...map.values()].sort((a, b) => b.montant - a.montant)
-  }, [filtered])
+  }, [filtered, commandes, clients])
 
   // ── Agrégation par plateforme ─────────────────────────────────────────────────
-  // La plateforme est portée par les LIGNES (typeDestination=2 Plateforme),
-  // pas par la commande client liée → on agrège chaque ligne vers sa plateforme.
+  // La plateforme est portée par les LIGNES (typeDestination=2 Plateforme) ou, pour
+  // les lignes Commande/Client, par le niveau lié (commande → client → plateforme).
   const byPlateforme = useMemo(() => {
     const map = new Map<string, { nom: string; count: number; montant: number }>()
     for (const a of filtered) {
       const lignes = a.lignesAchat?.length ? a.lignesAchat : []
       if (lignes.length === 0) {
-        const nom = a.commandeClient?.client?.plateforme?.nom ?? 'Sans plateforme'
+        const nom = resoudrePlateforme(null, a, plateformes, commandes, clients)
         const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
         row.count++
         row.montant += a.montantTotal ?? 0
@@ -216,12 +271,7 @@ export default function RapportAchatsPage() {
         continue
       }
       for (const l of lignes) {
-        let nom = 'Sans plateforme'
-        if (l.typeDestination === 2 && l.plateformeId) {
-          nom = plateformes?.find((p) => p.id === l.plateformeId)?.nom ?? `Plf #${l.plateformeId}`
-        } else {
-          nom = 'Sans plateforme'
-        }
+        const nom = resoudrePlateforme(l, a, plateformes, commandes, clients)
         const row = map.get(nom) ?? { nom, count: 0, montant: 0 }
         row.count++
         row.montant += l.montantLigne ?? 0
@@ -229,7 +279,33 @@ export default function RapportAchatsPage() {
       }
     }
     return [...map.values()].sort((a, b) => b.montant - a.montant)
-  }, [filtered, plateformes])
+  }, [filtered, plateformes, commandes, clients])
+
+  // ── Agrégation par article (lignes) ───────────────────────────────────────────
+  const byArticle = useMemo(() => {
+    const map = new Map<
+      number,
+      { nom: string; reference: string | null; count: number; quantite: number; montant: number }
+    >()
+    for (const a of filtered) {
+      const lignes = a.lignesAchat?.length ? a.lignesAchat : []
+      for (const l of lignes) {
+        if (!l.articleId) continue
+        const row = map.get(l.articleId) ?? {
+          nom: l.article?.designation ?? `Article #${l.articleId}`,
+          reference: l.article?.reference ?? null,
+          count: 0,
+          quantite: 0,
+          montant: 0,
+        }
+        row.count++
+        row.quantite += l.quantite ?? 0
+        row.montant += l.montantLigne ?? 0
+        map.set(l.articleId, row)
+      }
+    }
+    return [...map.values()].sort((a, b) => b.montant - a.montant)
+  }, [filtered])
 
   // ── Export CSV (par ligne, colonnes Excel) ─────────────────────────────────
   const handleExport = () => {
@@ -238,9 +314,8 @@ export default function RapportAchatsPage() {
       const lignes = a.lignesAchat?.length ? a.lignesAchat : [null]
       for (const l of lignes) {
         const plateforme = l
-          ? (plateformes?.find((p) => p.id === l.plateformeId)?.nom ??
-            (l.typeDestination === 2 ? `Plf #${l.plateformeId}` : (a.commandeClient?.client?.plateforme?.nom ?? '')))
-          : (a.commandeClient?.client?.plateforme?.nom ?? '')
+          ? resoudrePlateforme(l, a, plateformes, commandes, clients)
+          : resoudrePlateforme(null, a, plateformes, commandes, clients)
         rows.push({
           'N° Achat': a.numeroAchat,
           'Date achat': a.dateAchat ? fmtDate(a.dateAchat) : '',
@@ -256,7 +331,9 @@ export default function RapportAchatsPage() {
           'Montant ligne': l?.montantLigne ?? 0,
           Devise: l?.devise ?? a.devise ?? 'EUR',
           Plateforme: plateforme,
-          'Commande destinée': a.commandeClient?.numeroCommande ?? '',
+          'Commande destinée': l?.commandeClientId
+            ? (commandes?.find((c) => c.id === l.commandeClientId)?.numeroCommande ?? '')
+            : (a.commandeClient?.numeroCommande ?? ''),
           'Commandé par': a.creePar ?? '',
           Statut: STATUT_ACHAT[a.statut] ?? String(a.statut),
         })
@@ -431,7 +508,7 @@ export default function RapportAchatsPage() {
                         {fmtEur(row.montant)}
                       </TableCell>
                       <TableCell>
-                        <BarCell value={row.montant} max={maxFournisseurMontant} />
+                        <BarCell value={row.montant} max={totalMontant} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -441,10 +518,15 @@ export default function RapportAchatsPage() {
           </CardContent>
         </Card>
 
-        {/* Par statut */}
+        {/* Par article */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Par statut</CardTitle>
+            <CardTitle className="text-base">
+              Par article
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                (trié par montant décroissant)
+              </span>
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
@@ -453,7 +535,7 @@ export default function RapportAchatsPage() {
                   <Skeleton key={i} className="h-8 w-full" />
                 ))}
               </div>
-            ) : byStatut.length === 0 ? (
+            ) : byArticle.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 Aucune donnée pour cette période.
               </p>
@@ -461,32 +543,31 @@ export default function RapportAchatsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Achats</TableHead>
+                    <TableHead>Article</TableHead>
+                    <TableHead className="text-right">Lignes</TableHead>
+                    <TableHead className="text-right">Qté</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
-                    <TableHead className="text-right">%</TableHead>
+                    <TableHead>Part</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {byStatut.map((row) => (
-                    <TableRow key={row.statut}>
-                      <TableCell>
-                        <Badge
-                          variant={STATUT_VARIANT[row.statut] ?? 'secondary'}
-                          className={STATUT_CLASS[row.statut] ?? ''}
-                        >
-                          {STATUT_ACHAT[row.statut] ?? String(row.statut)}
-                        </Badge>
+                  {byArticle.map((row) => (
+                    <TableRow key={row.nom + row.reference}>
+                      <TableCell className="font-medium">
+                        {row.nom}
+                        {row.reference && (
+                          <span className="ml-1.5 text-xs text-muted-foreground">
+                            ({row.reference})
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{row.count}</TableCell>
+                      <TableCell className="text-right tabular-nums">{row.quantite}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">
                         {fmtEur(row.montant)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">
-                        {totalMontant > 0
-                          ? ((row.montant / totalMontant) * 100).toFixed(1)
-                          : '0.0'}
-                        %
+                      <TableCell>
+                        <BarCell value={row.montant} max={totalMontant} />
                       </TableCell>
                     </TableRow>
                   ))}
