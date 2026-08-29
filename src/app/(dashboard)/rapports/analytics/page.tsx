@@ -22,7 +22,7 @@ import { useGetStocks, useGetStocksAlertes } from '@/hooks/use-stocks'
 import { useGetTachesDashboard } from '@/hooks/use-taches'
 
 function formatCurrency(val: number) {
-  return val.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €'
+  return val.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
 function KpiCard({
@@ -167,7 +167,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           title="Montant moyen / achat"
-          value={nbAchats > 0 ? formatCurrency(montantMoyen) : '0 €'}
+          value={nbAchats > 0 ? formatCurrency(montantMoyen) : '0'}
           subtitle={`${nbAchats} achat${nbAchats > 1 ? 's' : ''} actifs`}
           icon={ShoppingCart}
           tone="bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"
@@ -242,7 +242,7 @@ export default function AnalyticsPage() {
           value={
             chartData.at(-1)?.montant
               ? formatCurrency(chartData.at(-1)!.montant)
-              : '0 €'
+              : '0'
           }
           subtitle="Montant non annulé"
           icon={TrendingUp}

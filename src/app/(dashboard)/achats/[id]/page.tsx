@@ -64,6 +64,7 @@ import type { CommandeClient } from '@/types/commande'
 import type { Client } from '@/types/client'
 import type { ApiError } from '@/types'
 import { libelleCommande } from '@/lib/labels'
+import { formatMontant } from '@/lib/format-devise'
 
 const ACHAT_STATUT_CONFIG: Record<number, WorkflowStatutConfig> = {
   0: { label: 'Brouillon', badgeVariant: 'secondary' },
@@ -699,8 +700,7 @@ export default function AchatDetailPage({
                   <div>
                     <dt className="text-muted-foreground">Montant total</dt>
                     <dd className="font-mono font-medium">
-                      {Number(achat.montantTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                      {achat.devise ? ` ${achat.devise}` : ''}
+                      {formatMontant(achat.montantTotal, achat.devise)}
                     </dd>
                   </div>
                   {achat.creePar && (
@@ -846,11 +846,10 @@ export default function AchatDetailPage({
                         </TableCell>
                       )}
                       <TableCell className="text-right font-mono">
-                        {Number(l.prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                        {l.devise ? ` ${l.devise}` : ''}
+                        {formatMontant(l.prixUnitaire, l.devise)}
                       </TableCell>
                       <TableCell className="text-right font-mono font-medium">
-                        {Number(l.montantLigne).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                        {formatMontant(l.montantLigne, l.devise)}
                       </TableCell>
                       <TableCell className="whitespace-normal break-words text-sm text-muted-foreground">
                         {[l.couleur, l.taille, l.dimension].filter(Boolean).join(' / ') || '—'}
@@ -925,8 +924,7 @@ export default function AchatDetailPage({
               <div className="flex justify-end rounded-lg border bg-card px-4 py-3 text-sm font-medium">
                 Total&nbsp;
                 <span className="ml-2 font-mono">
-                  {Number(achat.montantTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                  {achat.devise ? ` ${achat.devise}` : ''}
+                  {formatMontant(achat.montantTotal, achat.devise)}
                 </span>
               </div>
             )}

@@ -13,6 +13,7 @@ import {
 } from 'recharts'
 import { ClipboardList, ShoppingCart, Package, AlertTriangle, ArrowRight, AlertCircle, Ban, Clock3, Timer } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatMontant } from '@/lib/format-devise'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -28,10 +29,8 @@ import { PermissionGate } from '@/components/auth/permission-gate'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const fmtEur = (n: number) =>
+const fmtNaked = (n: number) =>
   new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
     maximumFractionDigits: 0,
   }).format(n)
 
@@ -262,7 +261,7 @@ export default function DashboardPage() {
         />
         <KpiCard
           title="Achats ce mois"
-          value={fmtEur(montantDuMois)}
+          value={fmtNaked(montantDuMois)}
           sub={`${achatsDuMois.length} ordre(s)`}
           icon={<ShoppingCart className="size-5" />}
           tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
@@ -270,7 +269,7 @@ export default function DashboardPage() {
         />
         <KpiCard
           title="Stock valorisé"
-          value={fmtEur(stockValorise)}
+          value={fmtNaked(stockValorise)}
           sub={`${stocks?.length ?? 0} entrées`}
           icon={<Package className="size-5" />}
           tone="bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
@@ -349,7 +348,7 @@ export default function DashboardPage() {
                     width={42}
                   />
                   <Tooltip
-                    formatter={(value) => [fmtEur(Number(value)), 'Montant total']}
+                    formatter={(value) => [fmtNaked(Number(value)), 'Montant total']}
                   />
                   <Bar dataKey="total" fill="#1E5FBF" radius={[3, 3, 0, 0]} />
                 </BarChart>
@@ -519,7 +518,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <span className="text-sm font-medium tabular-nums">
-                        {fmtEur(a.montantTotal)}
+                        {formatMontant(a.montantTotal, a.devise)}
                       </span>
                       <Badge
                         variant={ACHAT_BADGE_VARIANT[a.statut] ?? 'secondary'}

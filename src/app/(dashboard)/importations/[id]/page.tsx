@@ -51,6 +51,7 @@ import { MODE_EXPEDITION } from '@/types/fournisseur'
 import type { LigneImportation } from '@/types/importation'
 import type { CommandeClient } from '@/types/commande'
 import { libelleCommande } from '@/lib/labels'
+import { formatMontant } from '@/lib/format-devise'
 import {
   ligneImportationSchema,
   toLigneImportationPayload,
@@ -678,8 +679,7 @@ export default function ImportationDetailPage({
                   <div>
                     <dt className="text-muted-foreground">Montant total</dt>
                     <dd className="font-mono font-medium">
-                      {Number(importation.montantTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                      {importation.devise ? ` ${importation.devise}` : ''}
+                      {formatMontant(importation.montantTotal, importation.devise)}
                     </dd>
                   </div>
                   {importation.modifiePar && (
@@ -835,11 +835,10 @@ export default function ImportationDetailPage({
                         </TableCell>
                       )}
                       <TableCell className="text-right font-mono">
-                        {Number(l.prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                        {l.devise ? ` ${l.devise}` : ''}
+                        {formatMontant(l.prixUnitaire, l.devise)}
                       </TableCell>
                       <TableCell className="text-right font-mono font-medium">
-                        {Number(l.montantLigne).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                        {formatMontant(l.montantLigne, l.devise)}
                       </TableCell>
                       <TableCell className="whitespace-normal break-words text-sm text-muted-foreground">
                         {[l.couleur, l.dimension, l.nature].filter(Boolean).join(' / ') || '—'}
@@ -927,8 +926,7 @@ export default function ImportationDetailPage({
               <div className="flex justify-end rounded-lg border bg-card px-4 py-3 text-sm font-medium">
                 Total&nbsp;
                 <span className="ml-2 font-mono">
-                  {Number(importation.montantTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-                  {importation.devise ? ` ${importation.devise}` : ''}
+                  {formatMontant(importation.montantTotal, importation.devise)}
                 </span>
               </div>
             )}

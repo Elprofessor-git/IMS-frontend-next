@@ -36,10 +36,8 @@ import type { Plateforme } from '@/types/plateforme'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-const fmtEur = (n: number) =>
+const fmtNaked = (n: number) =>
   new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
     maximumFractionDigits: 0,
   }).format(n)
 
@@ -441,7 +439,7 @@ export default function RapportAchatsPage() {
           />
           <KpiCard
             title="Montant total"
-            value={fmtEur(totalMontant)}
+            value={fmtNaked(totalMontant)}
             icon={Wallet}
             tone="bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
           />
@@ -453,7 +451,7 @@ export default function RapportAchatsPage() {
           />
           <KpiCard
             title="Moyenne / achat"
-            value={fmtEur(montantMoyen)}
+            value={fmtNaked(montantMoyen)}
             icon={TrendingUp}
             tone="bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
           />
@@ -505,7 +503,7 @@ export default function RapportAchatsPage() {
                       <TableCell className="font-medium">{row.nom}</TableCell>
                       <TableCell className="text-right tabular-nums">{row.count}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">
-                        {fmtEur(row.montant)}
+                        {fmtNaked(row.montant)}
                       </TableCell>
                       <TableCell>
                         <BarCell value={row.montant} max={totalMontant} />
@@ -564,7 +562,7 @@ export default function RapportAchatsPage() {
                       <TableCell className="text-right tabular-nums">{row.count}</TableCell>
                       <TableCell className="text-right tabular-nums">{row.quantite}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">
-                        {fmtEur(row.montant)}
+                        {fmtNaked(row.montant)}
                       </TableCell>
                       <TableCell>
                         <BarCell value={row.montant} max={totalMontant} />
@@ -609,7 +607,7 @@ export default function RapportAchatsPage() {
                       <TableCell className="font-medium">{row.nom}</TableCell>
                       <TableCell className="text-right tabular-nums">{row.count}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">
-                        {fmtEur(row.montant)}
+                        {fmtNaked(row.montant)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">
                         {totalMontant > 0
@@ -657,7 +655,7 @@ export default function RapportAchatsPage() {
                       <TableCell className="font-medium">{row.nom}</TableCell>
                       <TableCell className="text-right tabular-nums">{row.count}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">
-                        {fmtEur(row.montant)}
+                        {fmtNaked(row.montant)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">
                         {totalMontant > 0

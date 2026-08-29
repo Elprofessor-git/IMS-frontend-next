@@ -30,6 +30,7 @@ import { useGetCommandes } from '@/hooks/use-commandes'
 import { STATUT_IMPORTATION, MODE_EXPEDITION } from '@/types/fournisseur'
 import type { Importation, LigneImportation } from '@/types/importation'
 import { libelleCommande } from '@/lib/labels'
+import { formatMontant } from '@/lib/format-devise'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
@@ -297,8 +298,7 @@ export default function ImportationsPage() {
         headerClassName: 'text-right',
         cell: (i) => (
           <span className="font-mono">
-            {Number(i.montantTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-            {i.devise ? ` ${i.devise}` : ''}
+            {formatMontant(i.montantTotal, i.devise)}
           </span>
         ),
       },
@@ -430,7 +430,7 @@ export default function ImportationsPage() {
         headerClassName: 'text-right',
         cell: ({ ligne }) => (
           <span className="tabular-nums">
-            {Number(ligne?.prixUnitaire ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+            {formatMontant(Number(ligne?.prixUnitaire ?? 0), ligne?.devise)}
           </span>
         ),
       },
@@ -440,7 +440,7 @@ export default function ImportationsPage() {
         headerClassName: 'text-right',
         cell: ({ ligne }) => (
           <span className="tabular-nums">
-            {Number(ligne?.montantLigne ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+            {formatMontant(Number(ligne?.montantLigne ?? 0), ligne?.devise)}
           </span>
         ),
       },

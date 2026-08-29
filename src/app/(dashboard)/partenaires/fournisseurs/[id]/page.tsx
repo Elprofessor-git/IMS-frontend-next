@@ -29,6 +29,7 @@ import {
   toFournisseurPayload,
   type FournisseurSchema,
 } from '@/lib/validations/fournisseur'
+import { formatMontant } from '@/lib/format-devise'
 import {
   useGetFournisseur,
   useUpdateFournisseur,
@@ -39,7 +40,8 @@ import {
 } from '@/hooks/use-fournisseurs'
 import { STATUT_ACHAT, STATUT_IMPORTATION, MODE_EXPEDITION } from '@/types/fournisseur'
 
-const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })
+const fmtMontantNaked = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n)
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 
@@ -340,7 +342,7 @@ export default function EditFournisseurPage({
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-2xl font-bold">
-                      {fmt.format(historique.statistiques.montantTotalAchats)}
+                      {fmtMontantNaked(historique.statistiques.montantTotalAchats)}
                     </p>
                     <p className="text-sm text-muted-foreground">Total achats</p>
                   </CardContent>
@@ -364,7 +366,7 @@ export default function EditFournisseurPage({
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-2xl font-bold">
-                      {fmt.format(historique.statistiques.montantTotalImportations)}
+                      {fmtMontantNaked(historique.statistiques.montantTotalImportations)}
                     </p>
                     <p className="text-sm text-muted-foreground">Total importations</p>
                   </CardContent>
@@ -421,10 +423,7 @@ export default function EditFournisseurPage({
                             </TableCell>
                             <TableCell className="text-muted-foreground">{a.client}</TableCell>
                             <TableCell className="text-right">
-                              {fmt.format(a.montantTotal)}
-                              {a.devise && a.devise !== 'EUR' && (
-                                <span className="ml-1 text-muted-foreground">{a.devise}</span>
-                              )}
+                              {formatMontant(a.montantTotal, a.devise)}
                             </TableCell>
                           </TableRow>
                         ))
@@ -476,10 +475,7 @@ export default function EditFournisseurPage({
                               {MODE_EXPEDITION[imp.modeExpedition] ?? `Mode ${imp.modeExpedition}`}
                             </TableCell>
                             <TableCell className="text-right">
-                              {fmt.format(imp.montantTotal)}
-                              {imp.devise && imp.devise !== 'EUR' && (
-                                <span className="ml-1 text-muted-foreground">{imp.devise}</span>
-                              )}
+                              {formatMontant(imp.montantTotal, imp.devise)}
                             </TableCell>
                           </TableRow>
                         ))

@@ -31,6 +31,7 @@ import { STATUT_ACHAT } from '@/types/fournisseur'
 import type { Achat, LigneAchat } from '@/types/achat'
 import type { CommandeClient } from '@/types/commande'
 import { libelleCommande } from '@/lib/labels'
+import { formatMontant } from '@/lib/format-devise'
 
 const STATUT_BADGE: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'secondary', icon: <FilePenLine className="size-3.5" /> },
@@ -335,8 +336,7 @@ export default function AchatsPage() {
         headerClassName: 'text-right',
         cell: (a) => (
           <span className="font-mono">
-            {Number(a.montantTotal).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
-            {a.devise ? ` ${a.devise}` : ''}
+            {formatMontant(a.montantTotal, a.devise)}
           </span>
         ),
       },
@@ -468,7 +468,7 @@ export default function AchatsPage() {
         headerClassName: 'text-right',
         cell: ({ ligne }) => (
           <span className="tabular-nums">
-            {Number(ligne?.prixUnitaire ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+            {formatMontant(Number(ligne?.prixUnitaire ?? 0), ligne?.devise)}
           </span>
         ),
       },
@@ -478,7 +478,7 @@ export default function AchatsPage() {
         headerClassName: 'text-right',
         cell: ({ ligne }) => (
           <span className="tabular-nums">
-            {Number(ligne?.montantLigne ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+            {formatMontant(Number(ligne?.montantLigne ?? 0), ligne?.devise)}
           </span>
         ),
       },

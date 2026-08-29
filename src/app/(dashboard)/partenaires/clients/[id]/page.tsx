@@ -32,6 +32,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { clientSchema, toClientPayload, type ClientSchema } from '@/lib/validations/client'
+import { formatMontant } from '@/lib/format-devise'
 import {
   useGetClient,
   useUpdateClient,
@@ -43,7 +44,8 @@ import {
 import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { STATUT_COMMANDE } from '@/types/client'
 
-const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })
+const fmtMontantNaked = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n)
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR') : '—'
 
@@ -345,7 +347,7 @@ export default function EditClientPage({
                 <Card>
                   <CardContent className="pt-6">
                     <p className="text-2xl font-bold">
-                      {fmt.format(historique.statistiques.montantTotal)}
+                      {fmtMontantNaked(historique.statistiques.montantTotal)}
                     </p>
                     <p className="text-sm text-muted-foreground">Montant total</p>
                   </CardContent>
@@ -405,10 +407,7 @@ export default function EditClientPage({
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                              {fmt.format(cmd.montantTotal)}
-                              {cmd.devise && cmd.devise !== 'EUR' && (
-                                <span className="ml-1 text-muted-foreground">{cmd.devise}</span>
-                              )}
+                              {formatMontant(cmd.montantTotal, cmd.devise)}
                             </TableCell>
                           </TableRow>
                         ))
