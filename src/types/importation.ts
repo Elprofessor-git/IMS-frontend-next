@@ -13,6 +13,8 @@ export type LigneImportation = {
   commandeClientId: number | null
   clientId: number | null
   plateformeId: number | null
+  groupeCommandeId: number | null
+  groupeCommandeMembres: number[]
   designation: string | null
   couleur: string | null
   codeCouleur: string | null
@@ -27,7 +29,7 @@ export type LigneImportation = {
   notes: string | null
   unite: string | null
   estAffecteStock: boolean
-  typeDestination: number // 0=Commande 1=Marque 2=Plateforme 3=StockLibre
+  typeDestination: number // 0=Commande 1=Marque 2=Plateforme 3=StockLibre 4=GroupeCommandes
   dateCreation: string
   article: LigneImportationArticle | null
   commandeClient: { id: number } | null

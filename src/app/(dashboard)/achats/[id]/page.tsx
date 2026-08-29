@@ -99,6 +99,11 @@ function destinationLabel(
     const nom = plateformes?.find((p) => p.id === l.plateformeId)?.nom
     return nom ?? `Plf #${l.plateformeId}`
   }
+  if (l.typeDestination === 4) {
+    const noms = l.groupeCommandeMembres
+      .map((id) => libelleCommande(id, commandes) ?? `Cde #${id}`)
+    return noms.length ? noms.join(', ') : base
+  }
   return base
 }
 

@@ -81,6 +81,13 @@ function destinationLabel(
   if (l.typeDestination === 0 && l.commandeClientId) {
     return libelleCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
   }
+  if (l.typeDestination === 4) {
+    const noms = l.groupeCommandeMembres
+      .map((id) => libelleCommande(id, commandes) ?? `Cde #${id}`)
+    return noms.length
+      ? noms.join(', ')
+      : (DESTINATION_LABEL_BY_NUMBER[4] ?? 'Groupe de commandes')
+  }
   return DESTINATION_LABEL_BY_NUMBER[l.typeDestination] ?? String(l.typeDestination)
 }
 
