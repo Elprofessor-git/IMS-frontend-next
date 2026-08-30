@@ -26,6 +26,7 @@ import {
   Menu,
   X,
   Shirt,
+  Settings,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetClose, SheetTrigger } from '@/components/ui/sheet'
@@ -68,6 +69,7 @@ const NAV: (NavItem | NavGroup)[] = [
   },
   { href: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, iconColor: 'text-slate-700 group-data-[active=true]:text-white dark:text-slate-300', module: 'utilisateurs' },
   { href: '/roles',        label: 'Rôles',        icon: Shield,  iconColor: 'text-purple-600 group-data-[active=true]:text-white dark:text-purple-400', module: 'roles' },
+  { href: '/parametres/taux-change', label: 'Paramètres', icon: Settings, iconColor: 'text-zinc-600 group-data-[active=true]:text-white dark:text-zinc-400', module: 'parametres' },
   {
     label: 'Rapports',
     icon: BarChart2,
