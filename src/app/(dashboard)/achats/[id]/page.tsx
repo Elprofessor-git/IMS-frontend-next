@@ -35,6 +35,10 @@ import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
 import { DeviseSelect } from '@/components/forms/devise-select'
+import {
+  TypePaiementSelect,
+  TYPE_PAIEMENT_LABELS,
+} from '@/components/forms/type-paiement-select'
 import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { DocumentSection } from '@/components/documents/document-section'
 import {
@@ -552,6 +556,7 @@ export default function AchatDetailPage({
   const [activeTab, setActiveTab] = useState('info')
   const [notes, setNotes] = useState('')
   const [dateLivraison, setDateLivraison] = useState('')
+  const [typePaiement, setTypePaiement] = useState<number | null>(null)
   const [depassements, setDepassements] = useState<Array<{
     ligneId: number
     articleDesignation: string
@@ -559,6 +564,10 @@ export default function AchatDetailPage({
     besoinTotal: number
     exces: number
   }> | null>(null)
+
+  useEffect(() => {
+    if (achat) setTypePaiement(achat.typePaiement ?? null)
+  }, [achat])
 
   const handleSoumettre = (forcer: boolean) => {
     if (!achat) return
@@ -822,6 +831,12 @@ export default function AchatDetailPage({
                       <dd>{achat.creePar}</dd>
                     </div>
                   )}
+                  {typeof achat.typePaiement === 'number' && (
+                    <div className="col-span-2">
+                      <dt className="text-muted-foreground">Type de paiement</dt>
+                      <dd>{TYPE_PAIEMENT_LABELS[achat.typePaiement]}</dd>
+                    </div>
+                  )}
                   {achat.conditionsPaiement && (
                     <div className="col-span-2">
                       <dt className="text-muted-foreground">Conditions de paiement</dt>
@@ -855,6 +870,13 @@ export default function AchatDetailPage({
                           onChange={(e) => setDateLivraison(e.target.value)}
                         />
                       </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="edit-typepaiement">Type de paiement</Label>
+                        <TypePaiementSelect
+                          value={typePaiement}
+                          onChange={setTypePaiement}
+                        />
+                      </div>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="edit-notes">Notes</Label>
@@ -877,6 +899,7 @@ export default function AchatDetailPage({
                           dateLivraisonPrevue: dateLivraison || achat.dateLivraisonPrevue,
                           devise: achat.devise,
                           conditionsPaiement: achat.conditionsPaiement,
+                          typePaiement: typePaiement ?? achat.typePaiement ?? null,
                           notesAchat: notes || achat.notesAchat,
                         })
                       }

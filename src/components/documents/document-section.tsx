@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { FileText, ImageIcon, Download, Trash2, Plus, Paperclip } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -26,12 +27,14 @@ const MAX_SIZE = 5 * 1024 * 1024
 const TYPE_LABELS: Record<TypeDocument, string> = {
   Facture: 'Facture',
   BonLivraison: 'Bon de livraison',
+  ListeColisage: 'Liste de colisage',
   Autre: 'Autre',
 }
 
 const TYPE_BADGE_CLASS: Record<TypeDocument, string> = {
   Facture: 'border-blue-200 bg-blue-50 text-blue-800',
   BonLivraison: 'border-violet-200 bg-violet-50 text-violet-800',
+  ListeColisage: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   Autre: '',
 }
 
@@ -50,7 +53,9 @@ export function DocumentSection({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [type, setType] = useState<TypeDocument>('Facture')
+  const [nature, setNature] = useState('')
   const [sizeError, setSizeError] = useState<string | null>(null)
+  const [natureError, setNatureError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: docs = [], isLoading } = useGetDocuments(scope, parentId)
@@ -80,8 +85,14 @@ export function DocumentSection({
 
   async function handleUpload() {
     if (!file || sizeError) return
+    const natureValue = type === 'Autre' ? nature.trim() : ''
+    if (type === 'Autre' && !natureValue) {
+      setNatureError('La nature est requise pour un document de type Autre.')
+      return
+    }
+    setNatureError(null)
     try {
-      await uploadMutation.mutateAsync({ file, type })
+      await uploadMutation.mutateAsync({ file, type, nature: natureValue })
       closeDialog()
     } catch {
       // error toasted inside the hook
@@ -91,6 +102,8 @@ export function DocumentSection({
   function closeDialog() {
     setFile(null)
     setType('Facture')
+    setNature('')
+    setNatureError(null)
     setSizeError(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
     setDialogOpen(false)
@@ -141,7 +154,9 @@ export function DocumentSection({
 
                   {/* Name + meta */}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{doc.nomFichier}</p>
+                    <p className="truncate text-sm font-medium">
+                      {doc.nature ? `${doc.nature} — ${doc.nomFichier}` : doc.nomFichier}
+                    </p>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                       <Badge
                         variant="outline"
@@ -237,7 +252,10 @@ export function DocumentSection({
                 <Label htmlFor="doc-type">Type de document</Label>
                 <Select
                   value={type}
-                  onValueChange={(v) => setType(v as TypeDocument)}
+                  onValueChange={(v) => {
+                    setType(v as TypeDocument)
+                    setNatureError(null)
+                  }}
                 >
                   <SelectTrigger id="doc-type">
                     <SelectValue />
@@ -245,10 +263,33 @@ export function DocumentSection({
                   <SelectContent>
                     <SelectItem value="Facture">Facture</SelectItem>
                     <SelectItem value="BonLivraison">Bon de livraison</SelectItem>
+                    <SelectItem value="ListeColisage">Liste de colisage</SelectItem>
                     <SelectItem value="Autre">Autre</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Nature libre — requise uniquement pour le type "Autre" */}
+              {type === 'Autre' && (
+                <div className="grid gap-2">
+                  <Label htmlFor="doc-nature">
+                    Nature du document <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="doc-nature"
+                    value={nature}
+                    maxLength={200}
+                    onChange={(e) => {
+                      setNature(e.target.value)
+                      if (e.target.value.trim()) setNatureError(null)
+                    }}
+                    placeholder="Ex. Certificat d'origine, facture proforma…"
+                  />
+                  {natureError && (
+                    <p className="text-sm font-medium text-destructive">{natureError}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="mt-6 flex justify-end gap-2">

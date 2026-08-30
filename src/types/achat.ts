@@ -64,6 +64,7 @@ export type Achat = {
   montantTotalTND: number
   devise: string | null
   conditionsPaiement: string | null
+  typePaiement: number | null // 0=Especes 1=Cheque 2=Virement 3=Autre
   notesAchat: string | null
   cheminPDF: string | null
   historiqueModifications: string | null
@@ -85,5 +86,6 @@ export type UpdateAchatPayload = {
   dateLivraisonPrevue: string | null
   devise: string | null
   conditionsPaiement: string | null
+  typePaiement: number | null // 0=Especes 1=Cheque 2=Virement 3=Autre
   notesAchat: string | null
 }

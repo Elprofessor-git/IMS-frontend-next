@@ -7,6 +7,7 @@ export const achatSchema = z.object({
   dateLivraisonPrevue: z.string().nullable(),
   devise: z.string().max(10).nullable(),
   conditionsPaiement: z.string().max(500).nullable(),
+  typePaiement: z.number().int().nullable(),
   notesAchat: z.string().max(1000).nullable(),
   creePar: z.string().max(100).nullable(),
 })
@@ -20,6 +21,7 @@ export function toAchatPayload(data: AchatSchema) {
     dateLivraisonPrevue: data.dateLivraisonPrevue || null,
     devise: data.devise || null,
     conditionsPaiement: data.conditionsPaiement || null,
+    typePaiement: data.typePaiement ?? null,
     notesAchat: data.notesAchat || null,
     creePar: data.creePar || null,
   }

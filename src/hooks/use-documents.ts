@@ -27,10 +27,19 @@ export function useGetDocuments(scope: 'achat' | 'importation', parentId: number
 export function useUploadDocument(scope: 'achat' | 'importation', parentId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ file, type }: { file: File; type: TypeDocument }) => {
+    mutationFn: async ({
+      file,
+      type,
+      nature,
+    }: {
+      file: File
+      type: TypeDocument
+      nature?: string | null
+    }) => {
       const fd = new FormData()
       fd.append('file', file)
       fd.append('type', type)
+      if (nature) fd.append('nature', nature)
 
       // No Content-Type header — browser sets multipart/form-data with boundary automatically.
       // The proxy forwards this header to the backend unchanged (fixed earlier).

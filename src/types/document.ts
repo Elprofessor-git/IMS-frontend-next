@@ -1,4 +1,4 @@
-export type TypeDocument = 'Facture' | 'BonLivraison' | 'Autre'
+export type TypeDocument = 'Facture' | 'BonLivraison' | 'ListeColisage' | 'Autre'
 
 export type DocumentJoint = {
   id: number
@@ -8,4 +8,5 @@ export type DocumentJoint = {
   tailleOctets: number
   dateAjout: string
   ajoutePar: string | null
+  nature: string | null
 }

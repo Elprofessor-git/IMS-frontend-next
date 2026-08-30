@@ -23,6 +23,7 @@ import {
 import { PageHeader } from '@/components/shared/page-header'
 import { ArticleSelect } from '@/components/forms/article-select'
 import { DeviseSelect } from '@/components/forms/devise-select'
+import { TypePaiementSelect } from '@/components/forms/type-paiement-select'
 import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { apiClient } from '@/lib/api-client'
 import {
@@ -90,6 +91,7 @@ export default function NouvelAchatPage() {
       dateLivraisonPrevue: null,
       devise: 'TND',
       conditionsPaiement: null,
+      typePaiement: null,
       notesAchat: null,
       creePar: null,
       lignes: [],
@@ -438,6 +440,20 @@ export default function NouvelAchatPage() {
               <CardTitle className="text-base">Notes & conditions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="typePaiement">Type de paiement</Label>
+                <Controller
+                  name="typePaiement"
+                  control={control}
+                  render={({ field }) => (
+                    <TypePaiementSelect
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Sélectionner un type de paiement…"
+                    />
+                  )}
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="conditionsPaiement">Conditions de paiement</Label>
                 <Textarea
