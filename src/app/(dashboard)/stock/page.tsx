@@ -37,10 +37,12 @@ import {
   useReserverStock,
   useCreateStock,
   useGetStockEmplacements,
+  useGetReservationsExistantes,
 } from '@/hooks/use-stocks'
 import { TYPE_STOCK } from '@/types/stock'
 import type { Stock, AlerteStock } from '@/types/stock'
 import type { Article } from '@/types/article'
+import type { ReservationStock } from '@/hooks/use-stocks'
 
 const EMPTY_STOCK_FORM = {
   articleId: null as number | null,
@@ -48,6 +50,15 @@ const EMPTY_STOCK_FORM = {
   quantite: '',
   typeStock: '0',
   emplacementPhysique: '',
+}
+
+// Bug 28 — Libellé lisible du scope d'une réservation (lecture seule).
+function reservationScopeLabel(r: ReservationStock): string | null {
+  if (r.commandeLibelle) return `Commande ${r.commandeLibelle}`
+  if (r.clientLibelle) return `Client ${r.clientLibelle}`
+  if (r.plateformeLibelle) return `Plateforme ${r.plateformeLibelle}`
+  if (r.groupeLibelle) return r.groupeLibelle
+  return null
 }
 
 // ── Dialog Valider ──────────────────────────────────────────────
@@ -172,6 +183,8 @@ export default function StockPage() {
   const { data: reservesStocks, isLoading: loadingReserves } = useGetStocksReserves()
   const { data: alertes,        isLoading: loadingAlertes  } = useGetStocksAlertes()
   const { data: emplacements } = useGetStockEmplacements()
+  const selectedArticleId = createForm.articleId ?? 0
+  const { data: reservations } = useGetReservationsExistantes({ articleId: selectedArticleId })
 
   const deleteMutation   = useDeleteStock()
   const validerMutation  = useValiderStock()
@@ -489,6 +502,33 @@ export default function StockPage() {
                   setCreateForm((f) => ({ ...f, articleId: id, article: article ?? null }))
                 }
               />
+              {reservations && reservations.length > 0 && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                  <p className="mb-1.5 flex items-center gap-1.5 font-medium">
+                    <TriangleAlert className="size-3.5" />
+                    Réservations existantes pour cet article
+                  </p>
+                  <ul className="space-y-1">
+                    {reservations.map((r) => {
+                      const scope = reservationScopeLabel(r)
+                      return (
+                        <li key={r.id} className="text-xs leading-relaxed">
+                          {Number(r.quantiteReservee) > 0
+                            ? `${Number(r.quantiteReservee)} unités réservées`
+                            : `${Number(r.quantite)} unités en stock`}{' '}
+                          ({TYPE_STOCK[r.typeStock] ?? r.typeStock})
+                          {scope ? ` pour ${scope}` : ''}
+                          {r.emplacementPhysique ? ` — ${r.emplacementPhysique}` : ''}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  <p className="mt-1.5 text-xs text-amber-700">
+                    Conseil : le stock manuel est un ajout (aucun blocage) — vérifiez que ce
+                    n&apos;est pas un doublon de réservation existante.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

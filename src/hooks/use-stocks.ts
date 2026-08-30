@@ -8,6 +8,26 @@ import type { ApiError } from '@/types'
 
 const KEY = ['stocks'] as const
 
+// Bug 28 — Type du retour de l'endpoint GET /api/Stock/ReservationsExistantes.
+// Scope résolu côté backend (lecture seule) ; champs *Libelle null si non applicable.
+export type ReservationStock = {
+  id: number
+  articleId: number
+  articleDesignation: string | null
+  quantite: number
+  quantiteReservee: number
+  typeStock: number
+  emplacementPhysique: string | null
+  commandeClientId: number | null
+  commandeLibelle: string | null
+  clientId: number | null
+  clientLibelle: string | null
+  plateformeId: number | null
+  plateformeLibelle: string | null
+  groupeCommandeId: number | null
+  groupeLibelle: string | null
+}
+
 export function useGetStocks() {
   return useQuery<Stock[]>({
     queryKey: KEY,
@@ -56,6 +76,33 @@ export function useGetStockEmplacements() {
   return useQuery<string[]>({
     queryKey: [...KEY, 'emplacements'],
     queryFn: () => apiClient.get<string[]>('/api/Stock/Emplacements'),
+  })
+}
+
+// Bug 28 — Affichage informatif des réservations existantes d'un article avant une
+// création manuelle de stock. Lecture seule. `enabled` = articleId présent.
+export type ReservationsExistantesParams = {
+  articleId: number
+  commandeClientId?: number
+  clientId?: number
+  plateformeId?: number
+  groupeCommandeId?: number
+}
+
+export function useGetReservationsExistantes(params: ReservationsExistantesParams) {
+  const { articleId, ...scope } = params
+  const sp = new URLSearchParams()
+  sp.set('articleId', String(articleId))
+  if (scope.commandeClientId !== undefined) sp.set('commandeClientId', String(scope.commandeClientId))
+  if (scope.clientId !== undefined) sp.set('clientId', String(scope.clientId))
+  if (scope.plateformeId !== undefined) sp.set('plateformeId', String(scope.plateformeId))
+  if (scope.groupeCommandeId !== undefined) sp.set('groupeCommandeId', String(scope.groupeCommandeId))
+  const qs = sp.toString()
+
+  return useQuery<ReservationStock[]>({
+    queryKey: [...KEY, 'reservations', params],
+    queryFn: () => apiClient.get<ReservationStock[]>(`/api/Stock/ReservationsExistantes?${qs}`),
+    enabled: articleId > 0,
   })
 }
 
