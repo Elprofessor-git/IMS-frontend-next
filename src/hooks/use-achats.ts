@@ -193,6 +193,35 @@ export function useRecevoirPartielAchat() {
   })
 }
 
+export function useCorrigerReceptionAchat() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      achatId,
+      ligneId,
+      nouvelleQuantiteRecue,
+      justification,
+    }: {
+      achatId: number
+      ligneId: number
+      nouvelleQuantiteRecue: number
+      justification: string
+    }) =>
+      apiClient.post<{ message: string; ligneId: number; ecart: number }>(
+        `/api/Achat/${achatId}/LignesAchat/${ligneId}/CorrigerReception`,
+        { nouvelleQuantiteRecue, justification },
+      ),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.achatId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['stocks'] })
+      toast.success('Correction de réception enregistrée')
+    },
+    onError: (err: ApiError) =>
+      toast.error(err.message ?? 'Erreur lors de la correction de réception'),
+  })
+}
+
 export function useClotureForceeAchat() {
   const qc = useQueryClient()
   return useMutation({

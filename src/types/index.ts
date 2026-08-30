@@ -8,6 +8,7 @@ export type User = {
   nom: string
   prenom: string
   roles: string[]
+  estAdministrateur?: boolean
   estActif: boolean
 }
 

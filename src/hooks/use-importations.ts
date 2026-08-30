@@ -233,6 +233,35 @@ export function useRecevoirPartielImportation() {
   })
 }
 
+export function useCorrigerReceptionImportation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      importationId,
+      ligneId,
+      nouvelleQuantiteRecue,
+      justification,
+    }: {
+      importationId: number
+      ligneId: number
+      nouvelleQuantiteRecue: number
+      justification: string
+    }) =>
+      apiClient.post<{ message: string; ligneId: number; ecart: number }>(
+        `/api/Importation/${importationId}/LignesImportation/${ligneId}/CorrigerReception`,
+        { nouvelleQuantiteRecue, justification },
+      ),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...KEY, vars.importationId] })
+      qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['stocks'] })
+      toast.success('Correction de réception enregistrée')
+    },
+    onError: (err: ApiError) =>
+      toast.error(err.message ?? 'Erreur lors de la correction de réception'),
+  })
+}
+
 export function useClotureForceeImportation() {
   const qc = useQueryClient()
   return useMutation({

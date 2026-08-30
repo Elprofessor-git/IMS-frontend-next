@@ -4,7 +4,8 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck, AlertTriangle } from 'lucide-react'
+import { z } from 'zod'
+import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck, AlertTriangle, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -48,7 +49,9 @@ import {
   useLivrerAchat,
   useRecevoirPartielAchat,
   useClotureForceeAchat,
+  useCorrigerReceptionAchat,
 } from '@/hooks/use-achats'
+import { useAuth } from '@/hooks/use-auth'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
 import { useGetPlateformes } from '@/hooks/use-plateformes'
@@ -405,6 +408,113 @@ function ReceptionPartielDialog({
   )
 }
 
+function CorrigerReceptionDialog({
+  achatId,
+  ligne,
+  open,
+  onClose,
+}: {
+  achatId: number
+  ligne: LigneAchat | null
+  open: boolean
+  onClose: () => void
+}) {
+  const corrigerM = useCorrigerReceptionAchat()
+  const schema = z.object({
+    nouvelleQuantiteRecue: z.number().min(0, 'Quantité reçue doit être ≥ 0'),
+    justification: z.string().min(1, 'La justification est requise'),
+  })
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<{ nouvelleQuantiteRecue: number; justification: string }>({
+    resolver: zodResolver(schema),
+    defaultValues: { nouvelleQuantiteRecue: 0, justification: '' },
+  })
+
+  useEffect(() => {
+    if (open && ligne) {
+      reset({ nouvelleQuantiteRecue: Number(ligne.quantiteRecue), justification: '' })
+    }
+  }, [open, ligne, reset])
+
+  if (!open || !ligne) return null
+
+  const onSubmit = handleSubmit(async (values) => {
+    await corrigerM.mutateAsync({
+      achatId,
+      ligneId: ligne.id,
+      nouvelleQuantiteRecue: values.nouvelleQuantiteRecue,
+      justification: values.justification,
+    })
+    onClose()
+  })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-[460px] rounded-lg bg-background p-6 shadow-xl">
+        <h3 className="mb-4 text-lg font-semibold">Corriger la réception</h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Article&nbsp;: <span className="font-medium text-foreground">{ligne.article?.designation ?? `#${ligne.articleId}`}</span>
+        </p>
+        <p className="mb-2 text-sm text-muted-foreground">
+          Quantité commandée&nbsp;: <span className="font-mono">{Number(ligne.quantite)}</span>
+          &nbsp;— Actuellement reçue&nbsp;: <span className="font-mono">{Number(ligne.quantiteRecue)}</span>
+        </p>
+        <form onSubmit={onSubmit} className="grid gap-2">
+          <div className="grid gap-2">
+            <Label htmlFor="nouvelle-quantite">Nouvelle quantité reçue <span className="text-destructive">*</span></Label>
+            <Controller
+              control={control}
+              name="nouvelleQuantiteRecue"
+              render={({ field }) => (
+                <Input
+                  id="nouvelle-quantite"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={field.value}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              )}
+            />
+            {errors.nouvelleQuantiteRecue && (
+              <p className="text-xs text-destructive">{errors.nouvelleQuantiteRecue.message}</p>
+            )}
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="justification">Justification <span className="text-destructive">*</span></Label>
+            <Textarea
+              id="justification"
+              placeholder="Motif de la correction…"
+              {...register('justification')}
+            />
+            {errors.justification && (
+              <p className="text-xs text-destructive">{errors.justification.message}</p>
+            )}
+          </div>
+          {corrigerM.error && (
+            <p className="text-xs text-destructive">
+              {(corrigerM.error as ApiError).message ?? 'Erreur lors de la correction'}
+            </p>
+          )}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button type="submit" size="sm" disabled={corrigerM.isPending}>
+              {corrigerM.isPending ? 'Enregistrement…' : 'Enregistrer la correction'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ── Page détail achat ───────────────────────────────────────────
 export default function AchatDetailPage({
   params,
@@ -418,8 +528,11 @@ export default function AchatDetailPage({
   const [ligneEnEdition, setLigneEnEdition] = useState<LigneAchat | null>(null)
   const [receptionDialogOpen, setReceptionDialogOpen] = useState(false)
   const [ligneEnReception, setLigneEnReception] = useState<LigneAchat | null>(null)
+  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false)
+  const [ligneEnCorrection, setLigneEnCorrection] = useState<LigneAchat | null>(null)
 
   const { data: achat, isLoading } = useGetAchat(achatId)
+  const { data: user } = useAuth()
   const { data: plateformes } = useGetPlateformes()
   const { data: commandes } = useGetCommandes()
   const { data: clients } = useGetClients()
@@ -805,7 +918,9 @@ export default function AchatDetailPage({
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
-                    {(achat.statut === 0 || achat.statut === 2) && (
+                    {(achat.statut === 0 ||
+                      achat.statut === 2 ||
+                      achat.statut === 3) && (
                       <TableHead className="text-right">Actions</TableHead>
                     )}
                   </TableRow>
@@ -814,7 +929,13 @@ export default function AchatDetailPage({
                   {achat.lignesAchat.length === 0 && (
                     <TableRow>
                       <TableCell
-                        colSpan={achat.statut === 0 || achat.statut === 2 ? 9 :achat.statut >= 2 ? 8 : 7}
+                        colSpan={
+                          achat.statut === 0 || achat.statut === 2 || achat.statut === 3
+                            ? 9
+                            : achat.statut >= 2
+                              ? 8
+                              : 7
+                        }
                         className="py-10 text-center text-muted-foreground"
                       >
                         Aucune ligne.{achat.statut === 0 && ' Ajoutez des articles.'}
@@ -911,6 +1032,43 @@ export default function AchatDetailPage({
                               Complet
                             </span>
                           )}
+                          {user?.estAdministrateur &&
+                            (l.statutLigne === 1 ||
+                              l.statutLigne === 2 ||
+                              l.statutLigne === 3) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="ml-2"
+                                onClick={() => {
+                                  setLigneEnCorrection(l)
+                                  setCorrectionDialogOpen(true)
+                                }}
+                              >
+                                <Wrench className="mr-1 size-3.5" />
+                                Corriger
+                              </Button>
+                            )}
+                        </TableCell>
+                      )}
+                      {achat.statut === 3 && (
+                        <TableCell className="text-right">
+                          {user?.estAdministrateur &&
+                            (l.statutLigne === 1 ||
+                              l.statutLigne === 2 ||
+                              l.statutLigne === 3) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setLigneEnCorrection(l)
+                                  setCorrectionDialogOpen(true)
+                                }}
+                              >
+                                <Wrench className="mr-1 size-3.5" />
+                                Corriger
+                              </Button>
+                            )}
                         </TableCell>
                       )}
                     </TableRow>
@@ -948,6 +1106,12 @@ export default function AchatDetailPage({
         ligne={ligneEnReception}
         open={receptionDialogOpen}
         onClose={() => setReceptionDialogOpen(false)}
+      />
+      <CorrigerReceptionDialog
+        achatId={achatId}
+        ligne={ligneEnCorrection}
+        open={correctionDialogOpen}
+        onClose={() => setCorrectionDialogOpen(false)}
       />
     </div>
   )
