@@ -60,6 +60,8 @@ const roleSchema = z.object({
   peutValiderImportations: z.boolean(),
   peutVoirDashboard: z.boolean(),
   peutVoirRapports: z.boolean(),
+  peutVoirFactures: z.boolean(),
+  peutGererFactures: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
@@ -73,6 +75,7 @@ const PERM_ECRITURE = [
   { key: 'peutValiderImportations', label: 'Gérer les importations' },
   { key: 'peutGererMouvements', label: 'Gérer les mouvements de stock' },
   { key: 'peutGererPlateformes', label: 'Gérer les plateformes' },
+  { key: 'peutGererFactures', label: 'Gérer les factures' },
 ] as const
 
 const PERM_LECTURE = [
@@ -87,6 +90,7 @@ const PERM_LECTURE = [
   { key: 'peutGererImportations', label: 'Voir les importations' },
   { key: 'peutVoirDashboard', label: 'Voir le dashboard' },
   { key: 'peutVoirRapports', label: 'Voir les rapports' },
+  { key: 'peutVoirFactures', label: 'Voir les factures' },
 ] as const
 
 const DEFAULT_VALUES: RoleSchema = {
@@ -116,6 +120,8 @@ const DEFAULT_VALUES: RoleSchema = {
   peutValiderImportations: false,
   peutVoirDashboard: true,
   peutVoirRapports: true,
+  peutVoirFactures: false,
+  peutGererFactures: false,
 }
 
 function roleToSchema(r: Role): RoleSchema {
@@ -146,6 +152,8 @@ function roleToSchema(r: Role): RoleSchema {
     peutValiderImportations: r.peutValiderImportations,
     peutVoirDashboard: r.peutVoirDashboard,
     peutVoirRapports: r.peutVoirRapports,
+    peutVoirFactures: r.peutVoirFactures,
+    peutGererFactures: r.peutGererFactures,
   }
 }
 
@@ -358,6 +366,7 @@ export default function RolesPage() {
                 r.peutValiderImportations,
                 r.peutGererMouvements,
                 r.peutGererPlateformes,
+                r.peutGererFactures,
               ].filter(Boolean).length
 
               const nbLecture = [
@@ -372,6 +381,7 @@ export default function RolesPage() {
                 r.peutGererImportations,
                 r.peutVoirDashboard,
                 r.peutVoirRapports,
+                r.peutVoirFactures,
               ].filter(Boolean).length
 
               return (
@@ -394,10 +404,10 @@ export default function RolesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 9`}
+                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 10`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 11`}
+                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 12`}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">

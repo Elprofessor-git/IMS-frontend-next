@@ -29,6 +29,7 @@ const TYPE_LABELS: Record<TypeDocument, string> = {
   BonLivraison: 'Bon de livraison',
   ListeColisage: 'Liste de colisage',
   Autre: 'Autre',
+  BonCommandeProduction: 'Bon de commande production',
 }
 
 const TYPE_BADGE_CLASS: Record<TypeDocument, string> = {
@@ -36,6 +37,7 @@ const TYPE_BADGE_CLASS: Record<TypeDocument, string> = {
   BonLivraison: 'border-violet-200 bg-violet-50 text-violet-800',
   ListeColisage: 'border-emerald-200 bg-emerald-50 text-emerald-800',
   Autre: '',
+  BonCommandeProduction: 'border-orange-200 bg-orange-50 text-orange-800',
 }
 
 function formatSize(bytes: number): string {
@@ -47,7 +49,7 @@ export function DocumentSection({
   scope,
   parentId,
 }: {
-  scope: 'achat' | 'importation'
+  scope: 'achat' | 'importation' | 'commande'
   parentId: number
 }) {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -62,7 +64,8 @@ export function DocumentSection({
   const uploadMutation = useUploadDocument(scope, parentId)
   const deleteMutation = useDeleteDocument(scope, parentId)
 
-  const entitySegment = scope === 'achat' ? 'Achat' : 'Importation'
+  const entitySegment =
+    scope === 'achat' ? 'Achat' : scope === 'importation' ? 'Importation' : 'CommandeClient'
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null
@@ -264,6 +267,9 @@ export function DocumentSection({
                     <SelectItem value="Facture">Facture</SelectItem>
                     <SelectItem value="BonLivraison">Bon de livraison</SelectItem>
                     <SelectItem value="ListeColisage">Liste de colisage</SelectItem>
+                    <SelectItem value="BonCommandeProduction">
+                      Bon de commande production
+                    </SelectItem>
                     <SelectItem value="Autre">Autre</SelectItem>
                   </SelectContent>
                 </Select>

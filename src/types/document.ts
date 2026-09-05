@@ -1,4 +1,9 @@
-export type TypeDocument = 'Facture' | 'BonLivraison' | 'ListeColisage' | 'Autre'
+export type TypeDocument =
+  | 'Facture'
+  | 'BonLivraison'
+  | 'ListeColisage'
+  | 'Autre'
+  | 'BonCommandeProduction'
 
 export type DocumentJoint = {
   id: number

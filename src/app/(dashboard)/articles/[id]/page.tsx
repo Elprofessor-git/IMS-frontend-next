@@ -95,6 +95,7 @@ export default function EditArticlePage({
         marque: article.marque ?? '',
         reference: article.reference ?? '',
         caracteristiques: article.caracteristiques ?? '',
+        laize: article.laize ?? null,
         seuilAlerte: article.seuilAlerte,
         seuilCritique: article.seuilCritique,
       })
@@ -260,6 +261,24 @@ export default function EditArticlePage({
                       <Label htmlFor="unite">Unité</Label>
                       <Input id="unite" {...register('unite')} />
                     </div>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="laize">Laize (m) — tissus uniquement</Label>
+                    <Input
+                      id="laize"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Ex. 1.50"
+                      {...register('laize', {
+                        setValueAs: (v) => (v === '' ? null : Number(v)),
+                      })}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Largeur du rouleau de tissu en mètres. Laissez vide pour les articles
+                      non tissus (boutons, fils…).
+                    </p>
                   </div>
 
                   <div className="grid gap-2">

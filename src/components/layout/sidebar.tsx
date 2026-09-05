@@ -56,6 +56,7 @@ const NAV: (NavItem | NavGroup)[] = [
   { href: '/achats',      label: 'Achats',       icon: ShoppingCart,    iconColor: 'text-teal-600 group-data-[active=true]:text-white dark:text-teal-400', module: 'achats' },
   { href: '/importations',label: 'Importations', icon: FileDown,        iconColor: 'text-blue-600 group-data-[active=true]:text-white dark:text-blue-400', module: 'importations' },
   { href: '/commandes',   label: 'Commandes',    icon: ClipboardList,   iconColor: 'text-pink-600 group-data-[active=true]:text-white dark:text-pink-400', module: 'commandes' },
+  { href: '/factures',    label: 'Factures',     icon: Receipt,         iconColor: 'text-lime-600 group-data-[active=true]:text-white dark:text-lime-400', module: 'factures' },
   { href: '/taches',      label: 'Tâches',       icon: CheckSquare,     iconColor: 'text-emerald-600 group-data-[active=true]:text-white dark:text-emerald-400', module: 'taches' },
   {
     label: 'Partenaires',

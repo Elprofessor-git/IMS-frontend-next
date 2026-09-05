@@ -2,6 +2,10 @@ import { z } from 'zod'
 
 const nullableStr = (max: number) => z.string().max(max).nullable()
 
+const nullableOrEmptyNumber = z
+  .union([z.number().positive('Laize > 0'), z.literal(''), z.literal(null)])
+  .nullable()
+
 export const articleSchema = z.object({
   designation: z.string().min(1, 'La désignation est requise').max(100),
   description: nullableStr(500),
@@ -11,6 +15,7 @@ export const articleSchema = z.object({
   marque: nullableStr(100),
   reference: nullableStr(100),
   caracteristiques: nullableStr(1000),
+  laize: nullableOrEmptyNumber,
   seuilAlerte: z.number().int().min(0, 'Minimum 0'),
   seuilCritique: z.number().int().min(0, 'Minimum 0'),
 })
@@ -27,6 +32,7 @@ export function toArticlePayload(data: ArticleSchema) {
     marque: data.marque?.trim() || null,
     reference: data.reference?.trim() || null,
     caracteristiques: data.caracteristiques?.trim() || null,
+    laize: typeof data.laize === 'number' ? data.laize : null,
     seuilAlerte: data.seuilAlerte,
     seuilCritique: data.seuilCritique,
   }

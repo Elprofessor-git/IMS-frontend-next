@@ -32,6 +32,7 @@ export type Article = {
   marque: string | null
   reference: string | null
   caracteristiques: string | null
+  laize: number | null
   prixUnitaireMoyen: number
   seuilAlerte: number
   seuilCritique: number

@@ -49,7 +49,8 @@ export type BomLigne = {
   articleId: number
   quantiteParPiece: number
   unite: string | null
-  article: { id: number; designation: string; reference: string | null } | null
+  estConsommableTissu: boolean
+  article: { id: number; designation: string; reference: string | null; laize: number | null } | null
 }
 
 export type ResultatCalcul = {
@@ -81,6 +82,7 @@ export type CommandeClient = {
   montantTotal: number
   devise: string | null
   pourcentageRessourcesCouvertes: number
+  prixFacon: number | null
   notesSpeciales: string | null
   specificationsClient: string | null
   dateCreation: string
@@ -110,9 +112,10 @@ export type CalculerResponse = {
   toutSuffisant: boolean
 }
 
-// Payload PUT /api/CommandeClient/{id} : en-tête uniquement (3 champs modifiables si statut <= 1).
+// Payload PUT /api/CommandeClient/{id} : en-tête uniquement (champs modifiables si statut <= 1).
 export type UpdateCommandePayload = {
   titreCommande: string | null
   dateLivraisonSouhaitee: string | null
   notesSpeciales: string | null
+  prixFacon: number | null
 }

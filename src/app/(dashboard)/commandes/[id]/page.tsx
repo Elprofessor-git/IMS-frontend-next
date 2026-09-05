@@ -4,7 +4,9 @@ import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks, Paperclip, Scissors } from 'lucide-react'
+import { DocumentSection } from '@/components/documents/document-section'
+import { RapportCoupeSection } from '@/components/rapport-coupe/rapport-coupe-section'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,6 +42,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { StatutWorkflow } from '@/components/ui/statut-workflow'
 import { ArticleSelect } from '@/components/forms/article-select'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   useGetCommande,
   useUpdateCommande,
@@ -308,7 +311,11 @@ function BomForm({
   const setBomMutation = useSetBom()
   const { control, register, handleSubmit, formState: { errors } } = useForm<{ bom: BomItem[] }>({
     resolver: zodResolver(z.object({ bom: z.array(bomItemSchema) })),
-    defaultValues: { bom: initial.length > 0 ? initial : [{ articleId: 0, quantiteParPiece: 0, unite: null }] },
+    defaultValues: {
+      bom: initial.length > 0
+        ? initial
+        : [{ articleId: 0, quantiteParPiece: 0, unite: null, estConsommableTissu: false }],
+    },
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'bom' })
 
@@ -345,13 +352,28 @@ function BomForm({
             <Label>Unité</Label>
             <Input placeholder="m, kg…" {...register(`bom.${idx}.unite`)} />
           </div>
+          <div className="flex h-9 items-center gap-1.5">
+            <Controller
+              name={`bom.${idx}.estConsommableTissu`}
+              control={control}
+              render={({ field: fld }) => (
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Checkbox
+                    checked={fld.value}
+                    onCheckedChange={(v) => fld.onChange(v === true)}
+                  />
+                  Tissu consommable
+                </label>
+              )}
+            />
+          </div>
           <Button type="button" variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" title="Supprimer" onClick={() => remove(idx)}>
             <Trash2 className="size-3.5" />
           </Button>
         </div>
       ))}
       <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => append({ articleId: 0, quantiteParPiece: 0, unite: null })}>
+        <Button type="button" variant="outline" size="sm" onClick={() => append({ articleId: 0, quantiteParPiece: 0, unite: null, estConsommableTissu: false })}>
           <Plus className="size-3.5" /> Ajouter
         </Button>
         <Button type="submit" size="sm" disabled={setBomMutation.isPending}>
@@ -380,6 +402,7 @@ export default function CommandeDetailPage({
   const [notesEdit, setNotesEdit] = useState('')
   const [dateLivraisonEdit, setDateLivraisonEdit] = useState('')
   const [titreEdit, setTitreEdit] = useState('')
+  const [prixFaconEdit, setPrixFaconEdit] = useState('')
   const [tab, setTab] = useState('ressources')
 
   const { data: commande, isLoading } = useGetCommande(commandeId)
@@ -479,6 +502,14 @@ export default function CommandeDetailPage({
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="documents">
+            <Paperclip className="size-4" />
+            Documents
+          </TabsTrigger>
+          <TabsTrigger value="rapport">
+            <Scissors className="size-4" />
+            Rapport de coupe
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}
@@ -529,6 +560,14 @@ export default function CommandeDetailPage({
                       <dd className="whitespace-pre-line">{commande.notesSpeciales}</dd>
                     </div>
                   )}
+                  {commande.prixFacon != null && (
+                    <div>
+                      <dt className="text-muted-foreground">Prix façon / pièce</dt>
+                      <dd className="font-semibold tabular-nums">
+                        {commande.prixFacon.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                      </dd>
+                    </div>
+                  )}
                   {commande.creePar && (
                     <div>
                       <dt className="text-muted-foreground">Créé par</dt>
@@ -572,6 +611,23 @@ export default function CommandeDetailPage({
                         onChange={(e) => setNotesEdit(e.target.value)}
                       />
                     </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-prix-facon">
+                        Prix façon / pièce
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">
+                          (utilisé pour la facturation)
+                        </span>
+                      </Label>
+                      <Input
+                        id="edit-prix-facon"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        defaultValue={commande.prixFacon ?? ''}
+                        onChange={(e) => setPrixFaconEdit(e.target.value)}
+                        className="max-w-xs"
+                      />
+                    </div>
                     <Button
                       size="sm"
                       disabled={updateMutation.isPending}
@@ -582,6 +638,10 @@ export default function CommandeDetailPage({
                             titreCommande: titreEdit || (commande.titreCommande ?? null),
                             dateLivraisonSouhaitee: dateLivraisonEdit || commande.dateLivraisonSouhaitee,
                             notesSpeciales: notesEdit || commande.notesSpeciales,
+                            prixFacon:
+                              prixFaconEdit !== ''
+                                ? parseFloat(prixFaconEdit)
+                                : (commande.prixFacon ?? null),
                           },
                         })
                       }
@@ -671,6 +731,7 @@ export default function CommandeDetailPage({
                       articleId: b.articleId,
                       quantiteParPiece: Number(b.quantiteParPiece),
                       unite: b.unite,
+                      estConsommableTissu: b.estConsommableTissu ?? false,
                     }))}
                     onDone={() => setEditBom(false)}
                   />
@@ -684,6 +745,7 @@ export default function CommandeDetailPage({
                           <TableHead>Article</TableHead>
                           <TableHead className="text-right">Qté / pièce</TableHead>
                           <TableHead>Unité</TableHead>
+                          <TableHead>Consommable tissu</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -697,6 +759,15 @@ export default function CommandeDetailPage({
                             </TableCell>
                             <TableCell className="text-right font-mono">{Number(b.quantiteParPiece)}</TableCell>
                             <TableCell className="text-muted-foreground">{b.unite ?? '—'}</TableCell>
+                            <TableCell>
+                              {b.estConsommableTissu ? (
+                                <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-800">
+                                  Tissu
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground">Non</span>
+                              )}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -1024,6 +1095,16 @@ export default function CommandeDetailPage({
               </span>
             </div>
           </div>
+        </TabsContent>
+
+        {/* ── Onglet Documents ── */}
+        <TabsContent value="documents">
+          <DocumentSection scope="commande" parentId={commandeId} />
+        </TabsContent>
+
+        {/* ── Onglet Rapport de coupe ── */}
+        <TabsContent value="rapport">
+          <RapportCoupeSection commandeId={commandeId} />
         </TabsContent>
       </Tabs>
 

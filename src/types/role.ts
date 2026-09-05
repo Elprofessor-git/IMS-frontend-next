@@ -27,6 +27,8 @@ export type Role = {
   peutValiderImportations: boolean
   peutVoirDashboard: boolean
   peutVoirRapports: boolean
+  peutVoirFactures: boolean
+  peutGererFactures: boolean
 }
 
 export type CreateRolePayload = Omit<Role, 'id' | 'estActif'>

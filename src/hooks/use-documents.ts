@@ -6,17 +6,26 @@ import { apiClient } from '@/lib/api-client'
 import type { DocumentJoint, TypeDocument } from '@/types/document'
 import type { ApiError } from '@/types'
 
+export type DocumentScope = 'achat' | 'importation' | 'commande'
+
 const PROXY_BASE = '/api/proxy'
 
-function docKey(scope: 'achat' | 'importation', parentId: number) {
+function docKey(scope: DocumentScope, parentId: number) {
   return ['documents', scope, parentId] as const
 }
 
-function entityPath(scope: 'achat' | 'importation', parentId: number) {
-  return scope === 'achat' ? `/api/Achat/${parentId}` : `/api/Importation/${parentId}`
+function entityPath(scope: DocumentScope, parentId: number) {
+  switch (scope) {
+    case 'achat':
+      return `/api/Achat/${parentId}`
+    case 'importation':
+      return `/api/Importation/${parentId}`
+    case 'commande':
+      return `/api/CommandeClient/${parentId}`
+  }
 }
 
-export function useGetDocuments(scope: 'achat' | 'importation', parentId: number) {
+export function useGetDocuments(scope: DocumentScope, parentId: number) {
   return useQuery<DocumentJoint[]>({
     queryKey: docKey(scope, parentId),
     queryFn: () => apiClient.get<DocumentJoint[]>(`${entityPath(scope, parentId)}/Documents`),
@@ -24,7 +33,7 @@ export function useGetDocuments(scope: 'achat' | 'importation', parentId: number
   })
 }
 
-export function useUploadDocument(scope: 'achat' | 'importation', parentId: number) {
+export function useUploadDocument(scope: DocumentScope, parentId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({
@@ -76,7 +85,7 @@ export function useUploadDocument(scope: 'achat' | 'importation', parentId: numb
   })
 }
 
-export function useDeleteDocument(scope: 'achat' | 'importation', parentId: number) {
+export function useDeleteDocument(scope: DocumentScope, parentId: number) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (docId: number) =>

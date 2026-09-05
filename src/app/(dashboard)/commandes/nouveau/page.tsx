@@ -33,6 +33,7 @@ import {
 } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
 import { PermissionGate } from '@/components/auth/permission-gate'
+import { Checkbox } from '@/components/ui/checkbox'
 
 // Schéma combiné pour le formulaire de création
 const createSchema = commandeSchema.extend({
@@ -301,7 +302,7 @@ export default function NouvelleCommandePage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => appendBom({ articleId: 0, quantiteParPiece: 0, unite: null })}
+                  onClick={() => appendBom({ articleId: 0, quantiteParPiece: 0, unite: null, estConsommableTissu: false })}
                 >
                   <Plus className="size-3.5" />
                   Ajouter
@@ -350,6 +351,21 @@ export default function NouvelleCommandePage() {
                       <Input
                         placeholder="m, kg…"
                         {...register(`bom.${idx}.unite`)}
+                      />
+                    </div>
+                    <div className="flex h-9 items-center gap-1.5">
+                      <Controller
+                        name={`bom.${idx}.estConsommableTissu`}
+                        control={control}
+                        render={({ field: f }) => (
+                          <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                            <Checkbox
+                              checked={f.value}
+                              onCheckedChange={(v) => f.onChange(v === true)}
+                            />
+                            Tissu consommable
+                          </label>
+                        )}
                       />
                     </div>
                     <Button

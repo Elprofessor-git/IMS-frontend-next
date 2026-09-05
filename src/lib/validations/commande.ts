@@ -36,11 +36,12 @@ export const taillesSchema = z.array(tailleItemSchema)
 
 export type TailleItem = z.infer<typeof tailleItemSchema>
 
-// POST /Bom — remplace TOUT — tableau de { articleId, quantiteParPiece, unite? }
+// POST /Bom — remplace TOUT — tableau de { articleId, quantiteParPiece, unite?, estConsommableTissu? }
 export const bomItemSchema = z.object({
   articleId: z.number().int().min(1, 'Article requis'),
   quantiteParPiece: z.number().min(0.001, 'Quantité > 0'),
   unite: z.string().max(50).nullable(),
+  estConsommableTissu: z.boolean(),
 })
 
 export const bomSchema = z.array(bomItemSchema)
