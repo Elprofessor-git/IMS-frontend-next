@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Scissors, Truck, Trash2, AlertTriangle, FileDown } from 'lucide-react'
+import { Scissors, Truck, Trash2, AlertTriangle, FileDown, FileText } from 'lucide-react'
 import {
   useGetRapportCoupe,
   useGetCoupes,
@@ -142,18 +142,20 @@ export function RapportCoupeSection({ commandeId }: { commandeId: number }) {
   const { data: rapport, isLoading } = useGetRapportCoupe(commandeId)
   const supprimerCoupe = useSupprimerCoupe(commandeId)
   const supprimerExport = useSupprimerExport(commandeId)
-  const [exportEnCours, setExportEnCours] = useState(false)
+  const [exportEnCours, setExportEnCours] = useState<'xlsx' | 'pdf' | null>(null)
 
-  const telecharger = () => {
+  const telecharger = (format: 'xlsx' | 'pdf') => {
     if (!rapport) return
-    setExportEnCours(true)
+    setExportEnCours(format)
     downloadViaProxy(
-      `/api/proxy/api/RapportCoupe/${commandeId}/Export`,
-      `RapportCoupe_${rapport.numeroCommande}.xlsx`,
+      `/api/proxy/api/RapportCoupe/${commandeId}/Export${format === 'pdf' ? 'Pdf' : ''}`,
+      format === 'pdf'
+        ? `RapportCoupe_${rapport.numeroCommande}.pdf`
+        : `RapportCoupe_${rapport.numeroCommande}.xlsx`,
     )
       .then(() => toast.success('Rapport de coupe téléchargé'))
       .catch((e: Error) => toast.error(e.message ?? 'Téléchargement impossible'))
-      .finally(() => setExportEnCours(false))
+      .finally(() => setExportEnCours(null))
   }
 
   if (isLoading) {
@@ -178,10 +180,16 @@ export function RapportCoupeSection({ commandeId }: { commandeId: number }) {
           Coupes : <b>{rapport.totalQuantiteCoupee}</b> / {rapport.totalQuantiteCommande} pièces · Exports :{' '}
           <b>{rapport.totalQuantiteExportee}</b>
         </span>
-        <Button variant="outline" size="sm" onClick={telecharger} disabled={exportEnCours}>
-          <FileDown className="size-3.5" />
-          {exportEnCours ? 'Génération…' : 'Télécharger (Excel)'}
-        </Button>
+        <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => telecharger('xlsx')} disabled={exportEnCours !== null}>
+              <FileDown className="size-3.5" />
+              {exportEnCours === 'xlsx' ? 'Génération…' : 'Télécharger (Excel)'}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => telecharger('pdf')} disabled={exportEnCours !== null}>
+              <FileText className="size-3.5" />
+              {exportEnCours === 'pdf' ? 'Génération…' : 'Télécharger (PDF)'}
+            </Button>
+          </div>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -138,6 +138,19 @@ export default function FacturesPage() {
             <Button
               variant="ghost"
               size="icon-sm"
+              title="Télécharger (PDF)"
+              onClick={() =>
+                downloadViaProxy(
+                  `/api/proxy/api/Facture/${f.id}/ExportPdf`,
+                  `Facture_${f.numeroFacture}.pdf`,
+                ).catch((e: Error) => toast.error(e.message ?? 'Téléchargement impossible'))
+              }
+            >
+              <FileText className="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
               title="Voir la facture"
               onClick={() => {
                 setDetailId(f.id)

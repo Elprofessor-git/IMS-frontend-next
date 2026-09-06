@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LoaderCircle, Pencil, Receipt, Send, CheckCircle2, Ban, Trash2, FileDown } from 'lucide-react'
+import { LoaderCircle, Pencil, Receipt, Send, CheckCircle2, Ban, Trash2, FileDown, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -47,17 +47,19 @@ export function FactureDetailDialog({ factureId, open, onOpenChange, onEdit }: P
   const emettreMutation = useEmettreFacture()
   const reglerMutation = useReglerFacture()
   const deleteMutation = useDeleteFacture()
-  const [exportEnCours, setExportEnCours] = useState(false)
+  const [exportEnCours, setExportEnCours] = useState<'xlsx' | 'pdf' | null>(null)
 
-  const telecharger = () => {
-    setExportEnCours(true)
+  const telecharger = (format: 'xlsx' | 'pdf') => {
+    setExportEnCours(format)
     downloadViaProxy(
-      `/api/proxy/api/Facture/${factureId}/Export`,
-      `Facture_${facture?.numeroFacture ?? factureId}.xlsx`,
+      `/api/proxy/api/Facture/${factureId}/Export${format === 'pdf' ? 'Pdf' : ''}`,
+      format === 'pdf'
+        ? `Facture_${facture?.numeroFacture ?? factureId}.pdf`
+        : `Facture_${facture?.numeroFacture ?? factureId}.xlsx`,
     )
       .then(() => toast.success('Facture téléchargée'))
       .catch((e: Error) => toast.error(e.message ?? 'Téléchargement impossible'))
-      .finally(() => setExportEnCours(false))
+      .finally(() => setExportEnCours(null))
   }
 
   if (!facture) return null
@@ -198,15 +200,26 @@ export function FactureDetailDialog({ factureId, open, onOpenChange, onEdit }: P
         </div>
 
         <DialogFooter className="flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={telecharger}
-            disabled={isLoading || exportEnCours}
-          >
-            <FileDown className="size-3.5" />
-            {exportEnCours ? 'Génération…' : 'Télécharger'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => telecharger('xlsx')}
+              disabled={isLoading || exportEnCours !== null}
+            >
+              <FileDown className="size-3.5" />
+              {exportEnCours === 'xlsx' ? 'Génération…' : 'Télécharger (Excel)'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => telecharger('pdf')}
+              disabled={isLoading || exportEnCours !== null}
+            >
+              <FileText className="size-3.5" />
+              {exportEnCours === 'pdf' ? 'Génération…' : 'Télécharger (PDF)'}
+            </Button>
+          </div>
           <PermissionGate module="factures" mode="write">
             {statut === 0 && (
               <>
