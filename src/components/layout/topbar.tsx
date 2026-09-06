@@ -34,7 +34,7 @@ export function Topbar() {
             <h1 className="truncate text-[15px] font-semibold text-white sm:text-base">
               Système de Gestion Textile
             </h1>
-            <p className="hidden text-xs text-white/70 sm:block">IMS · Production &amp; Stock</p>
+            <p className="hidden text-xs text-white/70 sm:block">Système de Gestion Textile</p>
           </div>
         </div>
       </div>

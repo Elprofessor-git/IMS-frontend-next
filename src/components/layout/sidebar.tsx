@@ -196,7 +196,7 @@ export function Sidebar() {
         </span>
         <div className="min-w-0 leading-tight">
           <span className="block truncate text-[15px] font-bold tracking-tight text-sidebar-foreground">
-            IMS · Gestion Textile
+            Système de Gestion Textile
           </span>
           <span className="block truncate text-xs text-sidebar-foreground/60">
             Production &amp; Stock
@@ -234,7 +234,7 @@ export function MobileSidebar() {
             </span>
             <div className="leading-tight">
               <span className="block text-[15px] font-bold tracking-tight text-sidebar-foreground">
-                IMS · Gestion Textile
+                Système de Gestion Textile
               </span>
               <span className="block text-xs text-sidebar-foreground/60">
                 Production &amp; Stock

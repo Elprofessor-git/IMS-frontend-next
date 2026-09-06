@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'IMS — Gestion de stock',
-  description: 'Inventory Management System',
+  title: 'Système de Gestion Textile',
+  description: 'Système de gestion textile — suivi du stock, des achats et de la production',
 }
 
 export default function RootLayout({
