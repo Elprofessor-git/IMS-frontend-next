@@ -13,13 +13,31 @@ async function parseError(response: Response): Promise<ApiError> {
     return { status: 401, message: 'Session expirée. Veuillez vous reconnecter.' }
   }
 
+  // 400 : plusieurs formats possibles selon la source de l'erreur
   if (status === 400) {
     try {
       const data = await response.json()
+
       // BadRequest("string") → corps = JSON string brute (pas un objet)
       if (typeof data === 'string') {
         return { status: 400, message: data }
       }
+
+      // Tableau ASP.NET Core Identity : BadRequest(result.Errors) → [{code, description}, ...]
+      if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object' && 'description' in data[0]) {
+        const descriptions = data
+          .filter((e: unknown): e is { code: string; description: string } =>
+            typeof e === 'object' && e !== null && 'description' in e && typeof (e as Record<string, unknown>).description === 'string')
+          .map((e) => e.description as string)
+        return {
+          status: 400,
+          message: descriptions.length > 0 ? descriptions.join('. ') + '.' : 'Requête invalide.',
+          errors: descriptions.length > 0
+            ? Object.fromEntries(descriptions.map((e, i) => [`erreurs[${i}]`, [e]]))
+            : undefined,
+        }
+      }
+
       // { message, erreurs } : erreurs de cohérence métier (ex. SoumettreAchat)
       if (data && typeof data === 'object' && typeof data.message === 'string') {
         const erreurs: string[] = Array.isArray(data.erreurs)
@@ -33,6 +51,8 @@ async function parseError(response: Response): Promise<ApiError> {
             : undefined,
         }
       }
+
+      // ValidationProblemDetails : ASP.NET Core ModelState/Validations
       const problem = data as ValidationProblemDetails
       const firstError = problem.errors
         ? Object.values(problem.errors).flat()[0]
