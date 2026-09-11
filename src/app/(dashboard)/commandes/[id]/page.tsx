@@ -4,9 +4,10 @@ import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks, Paperclip, Scissors } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks, Paperclip, Scissors, Boxes } from 'lucide-react'
 import { DocumentSection } from '@/components/documents/document-section'
 import { RapportCoupeSection } from '@/components/rapport-coupe/rapport-coupe-section'
+import { FournituresSection } from '@/components/fournitures/fournitures-section'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -509,6 +510,10 @@ export default function CommandeDetailPage({
           <TabsTrigger value="rapport">
             <Scissors className="size-4" />
             Rapport de coupe
+          </TabsTrigger>
+          <TabsTrigger value="fournitures">
+            <Boxes className="size-4" />
+            Fournitures
           </TabsTrigger>
         </TabsList>
 
@@ -1105,6 +1110,11 @@ export default function CommandeDetailPage({
         {/* ── Onglet Rapport de coupe ── */}
         <TabsContent value="rapport">
           <RapportCoupeSection commandeId={commandeId} />
+        </TabsContent>
+
+        {/* ── Onglet Fournitures ── */}
+        <TabsContent value="fournitures">
+          <FournituresSection commandeId={commandeId} />
         </TabsContent>
       </Tabs>
 
