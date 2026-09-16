@@ -27,6 +27,7 @@ import {
   X,
   Shirt,
   Settings,
+  CableCar,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetClose, SheetTrigger } from '@/components/ui/sheet'
@@ -58,6 +59,7 @@ const NAV: (NavItem | NavGroup)[] = [
   { href: '/commandes',   label: 'Commandes',    icon: ClipboardList,   iconColor: 'text-pink-600 group-data-[active=true]:text-white dark:text-pink-400', module: 'commandes' },
   { href: '/factures',    label: 'Factures',     icon: Receipt,         iconColor: 'text-lime-600 group-data-[active=true]:text-white dark:text-lime-400', module: 'factures' },
   { href: '/taches',      label: 'Tâches',       icon: CheckSquare,     iconColor: 'text-emerald-600 group-data-[active=true]:text-white dark:text-emerald-400', module: 'taches' },
+  { href: '/machines',    label: 'Machines',     icon: CableCar,        iconColor: 'text-sky-600 group-data-[active=true]:text-white dark:text-sky-400', module: 'machines' },
   {
     label: 'Partenaires',
     icon: Users,
