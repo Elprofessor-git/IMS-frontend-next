@@ -91,7 +91,7 @@ function KpiCard({
           {loading ? (
             <Skeleton className="mt-1 h-8 w-24" />
           ) : (
-            <p className="text-3xl font-bold leading-none">{value}</p>
+            <p className="break-words text-2xl font-bold leading-none sm:text-3xl">{value}</p>
           )}
           {sub && !loading && (
             <p className="mt-1 text-[13px] text-muted-foreground">{sub}</p>

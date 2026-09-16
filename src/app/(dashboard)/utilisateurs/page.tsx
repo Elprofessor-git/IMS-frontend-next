@@ -141,7 +141,7 @@ export default function UtilisateursPage() {
                   {u.nom}
                   {u.prenom ? ` ${u.prenom}` : ''}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                <TableCell className="max-w-[280px] whitespace-normal break-words text-muted-foreground">{u.email}</TableCell>
                 <TableCell>
                   <PermissionGate
                     module="utilisateurs"

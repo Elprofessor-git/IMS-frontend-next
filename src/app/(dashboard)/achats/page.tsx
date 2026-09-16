@@ -425,14 +425,14 @@ export default function AchatsPage() {
         header: 'Article',
         cardPrimary: true,
         cell: ({ ligne }) => (
-          <span>{ligne?.article?.designation ?? '—'}</span>
+          <span className="whitespace-normal break-words max-w-[280px]">{ligne?.article?.designation ?? '—'}</span>
         ),
       },
       {
         key: 'designation',
         header: 'Désignation / Réf.',
         cell: ({ ligne }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground whitespace-normal break-words max-w-[160px]">
             {ligne?.article?.reference ?? '—'}
           </span>
         ),
@@ -441,7 +441,7 @@ export default function AchatsPage() {
         key: 'caracteristiques',
         header: 'Couleur / Taille / Dim.',
         cell: ({ ligne }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground whitespace-normal break-words max-w-[160px]">
             {[ligne?.couleur, ligne?.taille, ligne?.dimension].filter(Boolean).join(' · ') || '—'}
           </span>
         ),
@@ -487,7 +487,7 @@ export default function AchatsPage() {
         header: 'Plateforme',
         cardPrimary: true,
         cell: ({ achat, ligne }) => (
-          <span className="text-sm">
+          <span className="text-sm whitespace-normal break-words max-w-[200px]">
             {ligne
               ? (plateformeDeLaLigne(ligne, plateformes) ?? plateformeDeLAchat(achat) ?? '—')
               : (plateformeDeLAchat(achat) ?? '—')}
@@ -498,7 +498,7 @@ export default function AchatsPage() {
         key: 'commandeDestinee',
         header: 'Commande destinée',
         cell: ({ achat, ligne }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground whitespace-normal break-words max-w-[200px]">
             {libelleCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '—'}
           </span>
         ),
@@ -507,7 +507,7 @@ export default function AchatsPage() {
         key: 'commandePar',
         header: 'Commandé par',
         cell: ({ achat }) => (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground whitespace-normal break-words max-w-[160px]">
             {achat.creePar ?? '—'}
           </span>
         ),

@@ -78,7 +78,7 @@ export default function PlateformesPage() {
                     {p.nom}
                   </div>
                 </TableCell>
-                <TableCell className="text-muted-foreground">
+                <TableCell className="max-w-[280px] whitespace-normal break-words text-muted-foreground">
                   {p.contactEmail ?? '—'}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
