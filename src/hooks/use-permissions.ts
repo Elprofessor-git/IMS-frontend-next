@@ -1,14 +1,17 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/use-auth'
 import { apiClient } from '@/lib/api-client'
 import type { PermissionEntry } from '@/types/permission'
 
 export const PERMISSIONS_KEY = ['permissions', 'me'] as const
 
 export function useMyPermissions() {
+  const { data: user } = useAuth()
+  const userId = user?.id ?? ''
   return useQuery<PermissionEntry[]>({
-    queryKey: PERMISSIONS_KEY,
+    queryKey: [...PERMISSIONS_KEY, userId],
     queryFn: () => apiClient.get<PermissionEntry[]>('/api/Permission/me'),
     staleTime: Infinity,
     gcTime: Infinity,

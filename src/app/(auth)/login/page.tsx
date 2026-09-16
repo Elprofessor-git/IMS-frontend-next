@@ -11,10 +11,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth'
 import type { AuthResponse } from '@/types'
+import { useQueryClient } from '@tanstack/react-query'
+import { PERMISSIONS_KEY } from '@/hooks/use-permissions'
+import { AUTH_KEY } from '@/hooks/use-auth'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const qc = useQueryClient()
   const expired = searchParams.get('expired')
 
   const [serverError, setServerError] = useState<string | null>(null)
@@ -77,6 +81,12 @@ function LoginForm() {
       }
 
       toast.success('Connexion réussie !')
+
+      // Invalidation du cache React Query après un login réussi
+      // (identique au pattern déjà utilisé dans use-users.ts:73 lors d'un changement de rôle).
+      qc.invalidateQueries({ queryKey: PERMISSIONS_KEY })
+      qc.invalidateQueries({ queryKey: AUTH_KEY })
+
       router.push('/dashboard')
       router.refresh()
     } catch {
