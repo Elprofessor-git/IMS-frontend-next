@@ -1158,7 +1158,7 @@ export default function CommandeDetailPage({
 
         {/* ── Onglet Rapport de coupe ── */}
         <TabsContent value="rapport">
-          <RapportCoupeSection commandeId={commandeId} />
+          <RapportCoupeSection commandeId={commandeId} lectureSeule />
         </TabsContent>
 
         {/* ── Onglet Fournitures ── */}

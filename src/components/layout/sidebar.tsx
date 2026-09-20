@@ -61,7 +61,7 @@ const NAV: (NavItem | NavGroup)[] = [
   { href: '/factures',    label: 'Factures',     icon: Receipt,         iconColor: 'text-lime-600 group-data-[active=true]:text-white dark:text-lime-400', module: 'factures' },
   { href: '/taches',      label: 'Tâches',       icon: CheckSquare,     iconColor: 'text-emerald-600 group-data-[active=true]:text-white dark:text-emerald-400', module: 'taches' },
   { href: '/machines',    label: 'Machines',     icon: CableCar,        iconColor: 'text-sky-600 group-data-[active=true]:text-white dark:text-sky-400', module: 'machines' },
-  { href: '/coupe',       label: 'Coupe',        icon: Scissors,        iconColor: 'text-orange-600 group-data-[active=true]:text-white dark:text-orange-400', module: 'commandes' },
+  { href: '/coupe',       label: 'Coupe',        icon: Scissors,        iconColor: 'text-orange-600 group-data-[active=true]:text-white dark:text-orange-400', module: 'coupe' },
   {
     label: 'Partenaires',
     icon: Users,

@@ -64,6 +64,8 @@ const roleSchema = z.object({
   peutGererFactures: z.boolean(),
   peutVoirMachines: z.boolean(),
   peutGererMachines: z.boolean(),
+  peutVoirCoupe: z.boolean(),
+  peutGererCoupe: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
@@ -79,6 +81,7 @@ const PERM_ECRITURE = [
   { key: 'peutGererPlateformes', label: 'Gérer les plateformes' },
   { key: 'peutGererFactures', label: 'Gérer les factures' },
   { key: 'peutGererMachines', label: 'Gérer les machines' },
+  { key: 'peutGererCoupe', label: 'Gérer la coupe' },
 ] as const
 
 const PERM_LECTURE = [
@@ -95,6 +98,7 @@ const PERM_LECTURE = [
   { key: 'peutVoirRapports', label: 'Voir les rapports' },
   { key: 'peutVoirFactures', label: 'Voir les factures' },
   { key: 'peutVoirMachines', label: 'Voir les machines' },
+  { key: 'peutVoirCoupe', label: 'Voir la coupe' },
 ] as const
 
 const DEFAULT_VALUES: RoleSchema = {
@@ -128,6 +132,8 @@ const DEFAULT_VALUES: RoleSchema = {
   peutGererFactures: false,
   peutVoirMachines: false,
   peutGererMachines: false,
+  peutVoirCoupe: false,
+  peutGererCoupe: false,
 }
 
 function roleToSchema(r: Role): RoleSchema {
@@ -162,6 +168,8 @@ function roleToSchema(r: Role): RoleSchema {
     peutGererFactures: r.peutGererFactures,
     peutVoirMachines: r.peutVoirMachines,
     peutGererMachines: r.peutGererMachines,
+    peutVoirCoupe: r.peutVoirCoupe,
+    peutGererCoupe: r.peutGererCoupe,
   }
 }
 

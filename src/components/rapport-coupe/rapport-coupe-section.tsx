@@ -252,7 +252,7 @@ function LotForm({
   )
 }
 
-export function RapportCoupeSection({ commandeId }: { commandeId: number }) {
+export function RapportCoupeSection({ commandeId, lectureSeule = false }: { commandeId: number; lectureSeule?: boolean }) {
   const { data: rapport, isLoading } = useGetRapportCoupe(commandeId)
   const supprimerCoupe = useSupprimerCoupe(commandeId)
   const supprimerExport = useSupprimerExport(commandeId)
@@ -306,10 +306,16 @@ export function RapportCoupeSection({ commandeId }: { commandeId: number }) {
           </div>
       </div>
 
+      {!lectureSeule && (
       <div className="grid gap-4 lg:grid-cols-2">
-        <LotForm commandeId={commandeId} kind="coupe" tailles={tailles} />
-        <LotForm commandeId={commandeId} kind="export" tailles={tailles} />
+        {!lectureSeule && (
+          <>
+            <LotForm commandeId={commandeId} kind="coupe" tailles={tailles} />
+            <LotForm commandeId={commandeId} kind="export" tailles={tailles} />
+          </>
+        )}
       </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -410,8 +416,8 @@ export function RapportCoupeSection({ commandeId }: { commandeId: number }) {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <CoupesHistorique commandeId={commandeId} onDelete={(id) => supprimerCoupe.mutate(id)} />
-        <ExportsHistorique commandeId={commandeId} onDelete={(id) => supprimerExport.mutate(id)} />
+        <CoupesHistorique commandeId={commandeId} onDelete={lectureSeule ? undefined : (id) => supprimerCoupe.mutate(id)} />
+        <ExportsHistorique commandeId={commandeId} onDelete={lectureSeule ? undefined : (id) => supprimerExport.mutate(id)} />
       </div>
     </div>
   )
@@ -422,7 +428,7 @@ function CoupesHistorique({
   onDelete,
 }: {
   commandeId: number
-  onDelete: (id: number) => void
+  onDelete?: (id: number) => void
 }) {
   const { data: coupes } = useGetCoupes(commandeId)
   return (
@@ -444,7 +450,7 @@ function ExportsHistorique({
   onDelete,
 }: {
   commandeId: number
-  onDelete: (id: number) => void
+  onDelete?: (id: number) => void
 }) {
   const { data: exports } = useGetExports(commandeId)
   return (
@@ -468,7 +474,7 @@ function HistoriqueList({
 }: {
   title: string
   items: { id: number; label: string; date: string; force: boolean }[]
-  onDelete: (id: number) => void
+  onDelete?: (id: number) => void
 }) {
   return (
     <Card>
@@ -493,14 +499,16 @@ function HistoriqueList({
                 dépassement forcé
               </Badge>
             )}
-            <ConfirmDialog
-              trigger={
-                <Button variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" title="Supprimer">
-                  <Trash2 className="size-3.5" />
-                </Button>
-              }
-              onConfirm={() => onDelete(i.id)}
-            />
+            {onDelete && (
+              <ConfirmDialog
+                trigger={
+                  <Button variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" title="Supprimer">
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                }
+                onConfirm={() => onDelete(i.id)}
+              />
+            )}
           </div>
         ))}
       </CardContent>

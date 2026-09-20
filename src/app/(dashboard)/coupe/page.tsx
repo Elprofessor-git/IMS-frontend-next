@@ -108,8 +108,8 @@ export default function CoupePage() {
             cell: (m: MatelasGlobal) => (
               <div className="flex items-center justify-end">
                 {m.CommandeId !== null && (
-                  <Button variant="ghost" size="icon-sm" asChild title="Rapport de coupe de la commande">
-                    <Link href={`/commandes/${m.CommandeId}`}>
+                  <Button variant="ghost" size="icon-sm" asChild title="Gérer la coupe de cette commande">
+                    <Link href={`/coupe/${m.CommandeId}`}>
                       <Eye className="size-3.5" />
                     </Link>
                   </Button>
