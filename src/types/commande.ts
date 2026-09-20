@@ -6,6 +6,20 @@ export const STATUT_COMMANDE: Record<number, string> = {
   4: 'Annulée',
 }
 
+// Mode de pilotage de l'atelier (Partie 3 du document maître). Sérialisé en entier
+// par le backend (pas de JsonStringEnumConverter) : Standard=0, DonneurOrdre=1, SousTraitant=2.
+export const MODE_PILOTAGE: Record<number, string> = {
+  0: 'Standard',
+  1: 'Donneur d\'ordre (sous-traitance)',
+  2: 'Sous-traitant pour tiers',
+}
+
+export const MODE_PILOTAGE_OPTIONS = [
+  { value: 0, label: MODE_PILOTAGE[0] },
+  { value: 1, label: MODE_PILOTAGE[1] },
+  { value: 2, label: MODE_PILOTAGE[2] },
+]
+
 export const TYPE_BESOIN: Record<number, string> = {
   0: 'Matière première',
   1: 'Accessoire',
@@ -79,6 +93,7 @@ export type CommandeClient = {
   dateCommande: string
   dateLivraisonSouhaitee: string | null
   statut: number // 0=EnAttente 1=Prete 2=EnProduction 3=Terminee 4=Annulee
+  modePilotage: number // 0=Standard 1=DonneurOrdre 2=SousTraitant
   montantTotal: number
   devise: string | null
   pourcentageRessourcesCouvertes: number
@@ -118,4 +133,45 @@ export type UpdateCommandePayload = {
   dateLivraisonSouhaitee: string | null
   notesSpeciales: string | null
   prixFacon: number | null
+  modePilotage?: number | null
+}
+
+// Payload POST /api/CommandeClient
+export type CreateCommandePayload = {
+  clientId: number
+  titreCommande: string | null
+  descriptionCommande: string | null
+  dateLivraisonSouhaitee: string | null
+  devise: string | null
+  notesSpeciales: string | null
+  specificationsClient: string | null
+  creePar: string | null
+  prixFacon: number | null
+  modePilotage?: number | null
+}
+
+// Réponse GET /{id}/Coutage (coûtage par style, partie I)
+export type CoutageLigne = {
+  articleId: number
+  designation: string
+  reference: string | null
+  quantiteParPiece: number
+  quantiteTotale: number
+  prixUnitaire: number
+  devise: string | null
+  coutLigne: number
+  sourcePrix: 'Historique' | 'Article' | 'Aucun prix'
+}
+
+export type CoutageCommande = {
+  commandeId: number
+  numeroCommande: string
+  titreCommande: string | null
+  deviseCommande: string | null
+  totalPieces: number
+  prixFacon: number | null
+  coutTotalMatiere: number
+  coutTotalFacon: number | null
+  coutTotalGeneral: number
+  lignes: CoutageLigne[]
 }

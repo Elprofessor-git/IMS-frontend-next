@@ -10,6 +10,7 @@ import type {
   ValiderRessourcesResponse,
   CalculerResponse,
   UpdateCommandePayload,
+  CoutageCommande,
 } from '@/types/commande'
 import type { TailleItem, BomItem } from '@/lib/validations/commande'
 import type { ApiError } from '@/types'
@@ -182,6 +183,15 @@ export function useGetResultatCalcul(commandeId: number) {
     queryFn: () =>
       apiClient.get<ResultatCalcul[]>(`/api/CommandeClient/${commandeId}/ResultatCalcul`),
     enabled: commandeId > 0,
+  })
+}
+
+// GET /Coutage — coûtage par style (matière + façon), lecture seule
+export function useGetCoutage(commandeId: number, enabled: boolean) {
+  return useQuery<CoutageCommande>({
+    queryKey: [...KEY, commandeId, 'coutage'],
+    queryFn: () => apiClient.get<CoutageCommande>(`/api/CommandeClient/${commandeId}/Coutage`),
+    enabled: commandeId > 0 && enabled,
   })
 }
 

@@ -9,6 +9,7 @@ export const commandeSchema = z.object({
   notesSpeciales: z.string().max(1000).nullable(),
   specificationsClient: z.string().max(1000).nullable(),
   creePar: z.string().max(100).nullable(),
+  modePilotage: z.number().int().min(0).max(2),
 })
 
 export type CommandeSchema = z.infer<typeof commandeSchema>
@@ -23,6 +24,7 @@ export function toCommandePayload(data: CommandeSchema) {
     notesSpeciales: data.notesSpeciales || null,
     specificationsClient: data.specificationsClient || null,
     creePar: data.creePar || null,
+    modePilotage: data.modePilotage ?? 0,
   }
 }
 

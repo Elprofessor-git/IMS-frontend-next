@@ -4,7 +4,7 @@ import { use, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks, Paperclip, Scissors, Boxes, Factory } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks, Paperclip, Scissors, Boxes, Factory, BadgeEuro } from 'lucide-react'
 import { DocumentSection } from '@/components/documents/document-section'
 import { RapportCoupeSection } from '@/components/rapport-coupe/rapport-coupe-section'
 import { FournituresSection } from '@/components/fournitures/fournitures-section'
@@ -55,11 +55,12 @@ import {
   useSetBom,
   useCalculer,
   useGetResultatCalcul,
+  useGetCoutage,
   useValiderRessources,
   useGenererTaches,
   useGenererBesoinsDepuisBom,
 } from '@/hooks/use-commandes'
-import { STATUT_COMMANDE, TYPE_BESOIN } from '@/types/commande'
+import { STATUT_COMMANDE, TYPE_BESOIN, MODE_PILOTAGE_OPTIONS, MODE_PILOTAGE } from '@/types/commande'
 import {
   besoinSchema,
   toBesoinPayload,
@@ -406,11 +407,13 @@ export default function CommandeDetailPage({
   const [dateLivraisonEdit, setDateLivraisonEdit] = useState('')
   const [titreEdit, setTitreEdit] = useState('')
   const [prixFaconEdit, setPrixFaconEdit] = useState('')
+  const [modePilotageEdit, setModePilotageEdit] = useState<number | null>(null)
   const [tab, setTab] = useState('ressources')
 
   const { data: commande, isLoading } = useGetCommande(commandeId)
   const { data: ordres } = useGetOrdresFabrication(commandeId, commandeId > 0)
   const { data: resultats } = useGetResultatCalcul(commandeId)
+  const { data: coutage, isLoading: coutageLoading } = useGetCoutage(commandeId, tab === 'coutage')
   const updateMutation = useUpdateCommande()
   const deleteMutation = useDeleteCommande()
   const validerMutation = useValiderRessources()
@@ -522,6 +525,10 @@ export default function CommandeDetailPage({
             <Factory className="size-4" />
             Ordres de fabrication
           </TabsTrigger>
+          <TabsTrigger value="coutage">
+            <BadgeEuro className="size-4" />
+            Coûtage
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}
@@ -580,6 +587,12 @@ export default function CommandeDetailPage({
                       </dd>
                     </div>
                   )}
+                  <div>
+                    <dt className="text-muted-foreground">Mode de pilotage</dt>
+                    <dd className="font-semibold">
+                      {MODE_PILOTAGE[commande.modePilotage] ?? 'Standard'}
+                    </dd>
+                  </div>
                   {commande.creePar && (
                     <div>
                       <dt className="text-muted-foreground">Créé par</dt>
@@ -640,6 +653,24 @@ export default function CommandeDetailPage({
                         className="max-w-xs"
                       />
                     </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-mode-pilotage">Mode de pilotage</Label>
+                      <Select
+                        value={String(modePilotageEdit ?? commande.modePilotage ?? 0)}
+                        onValueChange={(v) => setModePilotageEdit(Number(v))}
+                      >
+                        <SelectTrigger id="edit-mode-pilotage" className="max-w-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MODE_PILOTAGE_OPTIONS.map((o) => (
+                            <SelectItem key={o.value} value={String(o.value)}>
+                              {o.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Button
                       size="sm"
                       disabled={updateMutation.isPending}
@@ -654,6 +685,7 @@ export default function CommandeDetailPage({
                               prixFaconEdit !== ''
                                 ? parseFloat(prixFaconEdit)
                                 : (commande.prixFacon ?? null),
+                            modePilotage: modePilotageEdit ?? commande.modePilotage ?? 0,
                           },
                         })
                       }
@@ -1137,6 +1169,139 @@ export default function CommandeDetailPage({
         {/* ── Onglet Ordres de fabrication ── */}
         <TabsContent value="of">
           <OrdresFabricationSection commandeId={commandeId} />
+        </TabsContent>
+
+        {/* ── Onglet Coûtage (partie I) ── */}
+        <TabsContent value="coutage">
+          {coutageLoading ? (
+            <Skeleton className="h-72 w-full" />
+          ) : !coutage ? (
+            <Card>
+              <CardContent className="py-6 text-center text-sm text-muted-foreground">
+                Coûtage indisponible pour cette commande.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-2xl font-bold tabular-nums">
+                      {Number(coutage.totalPieces).toLocaleString('fr-FR')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Pièces (total tailles)</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-2xl font-bold tabular-nums">
+                      {Number(coutage.coutTotalMatiere).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                      {coutage.deviseCommande ? ` ${coutage.deviseCommande}` : ''}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Coût matière (BOM × prix)</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-2xl font-bold tabular-nums">
+                      {Number(coutage.coutTotalFacon ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                      {coutage.deviseCommande ? ` ${coutage.deviseCommande}` : ''}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Coût façon{' '}
+                      {coutage.prixFacon != null
+                        ? `(${Number(coutage.prixFacon).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} / pièce)`
+                        : '(non défini)'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-2xl font-bold tabular-nums text-green-700">
+                      {Number(coutage.coutTotalGeneral).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                      {coutage.deviseCommande ? ` ${coutage.deviseCommande}` : ''}
+                    </p>
+                    <p className="text-sm text-muted-foreground">Coût total estimé</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Détail par article</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {coutage.lignes.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      Aucune BOM définie — le coût matière est nul.
+                    </p>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Article</TableHead>
+                          <TableHead className="text-right">Qté / pièce</TableHead>
+                          <TableHead className="text-right">Besoin total</TableHead>
+                          <TableHead className="text-right">Prix unitaire</TableHead>
+                          <TableHead>Source prix</TableHead>
+                          <TableHead className="text-right">Coût ligne</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {coutage.lignes.map((l) => (
+                          <TableRow key={l.articleId}>
+                            <TableCell className="whitespace-normal break-words">
+                              <p className="font-medium">{l.designation}</p>
+                              {l.reference && (
+                                <p className="font-mono text-xs text-muted-foreground">{l.reference}</p>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {Number(l.quantiteParPiece).toLocaleString('fr-FR')}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {Number(l.quantiteTotale).toLocaleString('fr-FR')}
+                            </TableCell>
+                            <TableCell className="text-right font-mono tabular-nums">
+                              {Number(l.prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                              {l.devise ? ` ${l.devise}` : ''}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  l.sourcePrix === 'Historique'
+                                    ? 'border-green-200 bg-green-100 text-green-800'
+                                    : l.sourcePrix === 'Article'
+                                      ? 'border-blue-200 bg-blue-100 text-blue-800'
+                                      : 'bg-slate-100 text-slate-600'
+                                }
+                              >
+                                {l.sourcePrix === 'Historique'
+                                  ? 'Dernier prix connu'
+                                  : l.sourcePrix === 'Article'
+                                    ? 'Prix de référence'
+                                    : 'Aucun prix'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-mono font-medium tabular-nums">
+                              {Number(l.coutLigne).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                              {l.devise ? ` ${l.devise}` : ''}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Le coût matière est calculé avec le dernier prix connu par article
+                    (historique des prix) ; à défaut, le prix de référence de l&apos;article est
+                    utilisé.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 

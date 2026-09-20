@@ -161,6 +161,7 @@ const EMPTY_LIGNE_FORM = {
   unite: null,
   devise: 'EUR',
   notes: null,
+  numeroBain: null,
 }
 
 function ligneToFormValues(l: LigneImportation): LigneImportationSchema {
@@ -180,6 +181,7 @@ function ligneToFormValues(l: LigneImportation): LigneImportationSchema {
     unite: l.unite,
     devise: l.devise ?? 'EUR',
     notes: l.notes,
+    numeroBain: l.numeroBain,
   }
 }
 
@@ -327,6 +329,10 @@ function LigneDialog({
             <div className="grid gap-2">
               <Label htmlFor="imp-unite">Unité</Label>
               <Input id="imp-unite" placeholder="m, kg, pièce…" {...register('unite')} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="imp-numeroBain">N° de bain</Label>
+              <Input id="imp-numeroBain" placeholder="Bain de teinture…" {...register('numeroBain')} />
             </div>
           </div>
 
@@ -898,6 +904,7 @@ export default function ImportationDetailPage({
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
+                    <TableHead>N° bain</TableHead>
                     <TableHead>Affecté</TableHead>
                     {(importation.statut === 0 ||
                       importation.statut === 2 ||
@@ -914,10 +921,10 @@ export default function ImportationDetailPage({
                           importation.statut === 0 ||
                           importation.statut === 2 ||
                           importation.statut === 3
-                            ? 10
+                            ? 11
                             : importation.statut >= 2
-                              ? 9
-                              : 8
+                              ? 10
+                              : 9
                         }
                         className="py-10 text-center text-muted-foreground"
                       >
@@ -966,6 +973,9 @@ export default function ImportationDetailPage({
                       </TableCell>
                       <TableCell className="whitespace-normal break-words text-sm text-muted-foreground">
                         {[l.couleur, l.dimension, l.nature].filter(Boolean).join(' / ') || '—'}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {l.numeroBain ?? '—'}
                       </TableCell>
                       <TableCell>
                         {l.estAffecteStock ? (

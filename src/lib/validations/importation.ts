@@ -50,6 +50,7 @@ export const ligneImportationSchema = z.object({
   unite: z.string().max(50).nullable(),
   devise: z.string().max(10).nullable(),
   notes: z.string().max(1000).nullable(),
+  numeroBain: z.string().max(50).nullable(),
 })
 
 export type LigneImportationSchema = z.infer<typeof ligneImportationSchema>
@@ -76,5 +77,6 @@ export function toLigneImportationPayload(data: LigneImportationSchema) {
     unite: data.unite || null,
     devise: data.devise || null,
     notes: data.notes || null,
+    numeroBain: data.numeroBain || null,
   }
 }

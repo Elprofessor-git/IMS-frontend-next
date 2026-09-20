@@ -65,6 +65,37 @@ export type HistoriquePrixArticle = {
   referenceImportation: string | null
 }
 
+// Catalogue Article ↔ Fournisseur (multi-sourcing, §5.2) : un article peut être
+// fourni par plusieurs fournisseurs, chacun avec sa référence + prix habituel + délai.
+export type ArticleFournisseur = {
+  id: number
+  articleId: number
+  fournisseurId: number
+  referenceFournisseur: string | null
+  prixHabituel: number
+  delaiApprovisionnementJours: number | null
+  estActif: boolean
+  fournisseur: {
+    id: number
+    nomEntreprise: string
+  } | null
+}
+
+export type CreateArticleFournisseurDto = {
+  fournisseurId: number
+  referenceFournisseur: string | null
+  prixHabituel: number
+  delaiApprovisionnementJours: number | null
+  estActif: boolean
+}
+
+export type UpdateArticleFournisseurDto = {
+  referenceFournisseur: string | null
+  prixHabituel: number
+  delaiApprovisionnementJours: number | null
+  estActif: boolean
+}
+
 export type PaginatedResponse<T> = {
   data: T[]
   pageNumber: number

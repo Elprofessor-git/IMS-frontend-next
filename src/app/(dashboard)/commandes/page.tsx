@@ -14,7 +14,7 @@ import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { type ColDef } from '@/components/ui/responsive-table'
 import { useGetCommandes, useDeleteCommande } from '@/hooks/use-commandes'
-import { STATUT_COMMANDE } from '@/types/commande'
+import { STATUT_COMMANDE, MODE_PILOTAGE } from '@/types/commande'
 import type { CommandeClient } from '@/types/commande'
 
 const STATUT_CFG: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
@@ -116,6 +116,15 @@ export default function CommandesPage() {
         header: 'Statut',
         cardPrimary: true,
         cell: (c) => <StatutBadge statut={c.statut} />,
+      },
+      {
+        key: 'modePilotage',
+        header: 'Mode',
+        cell: (c) => (
+          <span className="text-xs text-muted-foreground" title={MODE_PILOTAGE[c.modePilotage] ?? 'Standard'}>
+            {(MODE_PILOTAGE[c.modePilotage] ?? 'Standard').split(' ')[0]}
+          </span>
+        ),
       },
       {
         key: 'couverture',

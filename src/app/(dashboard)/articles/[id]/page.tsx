@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { AlertTriangle, UserCheck, UserX, Info, Warehouse, History } from 'lucide-react'
+import { AlertTriangle, UserCheck, UserX, Info, Warehouse, History, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,8 +33,13 @@ import {
   useActiverArticle,
   useGetArticleStockTotal,
   useGetHistoriquePrix,
+  useGetArticleFournisseurs,
+  useAjouterArticleFournisseur,
+  useModifierArticleFournisseur,
+  useSupprimerArticleFournisseur,
 } from '@/hooks/use-articles'
-import type { HistoriquePrixSource } from '@/types/article'
+import { useGetFournisseurs } from '@/hooks/use-fournisseurs'
+import type { HistoriquePrixSource, ArticleFournisseur } from '@/types/article'
 
 const SOURCE_PRIX_CONFIG: Record<HistoriquePrixSource, { label: string; badgeClassName?: string; badgeVariant?: 'secondary' }> = {
   Manuel: { label: 'Manuel', badgeVariant: 'secondary' },
@@ -48,6 +53,147 @@ const SOURCE_PRIX_CONFIG: Record<HistoriquePrixSource, { label: string; badgeCla
   },
 }
 
+// Dialogue d'ajout/modification d'un lien fournisseur sur l'article
+function FournisseurDialog({
+  articleId,
+  lien,
+  open,
+  onClose,
+}: {
+  articleId: number
+  lien: ArticleFournisseur | null
+  open: boolean
+  onClose: () => void
+}) {
+  const ajouterM = useAjouterArticleFournisseur()
+  const modifierM = useModifierArticleFournisseur()
+  const { data: fournisseurs } = useGetFournisseurs()
+
+  const [fournisseurId, setFournisseurId] = useState(0)
+  const [referenceFournisseur, setReferenceFournisseur] = useState('')
+  const [prixHabituel, setPrixHabituel] = useState('')
+  const [delai, setDelai] = useState('')
+
+  useEffect(() => {
+    if (open) {
+      setFournisseurId(lien?.fournisseurId ?? 0)
+      setReferenceFournisseur(lien?.referenceFournisseur ?? '')
+      setPrixHabituel(lien ? String(Number(lien.prixHabituel)) : '')
+      setDelai(lien?.delaiApprovisionnementJours != null ? String(lien.delaiApprovisionnementJours) : '')
+    }
+  }, [open, lien])
+
+  if (!open) return null
+
+  const isEdition = !!lien
+  const isPending = isEdition ? modifierM.isPending : ajouterM.isPending
+
+  const onSubmit = async () => {
+    if (fournisseurId <= 0) return
+    const data = {
+      referenceFournisseur: referenceFournisseur.trim() || null,
+      prixHabituel: Number(prixHabituel) || 0,
+      delaiApprovisionnementJours: delai !== '' ? Number(delai) : null,
+      estActif: true,
+    }
+    if (lien) {
+      await modifierM.mutateAsync({ articleId, fournisseurId: lien.fournisseurId, data })
+    } else {
+      await ajouterM.mutateAsync({ articleId, data: { ...data, fournisseurId } })
+    }
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-[440px] rounded-lg bg-background p-6 shadow-xl">
+        <h3 className="mb-4 text-lg font-semibold">
+          {isEdition ? 'Modifier le fournisseur' : 'Ajouter un fournisseur'}
+        </h3>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void onSubmit()
+          }}
+          noValidate
+          className="space-y-4"
+        >
+          {!isEdition && (
+            <div className="grid gap-2">
+              <Label>
+                Fournisseur <span className="text-destructive">*</span>
+              </Label>
+              <select
+                value={fournisseurId}
+                onChange={(e) => setFournisseurId(Number(e.target.value))}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+              >
+                <option value={0}>— Sélectionner —</option>
+                {(fournisseurs ?? [])
+                  .filter((f) => f.estActif)
+                  .map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.nomEntreprise}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          )}
+
+          {isEdition && (
+            <div className="rounded-md bg-muted px-3 py-2 text-sm">
+              {lien?.fournisseur?.nomEntreprise ?? `Fournisseur #${lien?.fournisseurId}`}
+            </div>
+          )}
+
+          <div className="grid gap-2">
+            <Label htmlFor="referenceFournisseur">Référence fournisseur</Label>
+            <Input
+              id="referenceFournisseur"
+              value={referenceFournisseur}
+              onChange={(e) => setReferenceFournisseur(e.target.value)}
+              placeholder="Réf. interne du fournisseur…"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="prixHabituel">Prix habituel</Label>
+              <Input
+                id="prixHabituel"
+                type="number"
+                min="0"
+                step="0.01"
+                value={prixHabituel}
+                onChange={(e) => setPrixHabituel(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="delai">Délai (jours)</Label>
+              <Input
+                id="delai"
+                type="number"
+                min="0"
+                value={delai}
+                onChange={(e) => setDelai(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button type="submit" size="sm" disabled={isPending || (!isEdition && fournisseurId <= 0)}>
+              {isPending ? 'Enregistrement…' : isEdition ? 'Enregistrer' : 'Ajouter'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function EditArticlePage({
   params,
 }: {
@@ -57,6 +203,8 @@ export default function EditArticlePage({
   const articleId = Number(id)
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('info')
+  const [fournisseurDialogOpen, setFournisseurDialogOpen] = useState(false)
+  const [fournisseurEnEdition, setFournisseurEnEdition] = useState<ArticleFournisseur | null>(null)
 
   const { data: article, isLoading } = useGetArticle(articleId)
   const {
@@ -69,6 +217,14 @@ export default function EditArticlePage({
     data: historiquePrix,
     isLoading: historiquePrixLoading,
   } = useGetHistoriquePrix(articleId, activeTab === 'prix')
+
+  const {
+    data: fournisseursArticle,
+    isLoading: fournisseursLoading,
+  } = useGetArticleFournisseurs(articleId, activeTab === 'fournisseurs')
+
+  const modifierFournisseurM = useModifierArticleFournisseur()
+  const supprimerFournisseurM = useSupprimerArticleFournisseur()
 
   const updateMutation = useUpdateArticle()
   const deleteMutation = useDeleteArticle()
@@ -201,6 +357,15 @@ export default function EditArticlePage({
             {(historiquePrix?.length ?? 0) > 0 && (
               <span className="ml-1.5 rounded-full bg-muted px-1.5 text-xs">
                 {historiquePrix!.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="fournisseurs" className="gap-1.5">
+            <Truck className="size-4" />
+            Fournisseurs
+            {(fournisseursArticle?.length ?? 0) > 0 && (
+              <span className="ml-1.5 rounded-full bg-muted px-1.5 text-xs">
+                {fournisseursArticle!.length}
               </span>
             )}
           </TabsTrigger>
@@ -483,7 +648,122 @@ export default function EditArticlePage({
             </CardContent>
           </Card>
         </TabsContent>
+      {/* ── ONGLET FOURNISSEURS (multi-sourcing, §5.2) ── */}
+        <TabsContent value="fournisseurs">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between text-base">
+                <span>Fournisseurs enregistrés</span>
+                <PermissionGate module="articles" mode="write">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setFournisseurEnEdition(null)
+                      setFournisseurDialogOpen(true)
+                    }}
+                  >
+                    <Truck className="size-4" />
+                    Ajouter un fournisseur
+                  </Button>
+                </PermissionGate>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {fournisseursLoading ? (
+                <Skeleton className="h-40 w-full" />
+              ) : !fournisseursArticle || fournisseursArticle.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  Aucun fournisseur enregistré pour cet article. Ajoutez-en un pour mémoriser
+                  prix habituel, référence et délai d&apos;approvisionnement.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fournisseur</TableHead>
+                      <TableHead>Référence fournisseur</TableHead>
+                      <TableHead className="text-right">Prix habituel</TableHead>
+                      <TableHead className="text-right">Délai (jours)</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fournisseursArticle.map((lien) => (
+                      <TableRow key={lien.id}>
+                        <TableCell className="text-sm font-medium">
+                          {lien.fournisseur?.nomEntreprise ?? `Fournisseur #${lien.fournisseurId}`}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {lien.referenceFournisseur ?? <span className="text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell className="text-right font-mono font-medium">
+                          {Number(lien.prixHabituel).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-right text-sm">
+                          {lien.delaiApprovisionnementJours != null ? lien.delaiApprovisionnementJours : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={lien.estActif ? 'border-green-200 bg-green-100 text-green-800' : 'bg-slate-100 text-slate-600'}>
+                            {lien.estActif ? 'Actif' : 'Inactif'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <PermissionGate module="articles" mode="write">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setFournisseurEnEdition(lien)
+                                  setFournisseurDialogOpen(true)
+                                }}
+                                disabled={modifierFournisseurM.isPending}
+                              >
+                                Modifier
+                              </Button>
+                              <ConfirmDialog
+                                trigger={
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    disabled={supprimerFournisseurM.isPending}
+                                  >
+                                    Retirer
+                                  </Button>
+                                }
+                                title="Retirer ce fournisseur ?"
+                                description="Le lien sera supprimé. Les achats existants liés à cet article sont conservés."
+                                confirmLabel="Retirer"
+                                onConfirm={() =>
+                                  supprimerFournisseurM.mutate({
+                                    articleId,
+                                    fournisseurId: lien.fournisseurId,
+                                  })
+                                }
+                              />
+                            </div>
+                          </PermissionGate>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+          </TabsContent>
       </Tabs>
+
+      <FournisseurDialog
+        articleId={articleId}
+        lien={fournisseurEnEdition}
+        open={fournisseurDialogOpen}
+        onClose={() => {
+          setFournisseurDialogOpen(false)
+          setFournisseurEnEdition(null)
+        }}
+      />
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
-import type { Article, ArticleStockTotal, HistoriquePrixArticle, PaginatedResponse } from '@/types/article'
+import type { Article, ArticleStockTotal, HistoriquePrixArticle, PaginatedResponse, ArticleFournisseur, CreateArticleFournisseurDto, UpdateArticleFournisseurDto } from '@/types/article'
 import type { ArticleSchema } from '@/lib/validations/article'
 import type { ApiError } from '@/types'
 
@@ -127,5 +127,66 @@ export function useActiverArticle() {
       toast.success('Article activé')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur'),
+  })
+}
+
+// ── Catalogue Article ↔ Fournisseur (multi-sourcing, §5.2) ──────────────────
+const FOURNISSEURS_KEY = ['article-fournisseurs'] as const
+
+export function useGetArticleFournisseurs(articleId: number, enabled = true) {
+  return useQuery<ArticleFournisseur[]>({
+    queryKey: [...FOURNISSEURS_KEY, articleId],
+    queryFn: () => apiClient.get<ArticleFournisseur[]>(`/api/Article/${articleId}/Fournisseurs`),
+    enabled: articleId > 0 && enabled,
+  })
+}
+
+export function useAjouterArticleFournisseur() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ articleId, data }: { articleId: number; data: CreateArticleFournisseurDto }) =>
+      apiClient.post<ArticleFournisseur>(`/api/Article/${articleId}/Fournisseurs`, data),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...FOURNISSEURS_KEY, vars.articleId] })
+      toast.success('Fournisseur ajouté à l\u2019article')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de l\u2019ajout'),
+  })
+}
+
+export function useModifierArticleFournisseur() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      articleId,
+      fournisseurId,
+      data,
+    }: {
+      articleId: number
+      fournisseurId: number
+      data: UpdateArticleFournisseurDto
+    }) =>
+      apiClient.put<void>(
+        `/api/Article/${articleId}/Fournisseurs/${fournisseurId}`,
+        data,
+      ),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...FOURNISSEURS_KEY, vars.articleId] })
+      toast.success('Lien fournisseur mis à jour')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la mise à jour'),
+  })
+}
+
+export function useSupprimerArticleFournisseur() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ articleId, fournisseurId }: { articleId: number; fournisseurId: number }) =>
+      apiClient.del<void>(`/api/Article/${articleId}/Fournisseurs/${fournisseurId}`),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: [...FOURNISSEURS_KEY, vars.articleId] })
+      toast.success('Fournisseur retiré de l\u2019article')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de retirer le fournisseur'),
   })
 }

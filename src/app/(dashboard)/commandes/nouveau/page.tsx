@@ -34,6 +34,7 @@ import {
 import { useGetClients } from '@/hooks/use-clients'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { Checkbox } from '@/components/ui/checkbox'
+import { MODE_PILOTAGE_OPTIONS } from '@/types/commande'
 
 // Schéma combiné pour le formulaire de création
 const createSchema = commandeSchema.extend({
@@ -66,6 +67,7 @@ export default function NouvelleCommandePage() {
       notesSpeciales: null,
       specificationsClient: null,
       creePar: null,
+      modePilotage: 0,
       tailles: [],
       bom: [],
     },
@@ -203,6 +205,35 @@ export default function NouvelleCommandePage() {
               <div className="grid gap-2">
                 <Label htmlFor="notesSpeciales">Notes spéciales</Label>
                 <Textarea id="notesSpeciales" rows={2} {...register('notesSpeciales')} />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="modePilotage">Mode de pilotage</Label>
+                <Controller
+                  name="modePilotage"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={String(field.value ?? 0)}
+                      onValueChange={(v) => field.onChange(Number(v))}
+                    >
+                      <SelectTrigger id="modePilotage">
+                        <SelectValue placeholder="Choisir un mode…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MODE_PILOTAGE_OPTIONS.map((o) => (
+                          <SelectItem key={o.value} value={String(o.value)}>
+                            {o.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Standard = pilotage par la propre production ; les deux autres modes
+                  encadrent la sous-traitance (donneur d&apos;ordre vs sous-traitant).
+                </p>
               </div>
 
               <div className="grid gap-2">

@@ -61,6 +61,7 @@ const LIGNE_DEFAULTS = {
   devise: null,
   unite: null,
   notes: null,
+  numeroBain: null,
 }
 
 export default function NouvelleImportationPage() {

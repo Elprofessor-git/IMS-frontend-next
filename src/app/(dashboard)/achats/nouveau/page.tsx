@@ -61,6 +61,7 @@ const LIGNE_DEFAULTS = {
   unite: null,
   descriptionSpecifique: null,
   notes: null,
+  numeroBain: null,
 }
 
 export default function NouvelAchatPage() {

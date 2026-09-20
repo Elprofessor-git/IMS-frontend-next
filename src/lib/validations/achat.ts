@@ -43,6 +43,7 @@ export const ligneAchatSchema = z.object({
   unite: z.string().max(50).nullable(),
   descriptionSpecifique: z.string().max(500).nullable(),
   notes: z.string().max(1000).nullable(),
+  numeroBain: z.string().max(50).nullable(),
 })
 
 export type LigneAchatSchema = z.infer<typeof ligneAchatSchema>
@@ -71,5 +72,6 @@ export function toLigneAchatPayload(data: LigneAchatSchema) {
     unite: data.unite || null,
     descriptionSpecifique: data.descriptionSpecifique || null,
     notes: data.notes || null,
+    numeroBain: data.numeroBain || null,
   }
 }

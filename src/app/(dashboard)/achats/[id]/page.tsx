@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck, AlertTriangle, Wrench } from 'lucide-react'
@@ -55,6 +55,7 @@ import {
   useClotureForceeAchat,
   useCorrigerReceptionAchat,
 } from '@/hooks/use-achats'
+import { useGetArticleFournisseurs } from '@/hooks/use-articles'
 import { useAuth } from '@/hooks/use-auth'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { useGetClients } from '@/hooks/use-clients'
@@ -133,6 +134,7 @@ const EMPTY_LIGNE_FORM = {
   devise: 'EUR',
   descriptionSpecifique: null,
   notes: null,
+  numeroBain: null,
 }
 
 function ligneToFormValues(l: LigneAchat): LigneAchatSchema {
@@ -152,6 +154,7 @@ function ligneToFormValues(l: LigneAchat): LigneAchatSchema {
     devise: l.devise ?? 'EUR',
     descriptionSpecifique: l.descriptionSpecifique,
     notes: l.notes,
+    numeroBain: l.numeroBain,
   }
 }
 
@@ -183,6 +186,23 @@ function LigneDialog({
     resolver: zodResolver(ligneAchatSchema),
     defaultValues: ligne ? ligneToFormValues(ligne) : EMPTY_LIGNE_FORM,
   })
+
+  const articleSelectionne = useWatch({ control, name: 'articleId' })
+  const { data: fournisseursArticle } = useGetArticleFournisseurs(articleSelectionne > 0 ? articleSelectionne : 0, articleSelectionne > 0)
+
+  // Pré-remplissage du prix depuis le prix habituel des fournisseurs de l'article (§5.2)
+  // uniquement si l'utilisateur n'a pas déjà saisi un prix (création).
+  useEffect(() => {
+    if (articleSelectionne > 0 && !ligne && fournisseursArticle && fournisseursArticle.length > 0) {
+      const actifs = fournisseursArticle.filter((f) => f.estActif)
+      if (actifs.length > 0) {
+        const prefere = actifs.reduce((a, b) => (a.prixHabituel <= b.prixHabituel ? a : b))
+        if (prefere.prixHabituel > 0) {
+          setValue('prixUnitaire', Number(prefere.prixHabituel))
+        }
+      }
+    }
+  }, [articleSelectionne, fournisseursArticle, ligne, setValue])
 
   // Réinitialise le formulaire à chaque ouverture (valeurs de la ligne en édition, vierge sinon)
   useEffect(() => {
@@ -241,6 +261,27 @@ function LigneDialog({
             )}
           </div>
 
+          {/* Fournisseurs habituels de l'article (§5.2) : prix pré-rempli ci-dessus */}
+          {articleSelectionne > 0 && fournisseursArticle && fournisseursArticle.length > 0 && (
+            <div className="rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+              <p className="mb-1 font-medium">Fournisseurs enregistrés sur cet article :</p>
+              <ul className="space-y-0.5">
+                {fournisseursArticle
+                  .filter((f) => f.estActif)
+                  .map((f) => (
+                    <li key={f.fournisseurId}>
+                      {f.fournisseur?.nomEntreprise ?? `Fournisseur #${f.fournisseurId}`}
+                      {f.referenceFournisseur ? ` — réf. ${f.referenceFournisseur}` : ''}
+                      {f.prixHabituel > 0 ? ` — ${Number(f.prixHabituel).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}` : ''}
+                    </li>
+                  ))}
+                {fournisseursArticle.filter((f) => f.estActif).length === 0 && (
+                  <li>Tous inactifs.</li>
+                )}
+              </ul>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="quantite">Quantité <span className="text-destructive">*</span></Label>
@@ -297,6 +338,10 @@ function LigneDialog({
             <div className="grid gap-2">
               <Label htmlFor="unite">Unité</Label>
               <Input id="unite" placeholder="m, kg, pièce…" {...register('unite')} />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="numeroBain">N° de bain</Label>
+              <Input id="numeroBain" placeholder="Bain de teinture…" {...register('numeroBain')} />
             </div>
           </div>
 
@@ -941,6 +986,7 @@ export default function AchatDetailPage({
                     <TableHead className="text-right">Prix unit.</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead>Variantes</TableHead>
+                    <TableHead>N° bain</TableHead>
                     {(achat.statut === 0 ||
                       achat.statut === 2 ||
                       achat.statut === 3) && (
@@ -954,10 +1000,10 @@ export default function AchatDetailPage({
                       <TableCell
                         colSpan={
                           achat.statut === 0 || achat.statut === 2 || achat.statut === 3
-                            ? 9
+                            ? 10
                             : achat.statut >= 2
-                              ? 8
-                              : 7
+                              ? 9
+                              : 8
                         }
                         className="py-10 text-center text-muted-foreground"
                       >
@@ -997,6 +1043,9 @@ export default function AchatDetailPage({
                       </TableCell>
                       <TableCell className="whitespace-normal break-words text-sm text-muted-foreground">
                         {[l.couleur, l.taille, l.dimension].filter(Boolean).join(' / ') || '—'}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">
+                        {l.numeroBain ?? '—'}
                       </TableCell>
                       {achat.statut === 0 && (
                         <TableCell className="text-right">

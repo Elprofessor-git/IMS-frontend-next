@@ -30,6 +30,7 @@ export type LigneAchat = {
   devise: string | null
   descriptionSpecifique: string | null
   notes: string | null
+  numeroBain: string | null
   unite: string | null
   dateCreation: string
   article: LigneAchatArticle | null
