@@ -7,6 +7,8 @@ export type LotCoupe = {
   effectuePar: string | null
   forcerDepassement: boolean
   notes: string | null
+  matelasId: number | null
+  matelasNumero: string | null
 }
 
 export type LotExport = {
@@ -18,6 +20,8 @@ export type LotExport = {
   effectuePar: string | null
   forcerDepassement: boolean
   notes: string | null
+  chaineProductionId: number | null
+  chaineProductionNom: string | null
 }
 
 export type RapportCoupeTaille = {
@@ -58,4 +62,6 @@ export type CreerLotPayload = {
   quantiteExportee?: number
   forcerDepassement?: boolean
   notes?: string | null
+  matelasId?: number | null
+  chaineProductionId?: number | null
 }

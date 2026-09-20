@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Scissors, Truck, Trash2, AlertTriangle, FileDown, FileText } from 'lucide-react'
+import { Scissors, Truck, Trash2, AlertTriangle, FileDown, FileText, Plus } from 'lucide-react'
 import {
   useGetRapportCoupe,
   useGetCoupes,
@@ -11,6 +11,7 @@ import {
   useAjouterExport,
   useSupprimerExport,
 } from '@/hooks/use-rapport-coupe'
+import { useGetMatelas, useCreerMatelas, useGetChainesProduction } from '@/hooks/use-fournitures'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -53,9 +54,17 @@ function LotForm({
   const ajouterCoupe = useAjouterCoupe(commandeId)
   const ajouterExport = useAjouterExport(commandeId)
   const ajouter = kind === 'coupe' ? ajouterCoupe : ajouterExport
+  const { data: matelas } = useGetMatelas(commandeId)
+  const { data: chaines } = useGetChainesProduction()
+  const creerMatelas = useCreerMatelas(commandeId)
   const [taille, setTaille] = useState('')
   const [quantite, setQuantite] = useState('')
   const [forcer, setForcer] = useState(false)
+  const [matelasId, setMatelasId] = useState<string>('')
+  const [chaineId, setChaineId] = useState<string>('')
+  const [nouveauVisible, setNouveauVisible] = useState(false)
+  const [nouveauNumero, setNouveauNumero] = useState('')
+  const [nouveauPliage, setNouveauPliage] = useState('')
   const isCoupe = kind === 'coupe'
 
   const submit = () => {
@@ -66,11 +75,34 @@ function LotForm({
         taille,
         [isCoupe ? 'quantiteCoupee' : 'quantiteExportee']: q,
         forcerDepassement: forcer,
+        matelasId: matelasId ? Number(matelasId) : null,
+        chaineProductionId: chaineId ? Number(chaineId) : null,
       },
       {
         onSuccess: () => {
           setQuantite('')
           setForcer(false)
+        },
+      },
+    )
+  }
+
+  const creerNouveauMatelas = () => {
+    if (!nouveauNumero.trim()) {
+      toast.error('Le numéro du matelas est requis.')
+      return
+    }
+    creerMatelas.mutate(
+      {
+        numeroMatelas: nouveauNumero.trim(),
+        piecePliage: Number(nouveauPliage) || 0,
+      },
+      {
+        onSuccess: (res) => {
+          setMatelasId(String(res.id))
+          setNouveauNumero('')
+          setNouveauPliage('')
+          setNouveauVisible(false)
         },
       },
     )
@@ -124,6 +156,88 @@ function LotForm({
             </label>
           </div>
         </div>
+
+        {isCoupe ? (
+          <div className="grid gap-3 rounded-md border bg-muted/30 p-3">
+            <div className="grid gap-1.5">
+              <Label className="flex items-center justify-between">
+                Matelas
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setNouveauVisible((v) => !v)}
+                >
+                  <Plus className="size-3.5" /> {nouveauVisible ? 'Annuler' : 'Nouveau'}
+                </Button>
+              </Label>
+              <Select value={matelasId} onValueChange={setMatelasId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sans matelas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sans matelas</SelectItem>
+                  {(matelas ?? []).map((m) => (
+                    <SelectItem key={m.id} value={String(m.id)}>
+                      {m.numeroMatelas} — {new Date(m.dateMatelas).toLocaleDateString('fr-FR')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {nouveauVisible && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_7rem_auto]">
+                <div className="grid gap-1.5">
+                  <Label>N° matelas</Label>
+                  <Input
+                    value={nouveauNumero}
+                    onChange={(e) => setNouveauNumero(e.target.value)}
+                    placeholder="ex. M-2026-001"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label>Plis</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={nouveauPliage}
+                    onChange={(e) => setNouveauPliage(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={creerMatelas.isPending || !nouveauNumero.trim()}
+                    onClick={creerNouveauMatelas}
+                  >
+                    {creerMatelas.isPending ? 'Création…' : 'Créer'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid gap-1.5 rounded-md border bg-muted/30 p-3">
+            <Label>Chaîne de production</Label>
+            <Select value={chaineId} onValueChange={setChaineId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sans chaîne" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Sans chaîne</SelectItem>
+                {(chaines ?? []).filter((c) => c.estActif).map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.nom}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <Button
           type="button"
           size="sm"
@@ -316,7 +430,7 @@ function CoupesHistorique({
       title="Historique des coupes"
       items={(coupes ?? []).map((c) => ({
         id: c.id,
-        label: `Taille ${c.taille} — ${c.quantiteCoupee} pièce(s)`,
+        label: `Taille ${c.taille} — ${c.quantiteCoupee} pièce(s)${c.matelasNumero ? ` · ${c.matelasNumero}` : ''}`,
         date: new Date(c.dateCoupe).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }),
         force: c.forcerDepassement,
       }))}
@@ -338,7 +452,7 @@ function ExportsHistorique({
       title="Historique des exports"
       items={(exports ?? []).map((c) => ({
         id: c.id,
-        label: `Taille ${c.taille} — ${c.quantiteExportee} pièce(s)`,
+        label: `Taille ${c.taille} — ${c.quantiteExportee} pièce(s)${c.chaineProductionNom ? ` · ${c.chaineProductionNom}` : ''}`,
         date: new Date(c.dateExport).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }),
         force: c.forcerDepassement,
       }))}

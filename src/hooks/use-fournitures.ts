@@ -31,12 +31,15 @@ export function useGetMatelas(commandeId: number) {
 
 export function useCreerMatelas(commandeId: number) {
   const qc = useQueryClient()
-  const invalidate = () => qc.invalidateQueries({ queryKey: [...KEY, commandeId, 'matelas'] })
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: [...KEY, commandeId, 'matelas'] })
+    qc.invalidateQueries({ queryKey: ['matelas'] })
+  }
   return useMutation({
     mutationFn: (data: CreerMatelasPayload) =>
       apiClient.post<{ message: string; id: number }>(
-        `/api/FournitureCommande/CommandeClient/${commandeId}/Matelas`,
-        data,
+        '/api/Matelas',
+        { commandeId, ...data },
       ),
     onSuccess: () => {
       invalidate()

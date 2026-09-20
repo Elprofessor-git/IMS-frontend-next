@@ -9,6 +9,7 @@ import { DocumentSection } from '@/components/documents/document-section'
 import { RapportCoupeSection } from '@/components/rapport-coupe/rapport-coupe-section'
 import { FournituresSection } from '@/components/fournitures/fournitures-section'
 import { OrdresFabricationSection } from '@/components/ordres-fabrication/ordres-fabrication-section'
+import { useGetOrdresFabrication } from '@/hooks/use-ordres-fabrication'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -408,6 +409,7 @@ export default function CommandeDetailPage({
   const [tab, setTab] = useState('ressources')
 
   const { data: commande, isLoading } = useGetCommande(commandeId)
+  const { data: ordres } = useGetOrdresFabrication(commandeId, commandeId > 0)
   const { data: resultats } = useGetResultatCalcul(commandeId)
   const updateMutation = useUpdateCommande()
   const deleteMutation = useDeleteCommande()
@@ -675,7 +677,7 @@ export default function CommandeDetailPage({
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">Configuration des tailles</CardTitle>
                   <PermissionGate module="commandes" mode="write">
-                    {!editTailles && (
+                    {!editTailles && (ordres ?? []).length === 0 && (
                       <Button variant="outline" size="sm" onClick={() => setEditTailles(true)}>
                         Modifier
                       </Button>
@@ -683,8 +685,18 @@ export default function CommandeDetailPage({
                   </PermissionGate>
                 </div>
               </CardHeader>
-              <CardContent>
-                {editTailles ? (
+              <CardContent className="space-y-3">
+                {(ordres ?? []).length > 0 && (
+                  <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                    <Info className="mt-0.5 size-3.5 shrink-0" />
+                    <span>
+                      Lecture seule : des ordres de fabrication existent, la configuration des tailles
+                      est figée. La répartition se pilote désormais par OF (onglet «&nbsp;Ordres de
+                      fabrication&nbsp;»).
+                    </span>
+                  </div>
+                )}
+                {editTailles && (ordres ?? []).length === 0 ? (
                   <TaillesForm
                     commandeId={commandeId}
                     initial={commande.configTailles.map((t) => ({ taille: t.taille, quantite: t.quantite }))}
