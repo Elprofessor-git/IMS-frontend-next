@@ -2,7 +2,7 @@
 // TABLEAU BRUT, sans paramètre, sans pagination serveur, sans ChaineProduction* (absent du Select).
 export interface MatelasGlobal {
   Id: number
-  CommandeId: number
+  CommandeId: number | null
   NumeroCommande: string
   NumeroMatelas: string
   DateMatelas: string

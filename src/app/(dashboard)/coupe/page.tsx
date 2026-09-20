@@ -107,11 +107,13 @@ export default function CoupePage() {
             headerClassName: 'w-[80px]',
             cell: (m: MatelasGlobal) => (
               <div className="flex items-center justify-end">
-                <Button variant="ghost" size="icon-sm" asChild title="Rapport de coupe de la commande">
-                  <Link href={`/commandes/${m.CommandeId}`}>
-                    <Eye className="size-3.5" />
-                  </Link>
-                </Button>
+                {m.CommandeId !== null && (
+                  <Button variant="ghost" size="icon-sm" asChild title="Rapport de coupe de la commande">
+                    <Link href={`/commandes/${m.CommandeId}`}>
+                      <Eye className="size-3.5" />
+                    </Link>
+                  </Button>
+                )}
               </div>
             ),
           },
