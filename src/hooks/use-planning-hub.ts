@@ -10,14 +10,18 @@ import { useQueryClient } from '@tanstack/react-query'
 
 const HUB_PATH = '/hubs/planning'
 
-// L'URL du backend est un secret serveur (API_URL, lue par le proxy). Pour la
-// connexion SignalR, on s'appuie sur NEXT_PUBLIC_API_URL si définie, sinon sur
-// l'URL Render du backend par défaut.
-const HUB_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'https://ims-backend-g95v.onrender.com'
+// ⚠️ CONNEXION HUB DÉSACTIVÉE PAR DÉFAUT (feature flag).
+// Le JWT vit dans un cookie httpOnly côté Next.js — inaccessible au JS du
+// navigateur. Le backend s'authentifie par en-tête Authorization ; une
+// connexion SignalR navigateur ne peut pas le fournir sans exposer le token
+// (INTERDIT). Le temps réel garanti est le POLLING (refetchInterval 25 s +
+// refocus) via le proxy Next (voir use-planning / use-notifications).
+// N'ACTIVER que lorsqu'un mécanisme d'authentification du hub qui n'expose
+// pas le token au JS existe (ex. jeton de hub éphémère délivré par le proxy).
+const HUB_FEATURE_FLAG = process.env.NEXT_PUBLIC_PLANNING_HUB_ENABLED === 'true'
 
 /**
- * Connexion temps réel au hub SignalR du planning.
+ * Connexion temps réel au hub SignalR du planning (désactivée par défaut).
  * — `PlanningChanged`    → rechargement de la grille de planification
  * — `NotificationReceived` → recalcul du badge de la cloche
  * Reconnexion automatique (withAutomaticReconnect), retry manuel au démarrage.
@@ -27,7 +31,7 @@ export function usePlanningHub(enabled = true): HubConnection | null {
   const connectionRef = useRef<HubConnection | null>(null)
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled || !HUB_FEATURE_FLAG) return
 
     let cancelled = false
 
@@ -38,8 +42,12 @@ export function usePlanningHub(enabled = true): HubConnection | null {
       qc.invalidateQueries({ queryKey: ['notifications', 'me'] })
     }
 
+    // Aucune URL en dur vers Render : même origine (l'éventuelle activation doit
+    // transiter par un endpoint qui n'expose pas le token).
+    const hubBaseUrl = process.env.NEXT_PUBLIC_PLANNING_HUB_URL ?? window.location.origin
+
     const connection = new HubConnectionBuilder()
-      .withUrl(`${HUB_BASE_URL}${HUB_PATH}`)
+      .withUrl(`${hubBaseUrl}${HUB_PATH}`)
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build()

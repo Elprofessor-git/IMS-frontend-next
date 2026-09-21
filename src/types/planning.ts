@@ -1,6 +1,5 @@
 // Cellule du planning de production : intersection « chaîne de production × samedi ».
-// Une cellule contient une commande (NumeroCommande) ; la persistance est assurée
-// par le CRUD /api/planning (les clés échangées sont descriptives pour l'humain).
+// La persistance est assurée par le CRUD /api/planning.
 export type PlanningEntry = {
   id: number
   chaineProductionId: number
@@ -9,6 +8,19 @@ export type PlanningEntry = {
   quantite: number | null
   estLivree: boolean
   notes: string | null
+}
+
+// Chaîne de production telle que renvoyée par GET /api/planning (from ChaineProduction).
+export type ChainePlanning = {
+  id: number
+  nom: string
+  type: string
+}
+
+// Forme RÉELLE de GET /api/planning : { chaines, cellules } (PlanningController.cs:59).
+export type PlanningGrille = {
+  chaines: ChainePlanning[]
+  cellules: PlanningEntry[]
 }
 
 export type CreerPlanningEntryPayload = {

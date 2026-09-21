@@ -7,10 +7,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useGetNotifications, useLivrerNotification } from '@/hooks/use-notifications'
+import {
+  useGetNotificationsData,
+  useLivrerNotification,
+  useLivrerToutesNotifications,
+} from '@/hooks/use-notifications'
 import { usePlanningHub } from '@/hooks/use-planning-hub'
 import type { NotificationItem } from '@/types/notification'
 
@@ -21,18 +26,13 @@ function NotificationRow({
   notification: NotificationItem
   onLivrer: (id: number) => void
 }) {
-  const date = notification.dateCreation
-    ? new Date(notification.dateCreation).toLocaleDateString('fr-FR')
+  const date = notification.dateNotification
+    ? new Date(notification.dateNotification).toLocaleDateString('fr-FR')
     : ''
   return (
     <div className="flex items-start justify-between gap-3 rounded-lg border p-3">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{notification.titre}</p>
-        {notification.message && (
-          <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
-            {notification.message}
-          </p>
-        )}
+        <p className="line-clamp-2 text-sm font-medium">{notification.message}</p>
         {date && <p className="mt-1 text-xs text-muted-foreground/80">{date}</p>}
       </div>
       {notification.estLivree ? (
@@ -55,13 +55,13 @@ function NotificationRow({
 }
 
 export function NotificationBell() {
+  // Hub SignalR désactivé par défaut (feature flag) : le polling gère le temps réel.
   usePlanningHub(true)
 
   const [open, setOpen] = useState(false)
-  const { data: notifications, isLoading } = useGetNotifications()
+  const { notifications, countNonLivrees, isLoading } = useGetNotificationsData()
   const livrer = useLivrerNotification()
-
-  const nonLivrees = (notifications ?? []).filter((n) => !n.estLivree).length
+  const livrerToutes = useLivrerToutesNotifications()
 
   return (
     <>
@@ -73,9 +73,9 @@ export function NotificationBell() {
         aria-label="Notifications"
       >
         <Bell className="size-5" />
-        {nonLivrees > 0 && (
+        {countNonLivrees > 0 && (
           <span className="absolute top-0.5 right-0.5 grid min-w-4 h-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-            {nonLivrees}
+            {countNonLivrees}
           </span>
         )}
       </Button>
@@ -84,6 +84,9 @@ export function NotificationBell() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Notifications</DialogTitle>
+            <DialogDescription>
+              Modifications du planning de production.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
@@ -92,14 +95,28 @@ export function NotificationBell() {
                 <Skeleton key={i} className="h-14 w-full" />
               ))}
 
-            {!isLoading && (notifications ?? []).length === 0 && (
+            {!isLoading && notifications.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
                 <Inbox className="size-8 text-muted-foreground/50" />
                 <p className="text-sm text-muted-foreground">Aucune notification.</p>
               </div>
             )}
 
-            {(notifications ?? []).map((n) => (
+            {notifications.length > 0 && (
+              <div className="flex justify-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  disabled={countNonLivrees === 0 || livrerToutes.isPending}
+                  onClick={() => livrerToutes.mutate()}
+                >
+                  Tout marquer lu
+                </Button>
+              </div>
+            )}
+
+            {notifications.map((n) => (
               <NotificationRow
                 key={n.id}
                 notification={n}

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
   Pencil,
@@ -8,6 +9,9 @@ import {
   CheckCircle2,
   Circle,
   CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  Settings2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
@@ -26,24 +30,22 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
-import { useGetChainesProduction } from '@/hooks/use-fournitures'
 import {
-  useGetPlanningEntries,
+  useGetChainesProduction,
+  useCreateChaineProduction,
+  useDesactiverChaineProduction,
+} from '@/hooks/use-fournitures'
+import {
+  useGetPlanningGrille,
   useCreerPlanningEntry,
   useModifierPlanningEntry,
   useSupprimerPlanningEntry,
+  PLANNING_KEY,
 } from '@/hooks/use-planning'
-import type { ChaineProduction } from '@/types/fourniture'
-import type { PlanningEntry } from '@/types/planning'
+import type { ChainePlanning, PlanningEntry } from '@/types/planning'
 
-// Chaînes affichées si l'API /api/ChaineProduction n'est pas encore branchée.
-const FALLBACK_CHAINES: ChaineProduction[] = [
-  { id: 1, nom: 'Chaine 1 - Découpe', typeChaine: 'Decoupe', estActif: true, nombreEnvois: 0, nombreExports: 0 },
-  { id: 2, nom: 'Chaine 2 - Confection', typeChaine: 'Confection', estActif: true, nombreEnvois: 0, nombreExports: 0 },
-  { id: 3, nom: 'Chaine 3 - Conditionnement', typeChaine: 'Conditionnement', estActif: true, nombreEnvois: 0, nombreExports: 0 },
-]
+const TYPES_CHAINE = ['Decoupe', 'Confection', 'Conditionnement'] as const
 
-// Clé de cellule (format YYYY-MM-DD) pour comparer les samedis entres grille et entries.
 function toIsoDate(d: Date): string {
   const y = d.getFullYear()
   const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -58,20 +60,30 @@ function dateKeyOf(iso: string): string {
 function formatSamedi(d: Date): string {
   const dd = String(d.getDate()).padStart(2, '0')
   const mm = String(d.getMonth() + 1).padStart(2, '0')
-  return `Samedi ${dd}/${mm}`
+  return `${dd}/${mm}`
 }
 
-// Les 8 samedis : samedi de la semaine en cours + les 7 suivants.
-function getSamedis(): Date[] {
+function formatSamediLong(d: Date): string {
+  return `Samedi ${formatSamedi(d)}/${d.getFullYear()}`
+}
+
+function ajouterSemaines(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setDate(d.getDate() + n * 7)
+  return r
+}
+
+// Samedi le plus proche (aujourd'hui si samedi, sinon le samedi suivant).
+function prochainSamedi(): Date {
   const now = new Date()
   const diff = (6 - now.getDay() + 7) % 7
-  const first = new Date(now)
-  first.setDate(now.getDate() + diff)
-  return Array.from({ length: 8 }, (_, i) => {
-    const d = new Date(first)
-    d.setDate(first.getDate() + i * 7)
-    return d
-  })
+  const s = new Date(now)
+  s.setDate(now.getDate() + diff)
+  return s
+}
+
+function samedisPour(start: Date, nSemaines: number): Date[] {
+  return Array.from({ length: nSemaines }, (_, i) => ajouterSemaines(start, i))
 }
 
 // ── Éditeur d'une cellule (création / modification / suppression) ─────────────
@@ -85,7 +97,7 @@ function CellEditorDialog({
 }: {
   open: boolean
   onClose: () => void
-  chaine: ChaineProduction
+  chaine: ChainePlanning
   samedi: Date
   existing?: PlanningEntry
 }) {
@@ -101,7 +113,7 @@ function CellEditorDialog({
   const isPending = creer.isPending || modifier.isPending || supprimer.isPending
 
   const handleSubmit = async () => {
-    if (!numeroCommande.trim()) return
+    if (!numeroCommande.trim() || isPending) return
     const payload = {
       numeroCommande: numeroCommande.trim(),
       quantite: quantite.trim() ? Number(quantite) : null,
@@ -121,7 +133,7 @@ function CellEditorDialog({
   }
 
   const handleDelete = async () => {
-    if (!existing) return
+    if (!existing || isPending) return
     await supprimer.mutateAsync(existing.id)
     onClose()
   }
@@ -134,7 +146,7 @@ function CellEditorDialog({
             {existing ? 'Modifier la cellule' : 'Planifier une commande'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {chaine.nom} — {formatSamedi(samedi)}
+            {chaine.nom} — {formatSamediLong(samedi)}
           </p>
         </DialogHeader>
 
@@ -194,7 +206,7 @@ function CellEditorDialog({
             {existing && (
               <ConfirmDialog
                 title={`Supprimer « ${existing.numeroCommande} » ?`}
-                description={`La commande sera retirée du planning du ${formatSamedi(samedi)} sur ${chaine.nom}.`}
+                description={`La commande sera retirée du planning du ${formatSamediLong(samedi)} sur ${chaine.nom}.`}
                 onConfirm={handleDelete}
                 trigger={
                   <Button
@@ -219,6 +231,148 @@ function CellEditorDialog({
               {isPending ? 'Enregistrement…' : existing ? 'Mettre à jour' : 'Planifier'}
             </Button>
           </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Gestion des chaînes de production ────────────────────────────────────────
+
+type ChaineListItem = {
+  id: number
+  nom: string
+  type: string
+  estActif: boolean
+}
+
+function GestionChainesDialog({
+  open,
+  onClose,
+  chaines,
+}: {
+  open: boolean
+  onClose: () => void
+  chaines: ChainePlanning[]
+}) {
+  const qc = useQueryClient()
+  const { data: chainesToutes } = useGetChainesProduction()
+  const createChaine = useCreateChaineProduction()
+  const desactiverChaine = useDesactiverChaineProduction()
+
+  const [nom, setNom] = useState('')
+  const [typeChaine, setTypeChaine] = useState<string>(TYPES_CHAINE[0])
+
+  const liste: ChaineListItem[] =
+    chainesToutes && chainesToutes.length > 0
+      ? chainesToutes.map((c) => ({ id: c.id, nom: c.nom, type: c.typeChaine, estActif: c.estActif }))
+      : chaines.map((c) => ({ id: c.id, nom: c.nom, type: c.type, estActif: true }))
+
+  const rafraichir = () => {
+    // Une nouvelle chaîne doit apparaître immédiatement dans la grille.
+    qc.invalidateQueries({ queryKey: PLANNING_KEY })
+    qc.invalidateQueries({ queryKey: ['chaines-production'] })
+  }
+
+  const handleCreate = async () => {
+    if (!nom.trim()) return
+    await createChaine.mutateAsync({ nom: nom.trim(), typeChaine })
+    rafraichir()
+    setNom('')
+  }
+
+  const handleDesactiver = async (c: ChaineListItem) => {
+    await desactiverChaine.mutateAsync(c.id)
+    rafraichir()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Gérer les chaînes</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            Les chaînes actives apparaissent dans la grille du planning.
+          </p>
+        </DialogHeader>
+
+        <div className="space-y-2">
+          {liste.length === 0 && (
+            <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+              Aucune chaîne de production. Ajoutez-en une ci-dessous.
+            </p>
+          )}
+          {liste.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center justify-between gap-3 rounded-lg border p-3"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{c.nom}</p>
+                <p className="text-xs capitalize text-muted-foreground">
+                  {c.type.toLowerCase()}
+                  {!c.estActif && ' · inactive'}
+                </p>
+              </div>
+              {c.estActif ? (
+                <PermissionGate module="commandes" mode="write">
+                  <ConfirmDialog
+                    title={`Désactiver « ${c.nom} » ?`}
+                    description="La chaîne restera dans l'historique mais ne sera plus proposée dans le planning."
+                    onConfirm={() => handleDesactiver(c)}
+                    trigger={
+                      <Button variant="outline" size="sm">
+                        Désactiver
+                      </Button>
+                    }
+                  />
+                </PermissionGate>
+              ) : (
+                <Badge variant="outline">Inactive</Badge>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <PermissionGate module="commandes" mode="write">
+          <div className="grid gap-3 border-t pt-4">
+            <p className="text-sm font-medium">Ajouter une chaîne</p>
+            <div className="grid gap-2">
+              <Label htmlFor="nouvelleChaine">Nom</Label>
+              <Input
+                id="nouvelleChaine"
+                placeholder="Ex : Chaine 4 - Emballage"
+                value={nom}
+                onChange={(e) => setNom(e.target.value)}
+                disabled={createChaine.isPending}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="typeChaine">Type</Label>
+              <select
+                id="typeChaine"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={typeChaine}
+                onChange={(e) => setTypeChaine(e.target.value)}
+                disabled={createChaine.isPending}
+              >
+                {TYPES_CHAINE.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button type="button" onClick={handleCreate} disabled={createChaine.isPending || !nom.trim()}>
+              {createChaine.isPending ? 'Ajout…' : 'Ajouter la chaîne'}
+            </Button>
+          </div>
+        </PermissionGate>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Fermer
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -298,37 +452,50 @@ function CellContent({
   )
 }
 
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function PlanningPage() {
-  const { data: chainesApi, isLoading: isLoadingChaines } = useGetChainesProduction()
-  const { data: entries, isLoading: isLoadingEntries } = useGetPlanningEntries()
+  const { data: grille, isLoading } = useGetPlanningGrille()
   const supprimer = useSupprimerPlanningEntry()
 
+  const [startSamedi, setStartSamedi] = useState(prochainSamedi)
+  const [nbSemaines, setNbSemaines] = useState(8)
+  const [gestionOuverte, setGestionOuverte] = useState(false)
+
+  const samedis = useMemo(() => samedisPour(startSamedi, nbSemaines), [startSamedi, nbSemaines])
+  const chaines = grille?.chaines ?? []
+  const cellules = grille?.cellules ?? []
+
   const [cell, setCell] = useState<
-    { chaine: ChaineProduction; samedi: Date; entry?: PlanningEntry } | null
+    { chaine: ChainePlanning; samedi: Date; entry?: PlanningEntry } | null
   >(null)
 
-  const samedis = getSamedis()
-
-  const chainesUselles =
-    chainesApi && chainesApi.length > 0
-      ? chainesApi.filter((c) => c.estActif)
-      : FALLBACK_CHAINES
-
-  const isLoading = isLoadingChaines || isLoadingEntries
-
   const entryFor = (chaineId: number, samedi: Date): PlanningEntry | undefined =>
-    entries?.find(
+    cellules.find(
       (e) =>
         e.chaineProductionId === chaineId &&
         dateKeyOf(e.dateSamedi) === toIsoDate(samedi),
     )
 
-  const totalPlanifiees = entries?.length ?? 0
-  const totalLivrees = entries?.filter((e) => e.estLivree).length ?? 0
+  const totalPlanifiees = cellules.length
+  const totalLivrees = cellules.filter((e) => e.estLivree).length
 
-  const openCell = (chaine: ChaineProduction, samedi: Date, entry?: PlanningEntry) =>
+  const openCell = (chaine: ChainePlanning, samedi: Date, entry?: PlanningEntry) =>
     setCell({ chaine, samedi, entry })
   const closeCell = () => setCell(null)
+
+  const revenirAujourdHui = () => {
+    setStartSamedi(prochainSamedi())
+    setNbSemaines(8)
+  }
+
+  const changerDateDepart = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00`)
+    if (Number.isNaN(d.getTime())) return
+    const diff = (6 - d.getDay() + 7) % 7
+    d.setDate(d.getDate() + diff)
+    setStartSamedi(d)
+  }
 
   return (
     <div>
@@ -349,48 +516,84 @@ export default function PlanningPage() {
         }
       />
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
-        <table className="w-full min-w-max border-collapse text-sm">
-          <thead>
-            <tr className="border-b bg-muted/40">
-              <th className="sticky left-0 z-10 w-32 border-r bg-muted/40 px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Samedi
-              </th>
-              {chainesUselles.map((c) => (
-                <th
-                  key={c.id}
-                  className="min-w-44 px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-                >
-                  {c.nom}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading &&
-              samedis.map((s) => (
-                <tr key={toIsoDate(s)} className="border-b last:border-0">
-                  <th className="sticky left-0 z-10 border-r bg-card px-3 py-3 text-left align-top whitespace-nowrap font-medium">
-                    {formatSamedi(s)}
-                  </th>
-                  {chainesUselles.map((c) => (
-                    <td key={c.id} className="px-2 py-1.5 align-middle">
-                      <Skeleton className="h-12 w-full" />
-                    </td>
-                  ))}
-                </tr>
-              ))}
+      {/* Navigation par semaines */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={() => setStartSamedi(ajouterSemaines(startSamedi, -1))}>
+          <ChevronLeft className="size-4" />
+          Semaine préc.
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setStartSamedi(ajouterSemaines(startSamedi, 1))}>
+          Semaine suiv.
+          <ChevronRight className="size-4" />
+        </Button>
+        <input
+          type="date"
+          aria-label="Date de départ des semaines"
+          className="h-8 rounded-md border border-input bg-card px-2 text-sm"
+          value={toIsoDate(startSamedi)}
+          onChange={(e) => changerDateDepart(e.target.value)}
+        />
+        <Button variant="ghost" size="sm" onClick={revenirAujourdHui}>
+          Aujourd&apos;hui
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setNbSemaines((n) => Math.min(n + 1, 12))}
+          disabled={nbSemaines >= 12}
+        >
+          + Semaine
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setGestionOuverte(true)}>
+          <Settings2 className="size-4" />
+          Gérer les chaînes
+        </Button>
+      </div>
 
-            {!isLoading &&
-              samedis.map((s) => (
-                <tr key={toIsoDate(s)} className="border-b last:border-0">
-                  <th className="sticky left-0 z-10 border-r bg-card px-3 py-2.5 text-left align-top text-sm font-medium whitespace-nowrap">
-                    {formatSamedi(s)}
+      <div className="overflow-x-auto rounded-lg border bg-card">
+        {chaines.length === 0 && !isLoading && (
+          <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+            <p className="text-sm font-medium">Aucune chaîne de production active</p>
+            <p className="text-sm text-muted-foreground">
+              Créez une chaîne via « Gérer les chaînes » pour commencer.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setGestionOuverte(true)}>
+              <Settings2 className="size-4" />
+              Ouvrir la gestion
+            </Button>
+          </div>
+        )}
+
+        {chaines.length > 0 && (
+          <table className="w-full min-w-max border-collapse text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40">
+                <th className="sticky left-0 z-10 w-48 border-r bg-muted/40 px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Chaîne
+                </th>
+                {samedis.map((s) => (
+                  <th
+                    key={toIsoDate(s)}
+                    className="min-w-36 px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                  >
+                    {formatSamedi(s)} / {s.getFullYear()}
                   </th>
-                  {chainesUselles.map((c) => {
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {chaines.map((c) => (
+                <tr key={c.id} className="border-b last:border-0">
+                  <th className="sticky left-0 z-10 border-r bg-card px-3 py-2.5 text-left align-top text-sm font-medium whitespace-nowrap">
+                    {c.nom}
+                    <span className="block text-xs font-normal capitalize text-muted-foreground">
+                      {c.type.toLowerCase()}
+                    </span>
+                  </th>
+                  {samedis.map((s) => {
                     const entry = entryFor(c.id, s)
                     return (
-                      <td key={c.id} className="w-44 px-2 py-1.5 align-top">
+                      <td key={toIsoDate(s)} className="w-36 px-2 py-1.5 align-top">
                         <CellContent
                           entry={entry}
                           onEdit={() => openCell(c, s, entry)}
@@ -401,8 +604,40 @@ export default function PlanningPage() {
                   })}
                 </tr>
               ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        )}
+
+        {isLoading && (
+          <table className="w-full min-w-max border-collapse text-sm">
+            <thead>
+              <tr className="border-b bg-muted/40">
+                <th className="sticky left-0 z-10 w-48 border-r bg-muted/40 px-3 py-2.5 text-left">
+                  Chaîne
+                </th>
+                {samedis.map((s) => (
+                  <th key={toIsoDate(s)} className="px-3 py-2.5 text-left">
+                    {formatSamedi(s)} / {s.getFullYear()}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[0, 1, 2].map((r) => (
+                <tr key={r} className="border-b last:border-0">
+                  <th className="sticky left-0 z-10 border-r bg-card px-3 py-3 text-left">
+                    <Skeleton className="h-4 w-28" />
+                  </th>
+                  {samedis.map((s) => (
+                    <td key={toIsoDate(s)} className="px-2 py-1.5">
+                      <Skeleton className="h-12 w-full" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {cell && (
@@ -413,6 +648,14 @@ export default function PlanningPage() {
           chaine={cell.chaine}
           samedi={cell.samedi}
           existing={cell.entry}
+        />
+      )}
+
+      {gestionOuverte && (
+        <GestionChainesDialog
+          open={gestionOuverte}
+          onClose={() => setGestionOuverte(false)}
+          chaines={chaines}
         />
       )}
     </div>
