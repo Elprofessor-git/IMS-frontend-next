@@ -66,6 +66,8 @@ const roleSchema = z.object({
   peutGererMachines: z.boolean(),
   peutVoirCoupe: z.boolean(),
   peutGererCoupe: z.boolean(),
+  peutVoirPlanning: z.boolean(),
+  peutGererPlanning: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
@@ -82,6 +84,7 @@ const PERM_ECRITURE = [
   { key: 'peutGererFactures', label: 'Gérer les factures' },
   { key: 'peutGererMachines', label: 'Gérer les machines' },
   { key: 'peutGererCoupe', label: 'Gérer la coupe' },
+  { key: 'peutGererPlanning', label: 'Gérer le planning' },
 ] as const
 
 const PERM_LECTURE = [
@@ -99,6 +102,7 @@ const PERM_LECTURE = [
   { key: 'peutVoirFactures', label: 'Voir les factures' },
   { key: 'peutVoirMachines', label: 'Voir les machines' },
   { key: 'peutVoirCoupe', label: 'Voir la coupe' },
+  { key: 'peutVoirPlanning', label: 'Voir le planning' },
 ] as const
 
 const DEFAULT_VALUES: RoleSchema = {
@@ -134,6 +138,8 @@ const DEFAULT_VALUES: RoleSchema = {
   peutGererMachines: false,
   peutVoirCoupe: false,
   peutGererCoupe: false,
+  peutVoirPlanning: false,
+  peutGererPlanning: false,
 }
 
 function roleToSchema(r: Role): RoleSchema {
@@ -170,6 +176,8 @@ function roleToSchema(r: Role): RoleSchema {
     peutGererMachines: r.peutGererMachines,
     peutVoirCoupe: r.peutVoirCoupe,
     peutGererCoupe: r.peutGererCoupe,
+    peutVoirPlanning: r.peutVoirPlanning,
+    peutGererPlanning: r.peutGererPlanning,
   }
 }
 
@@ -384,6 +392,8 @@ export default function RolesPage() {
                 r.peutGererPlateformes,
                 r.peutGererFactures,
                 r.peutGererMachines,
+                r.peutGererCoupe,
+                r.peutGererPlanning,
               ].filter(Boolean).length
 
               const nbLecture = [
@@ -400,6 +410,8 @@ export default function RolesPage() {
                 r.peutVoirRapports,
                 r.peutVoirFactures,
                 r.peutVoirMachines,
+                r.peutVoirCoupe,
+                r.peutVoirPlanning,
               ].filter(Boolean).length
 
               return (
@@ -422,10 +434,10 @@ export default function RolesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 11`}
+                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 13`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 13`}
+                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 15`}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">

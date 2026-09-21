@@ -29,6 +29,7 @@ import {
   Settings,
   CableCar,
   Scissors,
+  CalendarRange,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetClose, SheetTrigger } from '@/components/ui/sheet'
@@ -62,6 +63,7 @@ const NAV: (NavItem | NavGroup)[] = [
   { href: '/taches',      label: 'Tâches',       icon: CheckSquare,     iconColor: 'text-emerald-600 group-data-[active=true]:text-white dark:text-emerald-400', module: 'taches' },
   { href: '/machines',    label: 'Machines',     icon: CableCar,        iconColor: 'text-sky-600 group-data-[active=true]:text-white dark:text-sky-400', module: 'machines' },
   { href: '/coupe',       label: 'Coupe',        icon: Scissors,        iconColor: 'text-orange-600 group-data-[active=true]:text-white dark:text-orange-400', module: 'coupe' },
+  { href: '/planning',    label: 'Planning',     icon: CalendarRange,   iconColor: 'text-cyan-600 group-data-[active=true]:text-white dark:text-cyan-400', module: 'planning' },
   {
     label: 'Partenaires',
     icon: Users,

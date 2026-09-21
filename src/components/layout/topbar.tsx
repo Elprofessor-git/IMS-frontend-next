@@ -5,6 +5,7 @@ import { LogOut, ChevronDown, Shirt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
 import { MobileSidebar } from '@/components/layout/sidebar'
+import { NotificationBell } from '@/components/layout/notification-bell'
 
 export function Topbar() {
   const router = useRouter()
@@ -39,8 +40,9 @@ export function Topbar() {
         </div>
       </div>
 
-      {/* Zone droite : compte utilisateur + déconnexion */}
+      {/* Zone droite : notifications + compte utilisateur + déconnexion */}
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <NotificationBell />
         <div
           className="flex items-center gap-2 rounded-full bg-white/15 py-1 pl-1 pr-2.5 transition-colors hover:bg-white/20"
           title="Compte utilisateur"
