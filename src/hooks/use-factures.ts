@@ -10,8 +10,18 @@ import type {
   UpdateFacturePayload,
 } from '@/types/facture'
 import type { ApiError } from '@/types'
+import type { CoutageCommande } from '@/types/commande'
 
 const KEY = ['factures'] as const
+
+// Coûtage par style (matière + façon), lecture seule — montants convertis en TND par le backend.
+export function useGetCoutage(commandeId: number, enabled: boolean) {
+  return useQuery<CoutageCommande>({
+    queryKey: [...KEY, 'coutage', commandeId],
+    queryFn: () => apiClient.get<CoutageCommande>(`/api/CommandeClient/${commandeId}/Coutage`),
+    enabled: commandeId > 0 && enabled,
+  })
+}
 
 export function useGetFactures() {
   return useQuery<FactureListDto[]>({

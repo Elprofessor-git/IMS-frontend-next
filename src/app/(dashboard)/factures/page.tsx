@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Plus, Trash2, Pencil, Eye, FileText, Clock, CheckCircle2, Send, Ban, X, LayoutGrid, FileDown } from 'lucide-react'
+import { Plus, Trash2, Pencil, Eye, FileText, Clock, CheckCircle2, Send, Ban, X, LayoutGrid, FileDown, BadgeEuro } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { downloadViaProxy } from '@/lib/download'
 import { FactureDetailDialog } from '@/components/factures/facture-detail-dialog'
 import { FactureFormDialog } from '@/components/factures/facture-form-dialog'
+import { CoutageSection } from '@/components/factures/coutage-section'
 
 const STATUT_CFG: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
   0: { variant: 'outline', className: 'border-amber-200 bg-amber-100 text-amber-800', icon: <FileText className="size-3.5" /> },
@@ -53,6 +54,7 @@ export default function FacturesPage() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [formFactureId, setFormFactureId] = useState(0)
+  const [section, setSection] = useState<'factures' | 'coutage'>('factures')
 
   // Détail chargé pour le mode édition du formulaire.
   const { data: editDetail } = useGetFacture(formFactureId)
@@ -220,7 +222,22 @@ export default function FacturesPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-4">
+      <Tabs value={section} onValueChange={(v) => setSection(v as 'factures' | 'coutage')}>
+        <div className="mb-4 overflow-x-auto">
+          <TabsList variant="line">
+            <TabsTrigger value="factures">
+              <FileText className="size-4" />
+              Factures
+            </TabsTrigger>
+            <TabsTrigger value="coutage">
+              <BadgeEuro className="size-4" />
+              Coûtage
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="factures">
+          <div className="mb-4 flex flex-wrap items-end gap-4">
         <div className="grid w-full max-w-sm gap-1.5">
           <Label>Recherche</Label>
           <Input
@@ -269,6 +286,12 @@ export default function FacturesPage() {
             />
           </TabsContent>
         ))}
+      </Tabs>
+        </TabsContent>
+
+        <TabsContent value="coutage">
+          <CoutageSection />
+        </TabsContent>
       </Tabs>
 
       <FactureDetailDialog

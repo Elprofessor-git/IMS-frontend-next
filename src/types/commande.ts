@@ -39,6 +39,8 @@ export type BesoinCommande = {
   nombrePieces: number
   // Calculé par le backend : quantiteUnitaire × nombrePieces
   quantiteTotale: number
+  // Calculé par le backend : quantiteTotale × (1 + marge par défaut / 100) — référence du statut
+  besoinFinal: number
   // Mis à jour par ValiderRessources
   quantiteCouverte: number
   quantiteStockImporte: number
@@ -151,7 +153,7 @@ export type CreateCommandePayload = {
   modePilotage?: number | null
 }
 
-// Réponse GET /{id}/Coutage (coûtage par style, partie I)
+// Réponse GET /{id}/Coutage (coûtage par style, partie I) — montants en TND (référence système)
 export type CoutageLigne = {
   articleId: number
   designation: string
@@ -161,6 +163,7 @@ export type CoutageLigne = {
   prixUnitaire: number
   devise: string | null
   coutLigne: number
+  tauxConvTND: number
   sourcePrix: 'Historique' | 'Article' | 'Aucun prix'
 }
 

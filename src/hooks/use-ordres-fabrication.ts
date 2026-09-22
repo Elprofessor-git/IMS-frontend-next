@@ -40,6 +40,8 @@ export function useCreateOrdreFabrication() {
       apiClient.post<OrdreFabricationWriteResponse>('/api/OrdreFabrication', data),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: KEY })
+      // Les OF pilotent la répartition par taille (ConfigTailles) : rafraîchir la commande.
+      qc.invalidateQueries({ queryKey: ['commandes'] })
       toast.success(res.message ?? 'Ordre de fabrication créé')
       if (res.avertissementCohérence) toast.warning(res.avertissementCohérence)
     },
@@ -54,6 +56,7 @@ export function useUpdateOrdreFabrication() {
       apiClient.put<OrdreFabricationWriteResponse>(`/api/OrdreFabrication/${id}`, data),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['commandes'] })
       toast.success(res.message ?? 'Ordre de fabrication mis à jour')
       if (res.avertissementCohérence) toast.warning(res.avertissementCohérence)
     },
@@ -67,6 +70,7 @@ export function useDeleteOrdreFabrication() {
     mutationFn: (id: number) => apiClient.del<{ message: string }>(`/api/OrdreFabrication/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['commandes'] })
       toast.success('Ordre de fabrication supprimé')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la suppression'),
@@ -80,6 +84,8 @@ export function useSetOrdreFabricationTailles(id: number) {
       apiClient.post<OrdreFabricationWriteResponse>(`/api/OrdreFabrication/${id}/Tailles`, tailles),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: KEY })
+      // La répartition par taille d'un OF recalcule les ConfigTailles de la commande.
+      qc.invalidateQueries({ queryKey: ['commandes'] })
       toast.success(res.message ?? 'Répartition enregistrée')
       if (res.avertissementCohérence) toast.warning(res.avertissementCohérence)
     },
@@ -95,6 +101,7 @@ export function useCreateOrdreFabricationEtiquette(id: number) {
       apiClient.post<{ message: string; id: number }>(`/api/OrdreFabrication/${id}/Etiquettes`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })
+      qc.invalidateQueries({ queryKey: ['commandes'] })
       toast.success('Étiquette enregistrée')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de l\u2019enregistrement'),
