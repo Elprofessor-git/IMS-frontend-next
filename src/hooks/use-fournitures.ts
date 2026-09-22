@@ -138,6 +138,19 @@ export function useDesactiverChaineProduction() {
   })
 }
 
+export function useReactiverChaineProduction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiClient.put<{ message: string }>(`/api/ChaineProduction/${id}/reactiver`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: CHAINES_KEY })
+      toast.success('Chaîne de production réactivée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de réactiver la chaîne'),
+  })
+}
+
 export function useGetNomenclature(commandeId: number) {
   return useQuery<FournitureCommandeLigne[]>({
     queryKey: [...KEY, commandeId, 'nomenclature'],

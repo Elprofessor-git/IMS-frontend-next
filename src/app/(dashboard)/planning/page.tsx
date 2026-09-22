@@ -34,6 +34,7 @@ import {
   useGetChainesProduction,
   useCreateChaineProduction,
   useDesactiverChaineProduction,
+  useReactiverChaineProduction,
 } from '@/hooks/use-fournitures'
 import {
   useGetPlanningGrille,
@@ -361,17 +362,23 @@ function GestionChainesDialog({
   const { data: chainesToutes } = useGetChainesProduction()
   const createChaine = useCreateChaineProduction()
   const desactiverChaine = useDesactiverChaineProduction()
+  const reactiverChaine = useReactiverChaineProduction()
 
   const [nom, setNom] = useState('')
   const [typeChaine, setTypeChaine] = useState<string>(TYPES_CHAINE[0])
 
+  // L'écran liste TOUTES les chaînes (actives ET inactives) : seul GET
+  // /api/ChaineProduction renvoie le référentiel complet. Le repli provisoire
+  // sur la grille (chaînes actives uniquement) ne sert qu'en attente du cache —
+  // une chaîne inactivée ne doit JAMAIS disparaître de cette liste.
   const liste: ChaineListItem[] =
     chainesToutes && chainesToutes.length > 0
       ? chainesToutes.map((c) => ({ id: c.id, nom: c.nom, type: c.typeChaine, estActif: c.estActif }))
       : chaines.map((c) => ({ id: c.id, nom: c.nom, type: c.type, estActif: true }))
 
   const rafraichir = () => {
-    // Une nouvelle chaîne doit apparaître immédiatement dans la grille.
+    // Une nouvelle chaîne doit apparaître immédiatement dans la grille ; une
+    // chaîne réactivée doit réapparaître dans les colonnes du planning.
     qc.invalidateQueries({ queryKey: PLANNING_KEY })
     qc.invalidateQueries({ queryKey: ['chaines-production'] })
   }
@@ -385,6 +392,11 @@ function GestionChainesDialog({
 
   const handleDesactiver = async (c: ChaineListItem) => {
     await desactiverChaine.mutateAsync(c.id)
+    rafraichir()
+  }
+
+  const handleReactiver = async (c: ChaineListItem) => {
+    await reactiverChaine.mutateAsync(c.id)
     rafraichir()
   }
 
@@ -410,17 +422,26 @@ function GestionChainesDialog({
               className="flex items-center justify-between gap-3 rounded-lg border p-3"
             >
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{c.nom}</p>
-                <p className="text-xs capitalize text-muted-foreground">
-                  {c.type.toLowerCase()}
-                  {!c.estActif && ' · inactive'}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-medium">{c.nom}</p>
+                  {c.estActif ? (
+                    <Badge variant="secondary" className="shrink-0">
+                      Active
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="shrink-0 text-muted-foreground">
+                      Inactive
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs capitalize text-muted-foreground">{c.type.toLowerCase()}</p>
               </div>
               {c.estActif ? (
                 <PermissionGate module="commandes" mode="write">
                   <ConfirmDialog
                     title={`Désactiver « ${c.nom} » ?`}
                     description="La chaîne restera dans l'historique mais ne sera plus proposée dans le planning."
+                    confirmLabel="Désactiver"
                     onConfirm={() => handleDesactiver(c)}
                     trigger={
                       <Button variant="outline" size="sm">
@@ -430,7 +451,16 @@ function GestionChainesDialog({
                   />
                 </PermissionGate>
               ) : (
-                <Badge variant="outline">Inactive</Badge>
+                <PermissionGate module="commandes" mode="write">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleReactiver(c)}
+                    disabled={reactiverChaine.isPending}
+                  >
+                    Activer
+                  </Button>
+                </PermissionGate>
               )}
             </div>
           ))}
