@@ -130,7 +130,8 @@ export function useSetBom() {
   })
 }
 
-// POST /Calculer — marge de sécurité, NE concerne PAS ValiderRessources
+// POST /Calculer — marge de sécurité : enregistre la marge par défaut de la commande
+// (MargeSecuriteDefaut), réutilisée ensuite par ValiderRessources et le rapport de coupe.
 export function useCalculer() {
   const qc = useQueryClient()
   return useMutation({

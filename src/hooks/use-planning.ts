@@ -7,6 +7,7 @@ import type {
   PlanningGrille,
   CreerPlanningEntryPayload,
   ModifierPlanningEntryPayload,
+  PlanningDatePayload,
 } from '@/types/planning'
 import type { ApiError } from '@/types'
 
@@ -66,5 +67,45 @@ export function useSupprimerPlanningEntry() {
       toast.success('Cellule de planning supprimée')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de supprimer la cellule'),
+  })
+}
+
+// ── Lignes de dates (POST/PUT/DELETE /api/planning/dates) ───────────────────────
+
+export function useCreerPlanningDate() {
+  const invalidate = useInvalidate()
+  return useMutation({
+    mutationFn: (data: PlanningDatePayload) =>
+      apiClient.post<{ id: number; date: string }>('/api/planning/dates', data),
+    onSuccess: () => {
+      invalidate()
+      toast.success('Date ajoutée au planning')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Impossible d\'ajouter la date'),
+  })
+}
+
+export function useModifierPlanningDate() {
+  const invalidate = useInvalidate()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number } & PlanningDatePayload) =>
+      apiClient.put<{ message: string }>(`/api/planning/dates/${id}`, data),
+    onSuccess: () => {
+      invalidate()
+      toast.success('Date de planning modifiée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de modifier la date'),
+  })
+}
+
+export function useSupprimerPlanningDate() {
+  const invalidate = useInvalidate()
+  return useMutation({
+    mutationFn: (id: number) => apiClient.del<{ message: string }>(`/api/planning/dates/${id}`),
+    onSuccess: () => {
+      invalidate()
+      toast.success('Date de planning supprimée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de supprimer la date'),
   })
 }

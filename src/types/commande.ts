@@ -96,6 +96,7 @@ export type CommandeClient = {
   modePilotage: number // 0=Standard 1=DonneurOrdre 2=SousTraitant
   montantTotal: number
   devise: string | null
+  margeSecuriteDefaut: number
   pourcentageRessourcesCouvertes: number
   prixFacon: number | null
   notesSpeciales: string | null

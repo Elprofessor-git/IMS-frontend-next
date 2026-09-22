@@ -840,11 +840,12 @@ export default function CommandeDetailPage({
                 <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
                   <Info className="mt-0.5 size-4 shrink-0" />
                   <span>
-                    La marge de sécurité est appliquée ici uniquement — elle n&apos;intervient
-                    pas dans la validation des ressources (<code>ValiderRessources</code> n&apos;accepte
-                    aucune marge). Le tableau ci-dessous est une simulation ; utilisez
-                    «&nbsp;Générer les besoins depuis la BOM&nbsp;» pour transformer cette BOM
-                    en besoins officiels (sans marge), utilisés ensuite par l&apos;onglet
+                    La marge de sécurité saisie ici est enregistrée comme marge par défaut de la
+                    commande (actuellement <strong>{commande.margeSecuriteDefaut}%</strong>). Elle est
+                    réutilisée par la validation des ressources (<code>ValiderRessources</code>) et par
+                    le seuil de dépassement du rapport de coupe. Le tableau ci-dessous est une simulation ;
+                    utilisez «&nbsp;Générer les besoins depuis la BOM&nbsp;» pour transformer cette BOM
+                    en besoins officiels (sans marge), validés ensuite dans l&apos;onglet
                     «&nbsp;Besoins &amp; Ressources&nbsp;».
                   </span>
                 </div>
@@ -1143,9 +1144,9 @@ export default function CommandeDetailPage({
             <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-700">
               <Info className="mt-0.5 size-3.5 shrink-0" />
               <span>
-                La validation des ressources ne tient pas compte d&apos;une marge de sécurité
-                (le backend ne l&apos;accepte pas sur cet endpoint). Pour calculer avec marge,
-                utilisez l&apos;onglet <strong>Tailles &amp; BOM → Calculer</strong>.
+                La validation des ressources applique la marge de sécurité par défaut de la
+                commande (actuellement <strong>{commande.margeSecuriteDefaut}%</strong>), définie via
+                l&apos;onglet <strong>Tailles &amp; BOM → Calculer</strong>, pour estimer la couverture.
               </span>
             </div>
           </div>

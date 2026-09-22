@@ -74,9 +74,16 @@ const NAV: (NavItem | NavGroup)[] = [
       { href: '/partenaires/plateformes',  label: 'Plateformes',  icon: Globe,     iconColor: 'text-indigo-600 group-data-[active=true]:text-white dark:text-indigo-400', module: 'plateformes' },
     ],
   },
-  { href: '/utilisateurs', label: 'Utilisateurs', icon: UserCog, iconColor: 'text-slate-700 group-data-[active=true]:text-white dark:text-slate-300', module: 'utilisateurs' },
-  { href: '/roles',        label: 'Rôles',        icon: Shield,  iconColor: 'text-purple-600 group-data-[active=true]:text-white dark:text-purple-400', module: 'roles' },
-  { href: '/parametres/taux-change', label: 'Paramètres', icon: Settings, iconColor: 'text-zinc-600 group-data-[active=true]:text-white dark:text-zinc-400', module: 'parametres' },
+  {
+    label: 'Paramètres',
+    icon: Settings,
+    iconColor: 'text-zinc-600 group-data-[active=true]:text-white dark:text-zinc-400',
+    children: [
+      { href: '/utilisateurs',       label: 'Utilisateurs', icon: UserCog,  iconColor: 'text-slate-700 group-data-[active=true]:text-white dark:text-slate-300', module: 'utilisateurs' },
+      { href: '/roles',              label: 'Rôles',        icon: Shield,    iconColor: 'text-purple-600 group-data-[active=true]:text-white dark:text-purple-400', module: 'roles' },
+      { href: '/parametres/taux-change', label: 'Taux de change', icon: Settings, iconColor: 'text-zinc-600 group-data-[active=true]:text-white dark:text-zinc-400', module: 'parametres' },
+    ],
+  },
   {
     label: 'Rapports',
     icon: BarChart2,
@@ -101,6 +108,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     Partenaires: pathname.startsWith('/partenaires'),
     Rapports:    pathname.startsWith('/rapports'),
+    Paramètres:  pathname.startsWith('/parametres') || pathname.startsWith('/utilisateurs') || pathname.startsWith('/roles'),
   })
 
   const toggleGroup = (label: string) =>

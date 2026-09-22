@@ -16,6 +16,7 @@ import type {
   CreerReceptionPayload,
   CreerEnvoiPayload,
 } from '@/types/fourniture'
+import type { MettreAJourMatelasPayload } from '@/types/matelas'
 import type { ApiError } from '@/types'
 
 const KEY = ['fournitures'] as const
@@ -34,6 +35,8 @@ export function useCreerMatelas(commandeId: number) {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: [...KEY, commandeId, 'matelas'] })
     qc.invalidateQueries({ queryKey: ['matelas'] })
+    qc.invalidateQueries({ queryKey: ['commandes'] })
+    qc.invalidateQueries({ queryKey: ['commandes', commandeId] })
   }
   return useMutation({
     mutationFn: (data: CreerMatelasPayload) =>
@@ -46,6 +49,47 @@ export function useCreerMatelas(commandeId: number) {
       toast.success('Matelas créé')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la création du matelas'),
+  })
+}
+
+export function useModifierMatelas(commandeId?: number) {
+  const qc = useQueryClient()
+  const invalidate = (cid?: number) => {
+    qc.invalidateQueries({ queryKey: ['matelas'] })
+    if (cid) {
+      qc.invalidateQueries({ queryKey: [...KEY, cid, 'matelas'] })
+      qc.invalidateQueries({ queryKey: ['commandes', cid] })
+    }
+    qc.invalidateQueries({ queryKey: ['commandes'] })
+  }
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number } & MettreAJourMatelasPayload) =>
+      apiClient.put<{ message: string; id: number }>(`/api/Matelas/${id}`, data),
+    onSuccess: () => {
+      invalidate(commandeId)
+      toast.success('Matelas mis à jour')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la mise à jour du matelas'),
+  })
+}
+
+export function useSupprimerMatelas(commandeId?: number) {
+  const qc = useQueryClient()
+  const invalidate = (cid?: number) => {
+    qc.invalidateQueries({ queryKey: ['matelas'] })
+    if (cid) {
+      qc.invalidateQueries({ queryKey: [...KEY, cid, 'matelas'] })
+      qc.invalidateQueries({ queryKey: ['commandes', cid] })
+    }
+    qc.invalidateQueries({ queryKey: ['commandes'] })
+  }
+  return useMutation({
+    mutationFn: (id: number) => apiClient.del<{ message: string }>(`/api/Matelas/${id}`),
+    onSuccess: () => {
+      invalidate(commandeId)
+      toast.success('Matelas supprimé')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de supprimer le matelas'),
   })
 }
 

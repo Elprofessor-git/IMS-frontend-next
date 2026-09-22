@@ -43,3 +43,6 @@ next-env.d.ts
 # playwright
 /test-results/
 /playwright-report/
+
+# preuves e2e (captures d'écran) — hors dépôt comme convenu
+/e2e/*.png

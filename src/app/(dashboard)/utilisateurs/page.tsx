@@ -43,6 +43,7 @@ import {
   useRegisterUser,
 } from '@/hooks/use-users'
 import { useGetRoles } from '@/hooks/use-roles'
+import { useAuth } from '@/hooks/use-auth'
 
 const EMPTY_FORM = {
   nom: '',
@@ -53,6 +54,8 @@ const EMPTY_FORM = {
 }
 
 export default function UtilisateursPage() {
+  const { data: me } = useAuth()
+  const estAdministrateur = me?.estAdministrateur ?? false
   const { data: users, isLoading } = useGetUsers()
   const pagination = useClientPagination(users ?? [])
   const { data: roles } = useGetRoles()
@@ -154,31 +157,37 @@ export default function UtilisateursPage() {
                       )
                     }
                   >
-                    <Select
-                      value={u.roleId?.toString() ?? '0'}
-                      disabled={assignRoleMutation.isPending && pendingRoleId === u.id}
-                      onValueChange={(val) => {
-                        setPendingRoleId(u.id)
-                        assignRoleMutation.mutate(
-                          { id: u.id, roleId: val === '0' ? null : Number(val) },
-                          { onSettled: () => setPendingRoleId(null) },
-                        )
-                      }}
-                    >
-                      <SelectTrigger className="h-7 w-44 text-xs">
-                        <SelectValue placeholder="Aucun rôle" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">
-                          <span className="text-muted-foreground">Aucun rôle</span>
-                        </SelectItem>
-                        {roles?.map((r) => (
-                          <SelectItem key={r.id} value={r.id.toString()}>
-                            {r.name}
+                    {estAdministrateur ? (
+                      <Select
+                        value={u.roleId?.toString() ?? '0'}
+                        disabled={assignRoleMutation.isPending && pendingRoleId === u.id}
+                        onValueChange={(val) => {
+                          setPendingRoleId(u.id)
+                          assignRoleMutation.mutate(
+                            { id: u.id, roleId: val === '0' ? null : Number(val) },
+                            { onSettled: () => setPendingRoleId(null) },
+                          )
+                        }}
+                      >
+                        <SelectTrigger className="h-7 w-44 text-xs">
+                          <SelectValue placeholder="Aucun rôle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">
+                            <span className="text-muted-foreground">Aucun rôle</span>
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          {roles?.map((r) => (
+                            <SelectItem key={r.id} value={r.id.toString()}>
+                              {r.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : u.nomRole ? (
+                      <Badge variant="outline">{u.nomRole}</Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
                   </PermissionGate>
                 </TableCell>
                 <TableCell>
@@ -293,19 +302,29 @@ export default function UtilisateursPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="role">Rôle personnalisé *</Label>
-              <Select value={form.roleId} onValueChange={(v) => handleField('roleId', v)}>
+              <Select
+                value={estAdministrateur ? form.roleId : '0'}
+                onValueChange={(v) => handleField('roleId', v)}
+                disabled={!estAdministrateur}
+              >
                 <SelectTrigger id="role">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Aucun rôle</SelectItem>
-                  {roles?.filter(r => r.estActif).map((r) => (
-                    <SelectItem key={r.id} value={r.id.toString()}>
-                      {r.name}
-                    </SelectItem>
-                  ))}
+                  {estAdministrateur &&
+                    roles?.filter(r => r.estActif).map((r) => (
+                      <SelectItem key={r.id} value={r.id.toString()}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
+              {!estAdministrateur && (
+                <p className="text-xs text-muted-foreground">
+                  L&apos;attribution d&apos;un rôle à la création est réservée aux administrateurs.
+                </p>
+              )}
             </div>
             <DialogFooter>
               <Button

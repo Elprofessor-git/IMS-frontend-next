@@ -8,6 +8,7 @@ import type {
   LotCoupe,
   LotExport,
   CreerLotPayload,
+  ModifierCoupePayload,
 } from '@/types/rapport-coupe'
 import type { ApiError } from '@/types'
 
@@ -18,6 +19,7 @@ export function useGetRapportCoupe(commandeId: number) {
     queryKey: [...KEY, commandeId],
     queryFn: () => apiClient.get<RapportCoupe>(`/api/RapportCoupe/${commandeId}`),
     enabled: commandeId > 0,
+    retry: false,
   })
 }
 
@@ -43,6 +45,10 @@ function useInvalidate(commandeId: number) {
     qc.invalidateQueries({ queryKey: [...KEY, commandeId] })
     qc.invalidateQueries({ queryKey: [...KEY, commandeId, 'coupes'] })
     qc.invalidateQueries({ queryKey: [...KEY, commandeId, 'exports'] })
+    // Le module Coupe alimente aussi la liste globale des matelas et le suivi des commandes.
+    qc.invalidateQueries({ queryKey: ['matelas'] })
+    qc.invalidateQueries({ queryKey: ['commandes'] })
+    qc.invalidateQueries({ queryKey: ['commandes', commandeId] })
   }
 }
 
@@ -71,6 +77,22 @@ export function useSupprimerCoupe(commandeId: number) {
       toast.success('Coupe supprimée')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de supprimer la coupe'),
+  })
+}
+
+export function useModifierCoupe(commandeId: number) {
+  const invalidate = useInvalidate(commandeId)
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number } & ModifierCoupePayload) =>
+      apiClient.put<{ message: string; id: number; totalTaille: number }>(
+        `/api/RapportCoupe/${commandeId}/Coupes/${id}`,
+        data,
+      ),
+    onSuccess: (res) => {
+      invalidate()
+      toast.success(res.message ?? 'Coupe mise à jour')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la mise à jour de la coupe'),
   })
 }
 

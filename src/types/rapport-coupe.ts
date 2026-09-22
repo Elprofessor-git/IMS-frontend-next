@@ -65,3 +65,6 @@ export type CreerLotPayload = {
   matelasId?: number | null
   chaineProductionId?: number | null
 }
+
+// PUT /api/RapportCoupe/{commandeId}/Coupes/{id} — mêmes champs qu'une création de coupe.
+export type ModifierCoupePayload = CreerLotPayload

@@ -127,8 +127,10 @@ test('matelas + coupe + export : les 3 évolutions frontend', async ({ page }) =
     page.getByText(/Lecture seule : des ordres de fabrication existent/),
   ).toBeVisible()
 
-  // ── 2 + 3. Rapport de coupe : matelas à la volée + chaîne ──
-  await gotoCommandeTab(page, commandeId, /Rapport de coupe/)
+  // ── 2 + 3. Coupe/export : module Coupe (écriture) ──
+  // Depuis LOT 3, l'enregistrement des coupes/exports se fait dans /coupe/{commandeId} ;
+  // l'onglet « Rapport de coupe » de /commandes/{id} est en lecture seule.
+  await gotoPage(page, `/coupe/${commandeId}`, /Module Coupe/)
 
   const coupeForm = page
     .locator('[data-slot="card"]')
@@ -167,5 +169,27 @@ test('matelas + coupe + export : les 3 évolutions frontend', async ({ page }) =
     page.getByText(new RegExp(`5 pièce\\(s\\) · PW Chaine ${ts}`)),
   ).toBeVisible()
 
+  // ── 4. /commandes : onglet « Rapport de coupe » en LECTURE SEULE ──
+  // Ni formulaire de coupe ni formulaire d'export ; l'historique est complet en lecture.
+  await gotoCommandeTab(page, commandeId, /Rapport de coupe/)
+  await expect(page.locator('[data-slot="card"]').filter({ has: page.getByText('Enregistrer une coupe') })).toHaveCount(0)
+  await expect(page.getByText(new RegExp(`12 pièce\\(s\\) · ${numeroMatelas}`))).toBeVisible()
+  await expect(page.getByText(new RegExp(`5 pièce\\(s\\) · PW Chaine ${ts}`))).toBeVisible()
+
+  await page.screenshot({ path: 'e2e/lot3-commandes-coupe-readonly-1440.png', fullPage: false })
+
   console.log(`commandeId=${commandeId} clientId=${clientId} chaineId=${chaineId} matelas=${numeroMatelas}`)
 })
+
+async function gotoPage(page: Page, path: string, waitFor: RegExp | string) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.goto(path, { waitUntil: 'domcontentloaded' }).catch(() => {})
+    try {
+      await page.getByText(waitFor).first().waitFor({ state: 'visible', timeout: 30_000 })
+      return
+    } catch {
+      // premier chargement (compilation Next) avorté : nouvelle tentative
+    }
+  }
+  throw new Error(`Page ${path} introuvable (attendu ${waitFor})`)
+}

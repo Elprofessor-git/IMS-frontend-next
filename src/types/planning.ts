@@ -1,4 +1,4 @@
-// Cellule du planning de production : intersection « chaîne de production × samedi ».
+// Cellule du planning de production : intersection « chaîne de production × date ».
 // La persistance est assurée par le CRUD /api/planning.
 export type PlanningEntry = {
   id: number
@@ -17,9 +17,18 @@ export type ChainePlanning = {
   type: string
 }
 
-// Forme RÉELLE de GET /api/planning : { chaines, cellules } (PlanningController.cs:59).
+// Ligne de date du planning : une « case » verticale (Id 0 = date dérivée d'une
+// cellule existante, pas encore créée en base — lecture seule jusqu'à ré-édition).
+export type PlanningDate = {
+  id: number
+  date: string
+}
+
+// Forme RÉELLE de GET /api/planning : { chaines, dates, cellules }
+// (PlanningController.cs:59) — chaînes = colonnes, dates = lignes.
 export type PlanningGrille = {
   chaines: ChainePlanning[]
+  dates: PlanningDate[]
   cellules: PlanningEntry[]
 }
 
@@ -37,4 +46,8 @@ export type ModifierPlanningEntryPayload = {
   quantite: number | null
   estLivree: boolean
   notes: string | null
+}
+
+export type PlanningDatePayload = {
+  date: string
 }

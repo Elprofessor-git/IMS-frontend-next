@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
@@ -40,11 +40,15 @@ import {
   useCreerPlanningEntry,
   useModifierPlanningEntry,
   useSupprimerPlanningEntry,
+  useCreerPlanningDate,
+  useModifierPlanningDate,
+  useSupprimerPlanningDate,
   PLANNING_KEY,
 } from '@/hooks/use-planning'
-import type { ChainePlanning, PlanningEntry } from '@/types/planning'
+import type { ChainePlanning, PlanningDate, PlanningEntry } from '@/types/planning'
 
 const TYPES_CHAINE = ['Decoupe', 'Confection', 'Conditionnement'] as const
+const TAILLE_FENETRE = 8
 
 function toIsoDate(d: Date): string {
   const y = d.getFullYear()
@@ -57,33 +61,24 @@ function dateKeyOf(iso: string): string {
   return iso.slice(0, 10)
 }
 
-function formatSamedi(d: Date): string {
+function parseDate(iso: string): Date {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function formatDateCourt(d: Date): string {
   const dd = String(d.getDate()).padStart(2, '0')
   const mm = String(d.getMonth() + 1).padStart(2, '0')
-  return `${dd}/${mm}`
+  return `${dd}/${mm}/${d.getFullYear()}`
 }
 
-function formatSamediLong(d: Date): string {
-  return `Samedi ${formatSamedi(d)}/${d.getFullYear()}`
-}
-
-function ajouterSemaines(d: Date, n: number): Date {
-  const r = new Date(d)
-  r.setDate(d.getDate() + n * 7)
-  return r
-}
-
-// Samedi le plus proche (aujourd'hui si samedi, sinon le samedi suivant).
-function prochainSamedi(): Date {
-  const now = new Date()
-  const diff = (6 - now.getDay() + 7) % 7
-  const s = new Date(now)
-  s.setDate(now.getDate() + diff)
-  return s
-}
-
-function samedisPour(start: Date, nSemaines: number): Date[] {
-  return Array.from({ length: nSemaines }, (_, i) => ajouterSemaines(start, i))
+function formatDateLong(d: Date): string {
+  return d.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
 }
 
 // ── Éditeur d'une cellule (création / modification / suppression) ─────────────
@@ -92,13 +87,13 @@ function CellEditorDialog({
   open,
   onClose,
   chaine,
-  samedi,
+  date,
   existing,
 }: {
   open: boolean
   onClose: () => void
   chaine: ChainePlanning
-  samedi: Date
+  date: Date
   existing?: PlanningEntry
 }) {
   const creer = useCreerPlanningEntry()
@@ -125,7 +120,7 @@ function CellEditorDialog({
     } else {
       await creer.mutateAsync({
         chaineProductionId: chaine.id,
-        dateSamedi: toIsoDate(samedi),
+        dateSamedi: toIsoDate(date),
         ...payload,
       })
     }
@@ -146,7 +141,7 @@ function CellEditorDialog({
             {existing ? 'Modifier la cellule' : 'Planifier une commande'}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">
-            {chaine.nom} — {formatSamediLong(samedi)}
+            {chaine.nom} — {formatDateLong(date)}
           </p>
         </DialogHeader>
 
@@ -206,7 +201,7 @@ function CellEditorDialog({
             {existing && (
               <ConfirmDialog
                 title={`Supprimer « ${existing.numeroCommande} » ?`}
-                description={`La commande sera retirée du planning du ${formatSamediLong(samedi)} sur ${chaine.nom}.`}
+                description={`La commande sera retirée du planning du ${formatDateLong(date)} sur ${chaine.nom}.`}
                 onConfirm={handleDelete}
                 trigger={
                   <Button
@@ -229,6 +224,113 @@ function CellEditorDialog({
             </Button>
             <Button type="button" onClick={handleSubmit} disabled={isPending || !numeroCommande.trim()}>
               {isPending ? 'Enregistrement…' : existing ? 'Mettre à jour' : 'Planifier'}
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Éditeur d'une ligne de date (création / modification / suppression) ──────
+
+function DateEditorDialog({
+  open,
+  onClose,
+  existing,
+  onCreated,
+}: {
+  open: boolean
+  onClose: () => void
+  existing?: PlanningDate
+  onCreated: (dateIso: string) => void
+}) {
+  const creer = useCreerPlanningDate()
+  const modifier = useModifierPlanningDate()
+  const supprimer = useSupprimerPlanningDate()
+
+  const [date, setDate] = useState(existing ? dateKeyOf(existing.date) : toIsoDate(new Date()))
+
+  const isPending = creer.isPending || modifier.isPending || supprimer.isPending
+
+  const handleSubmit = async () => {
+    if (!date || isPending) return
+    if (existing) {
+      await modifier.mutateAsync({ id: existing.id, date: `${date}T00:00:00Z` })
+    } else {
+      await creer.mutateAsync({ date: `${date}T00:00:00Z` })
+      onCreated(date)
+    }
+    onClose()
+  }
+
+  const handleDelete = async () => {
+    if (!existing || isPending) return
+    await supprimer.mutateAsync(existing.id)
+    onClose()
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && !isPending && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{existing ? 'Modifier la date' : 'Ajouter une date'}</DialogTitle>
+          <p className="text-sm text-muted-foreground">
+            {existing
+              ? 'Les cellules de cette ligne suivront la nouvelle date.'
+              : 'La ligne vide sera rajoutée à la grille du planning.'}
+          </p>
+        </DialogHeader>
+
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="planningDate">
+              Date d&apos;export <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="planningDate"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              disabled={isPending}
+            />
+            {existing && existing.id === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Cette date provient d&apos;une cellule existante : recréez une vraie ligne pour la
+                modifier.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-between">
+          <div>
+            {existing && existing.id > 0 && (
+              <ConfirmDialog
+                title="Supprimer cette date ?"
+                description="Les cellules qui s'y trouvent seront aussi supprimées du planning."
+                onConfirm={handleDelete}
+                trigger={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    disabled={isPending}
+                  >
+                    <Trash2 className="size-3.5" />
+                    Supprimer
+                  </Button>
+                }
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
+              Annuler
+            </Button>
+            <Button type="button" onClick={handleSubmit} disabled={isPending || !date}>
+              {isPending ? 'Enregistrement…' : existing ? 'Modifier' : 'Ajouter'}
             </Button>
           </div>
         </DialogFooter>
@@ -296,7 +398,7 @@ function GestionChainesDialog({
           </p>
         </DialogHeader>
 
-        <div className="space-y-2">
+        <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
           {liste.length === 0 && (
             <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
               Aucune chaîne de production. Ajoutez-en une ci-dessous.
@@ -458,50 +560,68 @@ export default function PlanningPage() {
   const { data: grille, isLoading } = useGetPlanningGrille()
   const supprimer = useSupprimerPlanningEntry()
 
-  const [startSamedi, setStartSamedi] = useState(prochainSamedi)
-  const [nbSemaines, setNbSemaines] = useState(8)
+  const [indexDeb, setIndexDeb] = useState(0)
   const [gestionOuverte, setGestionOuverte] = useState(false)
+  const [dateDialog, setDateDialog] = useState<{ existing?: PlanningDate } | null>(null)
 
-  const samedis = useMemo(() => samedisPour(startSamedi, nbSemaines), [startSamedi, nbSemaines])
   const chaines = grille?.chaines ?? []
   const cellules = grille?.cellules ?? []
+  const dates = useMemo(
+    () =>
+      [...(grille?.dates ?? [])].sort((a, b) => dateKeyOf(a.date).localeCompare(dateKeyOf(b.date))),
+    [grille?.dates],
+  )
+
+  // La fenêtre courante reste valide quand la liste se charge/change.
+  useEffect(() => {
+    setIndexDeb((i) => Math.min(i, Math.max(0, dates.length - 1)))
+  }, [dates.length])
+
+  const datesFenetre = useMemo(
+    () => dates.slice(indexDeb, indexDeb + TAILLE_FENETRE),
+    [dates, indexDeb],
+  )
+  const aDesDatesAvant = indexDeb > 0
+  const aDesDatesApres = indexDeb + TAILLE_FENETRE < dates.length
 
   const [cell, setCell] = useState<
-    { chaine: ChainePlanning; samedi: Date; entry?: PlanningEntry } | null
+    { chaine: ChainePlanning; date: Date; entry?: PlanningEntry } | null
   >(null)
 
-  const entryFor = (chaineId: number, samedi: Date): PlanningEntry | undefined =>
+  const entryFor = (chaineId: number, date: Date): PlanningEntry | undefined =>
     cellules.find(
-      (e) =>
-        e.chaineProductionId === chaineId &&
-        dateKeyOf(e.dateSamedi) === toIsoDate(samedi),
+      (e) => e.chaineProductionId === chaineId && dateKeyOf(e.dateSamedi) === toIsoDate(date),
     )
 
   const totalPlanifiees = cellules.length
   const totalLivrees = cellules.filter((e) => e.estLivree).length
 
-  const openCell = (chaine: ChainePlanning, samedi: Date, entry?: PlanningEntry) =>
-    setCell({ chaine, samedi, entry })
+  const openCell = (chaine: ChainePlanning, date: Date, entry?: PlanningEntry) =>
+    setCell({ chaine, date, entry })
   const closeCell = () => setCell(null)
 
-  const revenirAujourdHui = () => {
-    setStartSamedi(prochainSamedi())
-    setNbSemaines(8)
+  const navigateVers = (iso: string) => {
+    const d = parseDate(iso)
+    if (Number.isNaN(d.getTime())) return
+    const idx = dates.findIndex((p) => parseDate(p.date) >= d)
+    setIndexDeb(idx === -1 ? Math.max(0, dates.length - 1) : idx)
   }
 
-  const changerDateDepart = (iso: string) => {
-    const d = new Date(`${iso}T00:00:00`)
-    if (Number.isNaN(d.getTime())) return
-    const diff = (6 - d.getDay() + 7) % 7
-    d.setDate(d.getDate() + diff)
-    setStartSamedi(d)
+  const revenirAujourdHui = () => navigateVers(toIsoDate(new Date()))
+
+  const avancer = (pas: number) => {
+    setIndexDeb((i) => {
+      const cible = i + pas
+      if (pas > 0) return Math.min(cible, Math.max(0, dates.length - 1))
+      return Math.max(0, cible)
+    })
   }
 
   return (
     <div>
       <PageHeader
         title="Planning de production"
-        description="Grille hebdomadaire : commandes de matelas placées par chaîne de production et par samedi d'export."
+        description="Grille du planning : commandes de matelas placées par chaîne de production (colonnes) et par date d'export (lignes)."
         action={
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="gap-1">
@@ -516,34 +636,42 @@ export default function PlanningPage() {
         }
       />
 
-      {/* Navigation par semaines */}
+      {/* Navigation par fenêtre de dates */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => setStartSamedi(ajouterSemaines(startSamedi, -1))}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => avancer(-TAILLE_FENETRE)}
+          disabled={!aDesDatesAvant}
+        >
           <ChevronLeft className="size-4" />
-          Semaine préc.
+          Dates préc.
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setStartSamedi(ajouterSemaines(startSamedi, 1))}>
-          Semaine suiv.
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => avancer(TAILLE_FENETRE)}
+          disabled={!aDesDatesApres}
+        >
+          Dates suiv.
           <ChevronRight className="size-4" />
         </Button>
         <input
           type="date"
-          aria-label="Date de départ des semaines"
+          aria-label="Aller à une date"
           className="h-8 rounded-md border border-input bg-card px-2 text-sm"
-          value={toIsoDate(startSamedi)}
-          onChange={(e) => changerDateDepart(e.target.value)}
+          value=""
+          onChange={(e) => navigateVers(e.target.value)}
         />
         <Button variant="ghost" size="sm" onClick={revenirAujourdHui}>
           Aujourd&apos;hui
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setNbSemaines((n) => Math.min(n + 1, 12))}
-          disabled={nbSemaines >= 12}
-        >
-          + Semaine
-        </Button>
+        <PermissionGate module="planning" mode="write">
+          <Button variant="outline" size="sm" onClick={() => setDateDialog({})}>
+            <Plus className="size-4" />
+            Ajouter une date
+          </Button>
+        </PermissionGate>
         <Button variant="ghost" size="sm" onClick={() => setGestionOuverte(true)}>
           <Settings2 className="size-4" />
           Gérer les chaînes
@@ -551,7 +679,22 @@ export default function PlanningPage() {
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-card">
-        {chaines.length === 0 && !isLoading && (
+        {dates.length === 0 && !isLoading && (
+          <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
+            <p className="text-sm font-medium">Aucune date de planning</p>
+            <p className="text-sm text-muted-foreground">
+              Ajoutez une date via « Ajouter une date » pour commencer à remplir la grille.
+            </p>
+            <PermissionGate module="planning" mode="write">
+              <Button variant="outline" size="sm" onClick={() => setDateDialog({})}>
+                <Plus className="size-4" />
+                Ajouter une date
+              </Button>
+            </PermissionGate>
+          </div>
+        )}
+
+        {chaines.length === 0 && dates.length > 0 && !isLoading && (
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center">
             <p className="text-sm font-medium">Aucune chaîne de production active</p>
             <p className="text-sm text-muted-foreground">
@@ -564,46 +707,70 @@ export default function PlanningPage() {
           </div>
         )}
 
-        {chaines.length > 0 && (
+        {dates.length > 0 && chaines.length > 0 && (
           <table className="w-full min-w-max border-collapse text-sm">
             <thead>
               <tr className="border-b bg-muted/40">
-                <th className="sticky left-0 z-10 w-48 border-r bg-muted/40 px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                  Chaîne
+                <th className="sticky left-0 z-10 w-40 border-r bg-muted/40 px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                  Date
                 </th>
-                {samedis.map((s) => (
+                {chaines.map((c) => (
                   <th
-                    key={toIsoDate(s)}
+                    key={c.id}
                     className="min-w-36 px-3 py-2.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase"
                   >
-                    {formatSamedi(s)} / {s.getFullYear()}
+                    {c.nom}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {chaines.map((c) => (
-                <tr key={c.id} className="border-b last:border-0">
-                  <th className="sticky left-0 z-10 border-r bg-card px-3 py-2.5 text-left align-top text-sm font-medium whitespace-nowrap">
-                    {c.nom}
-                    <span className="block text-xs font-normal capitalize text-muted-foreground">
-                      {c.type.toLowerCase()}
-                    </span>
-                  </th>
-                  {samedis.map((s) => {
-                    const entry = entryFor(c.id, s)
-                    return (
-                      <td key={toIsoDate(s)} className="w-36 px-2 py-1.5 align-top">
-                        <CellContent
-                          entry={entry}
-                          onEdit={() => openCell(c, s, entry)}
-                          onDelete={(e) => supprimer.mutate(e.id)}
-                        />
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
+              {datesFenetre.map((p) => {
+                const date = parseDate(p.date)
+                return (
+                  <tr key={p.id !== 0 ? p.id : `date-${dateKeyOf(p.date)}`} className="border-b last:border-0">
+                    <th className="sticky left-0 z-10 border-r bg-card px-3 py-2.5 text-left align-top text-sm font-medium whitespace-nowrap">
+                      {formatDateCourt(date)}
+                      <span className="block text-xs font-normal capitalize text-muted-foreground">
+                        {date.toLocaleDateString('fr-FR', { weekday: 'long' })}
+                      </span>
+                      {p.id > 0 && (
+                        <span className="mt-1 flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            title="Modifier la date"
+                            onClick={() => setDateDialog({ existing: p })}
+                          >
+                            <Pencil className="size-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="text-destructive hover:text-destructive"
+                            title={`Supprimer la date ${formatDateCourt(date)}`}
+                            onClick={() => setDateDialog({ existing: p })}
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        </span>
+                      )}
+                    </th>
+                    {chaines.map((c) => {
+                      const entry = entryFor(c.id, date)
+                      return (
+                        <td key={c.id} className="w-36 px-2 py-1.5 align-top">
+                          <CellContent
+                            entry={entry}
+                            onEdit={() => openCell(c, date, entry)}
+                            onDelete={(e) => supprimer.mutate(e.id)}
+                          />
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
@@ -612,12 +779,12 @@ export default function PlanningPage() {
           <table className="w-full min-w-max border-collapse text-sm">
             <thead>
               <tr className="border-b bg-muted/40">
-                <th className="sticky left-0 z-10 w-48 border-r bg-muted/40 px-3 py-2.5 text-left">
-                  Chaîne
+                <th className="sticky left-0 z-10 w-40 border-r bg-muted/40 px-3 py-2.5 text-left">
+                  Date
                 </th>
-                {samedis.map((s) => (
-                  <th key={toIsoDate(s)} className="px-3 py-2.5 text-left">
-                    {formatSamedi(s)} / {s.getFullYear()}
+                {chaines.map((c) => (
+                  <th key={c.id} className="px-3 py-2.5 text-left">
+                    <Skeleton className="h-4 w-28" />
                   </th>
                 ))}
               </tr>
@@ -626,10 +793,10 @@ export default function PlanningPage() {
               {[0, 1, 2].map((r) => (
                 <tr key={r} className="border-b last:border-0">
                   <th className="sticky left-0 z-10 border-r bg-card px-3 py-3 text-left">
-                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-24" />
                   </th>
-                  {samedis.map((s) => (
-                    <td key={toIsoDate(s)} className="px-2 py-1.5">
+                  {chaines.map((c) => (
+                    <td key={c.id} className="px-2 py-1.5">
                       <Skeleton className="h-12 w-full" />
                     </td>
                   ))}
@@ -642,12 +809,22 @@ export default function PlanningPage() {
 
       {cell && (
         <CellEditorDialog
-          key={`${cell.chaine.id}-${toIsoDate(cell.samedi)}-${cell.entry?.id ?? 'new'}`}
+          key={`${cell.chaine.id}-${toIsoDate(cell.date)}-${cell.entry?.id ?? 'new'}`}
           open={!!cell}
           onClose={closeCell}
           chaine={cell.chaine}
-          samedi={cell.samedi}
+          date={cell.date}
           existing={cell.entry}
+        />
+      )}
+
+      {dateDialog && (
+        <DateEditorDialog
+          key={dateDialog.existing ? `edit-${dateDialog.existing.id}` : 'new'}
+          open={!!dateDialog}
+          onClose={() => setDateDialog(null)}
+          existing={dateDialog.existing}
+          onCreated={navigateVers}
         />
       )}
 

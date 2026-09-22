@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { PermissionGate } from '@/components/auth/permission-gate'
 import {
   useGetDocuments,
   useUploadDocument,
@@ -66,6 +67,8 @@ export function DocumentSection({
 
   const entitySegment =
     scope === 'achat' ? 'Achat' : scope === 'importation' ? 'Importation' : 'CommandeClient'
+
+  const moduleId = scope === 'achat' ? 'achats' : scope === 'importation' ? 'importations' : 'commandes'
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null
@@ -131,10 +134,12 @@ export function DocumentSection({
               </span>
             )}
           </CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
-            <Plus className="mr-1.5 size-3.5" />
-            Ajouter
-          </Button>
+          <PermissionGate module={moduleId} mode="write">
+            <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
+              <Plus className="mr-1.5 size-3.5" />
+              Ajouter
+            </Button>
+          </PermissionGate>
         </CardHeader>
 
         <CardContent>
@@ -190,22 +195,24 @@ export function DocumentSection({
                     >
                       <Download className="size-4" />
                     </Button>
-                    <ConfirmDialog
-                      trigger={
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-8 text-destructive hover:text-destructive"
-                          title="Supprimer"
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      }
-                      title="Supprimer ce document ?"
-                      description={`"${doc.nomFichier}" sera définitivement supprimé.`}
-                      onConfirm={() => deleteMutation.mutate(doc.id)}
-                    />
+                    <PermissionGate module={moduleId} mode="write">
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="size-8 text-destructive hover:text-destructive"
+                            title="Supprimer"
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        }
+                        title="Supprimer ce document ?"
+                        description={`"${doc.nomFichier}" sera définitivement supprimé.`}
+                        onConfirm={() => deleteMutation.mutate(doc.id)}
+                      />
+                    </PermissionGate>
                   </div>
                 </li>
               ))}
