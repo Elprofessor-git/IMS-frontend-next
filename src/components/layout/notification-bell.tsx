@@ -1,49 +1,49 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CheckCheck, CheckCircle2, Inbox } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Bell, CheckCheck, Inbox } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  getNotificationHref,
   useGetNotificationsData,
   useLivrerNotification,
   useLivrerToutesNotifications,
 } from '@/hooks/use-notifications'
 import { usePlanningHub } from '@/hooks/use-planning-hub'
 import type { NotificationItem } from '@/types/notification'
+import { cn } from '@/lib/utils'
 
 function NotificationRow({
   notification,
-  onLivrer,
+  onOpen,
 }: {
   notification: NotificationItem
-  onLivrer: (id: number) => void
+  onOpen: (n: NotificationItem) => void
 }) {
   const date = notification.dateNotification
     ? new Date(notification.dateNotification).toLocaleDateString('fr-FR')
     : ''
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border p-3">
-      <div className="min-w-0">
-        <p className="line-clamp-2 text-sm font-medium">{notification.message}</p>
-        {date && <p className="mt-1 text-xs text-muted-foreground/80">{date}</p>}
-      </div>
-      {notification.estLivree ? (
-        <span className="flex shrink-0 items-center gap-1 text-xs text-emerald-600">
-          <CheckCircle2 className="size-3.5" />
-          Livrée
-        </span>
-      ) : (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onLivrer(notification.id)}
-          className="shrink-0"
-        >
-          Marquer livré
-        </Button>
+    <button
+      type="button"
+      onClick={() => onOpen(notification)}
+      className={cn(
+        'flex w-full items-start gap-2 rounded-lg border p-3 text-left transition-colors hover:bg-muted/60',
+        notification.estLivree
+          ? 'border-border/70'
+          : 'border-primary/20 bg-primary/[0.04]',
       )}
-    </div>
+    >
+      {!notification.estLivree && (
+        <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+      )}
+      <span className="min-w-0">
+        <span className="block text-sm font-medium">{notification.message}</span>
+        {date && <span className="mt-0.5 block text-xs text-muted-foreground/80">{date}</span>}
+      </span>
+    </button>
   )
 }
 
@@ -51,6 +51,7 @@ export function NotificationBell() {
   // Hub SignalR désactivé par défaut (feature flag) : le polling gère le temps réel.
   usePlanningHub(true)
 
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const { notifications, countNonLivrees, isLoading } = useGetNotificationsData()
@@ -73,6 +74,15 @@ export function NotificationBell() {
       document.removeEventListener('keydown', onKeyDown)
     }
   }, [open])
+
+  const handleOpenNotification = (n: NotificationItem) => {
+    // 1. Marquer comme lue — BEST EFFORT : la navigation ne doit JAMAIS attendre
+    // la réponse du serveur. L'invalidation du cache met à jour la pastille/le dot.
+    if (!n.estLivree) livrer.mutate(n.id)
+    // 2. Fermer le panneau, 3. naviguer vers la cible de la notification.
+    setOpen(false)
+    router.push(getNotificationHref(n))
+  }
 
   return (
     <div ref={rootRef} className="relative">
@@ -140,7 +150,7 @@ export function NotificationBell() {
               )}
 
               {notifications.map((n) => (
-                <NotificationRow key={n.id} notification={n} onLivrer={livrer.mutate} />
+                <NotificationRow key={n.id} notification={n} onOpen={handleOpenNotification} />
               ))}
             </div>
           </div>

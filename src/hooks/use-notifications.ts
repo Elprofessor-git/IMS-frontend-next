@@ -61,3 +61,12 @@ export function useLivrerToutesNotifications() {
       toast.error(err.message ?? 'Impossible de marquer les notifications comme lues'),
   })
 }
+
+// Cible de navigation d'une notification. Aujourd'hui le SEUL émetteur est le
+// planning → toutes mènent à /planning. La forme « fonction dérivée de la
+// notification » (au lieu d'une constante) laisse la place à d'autres émetteurs
+// (coupe, qualité…) qui pourront rouler vers d'autres pages sans casser la cloche.
+export function getNotificationHref(notification: NotificationItem): string {
+  void notification
+  return '/planning'
+}
