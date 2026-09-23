@@ -514,20 +514,22 @@ function GestionChainesDialog({
 // ── Contenu d'une cellule ─────────────────────────────────────────────────────
 
 function CellContent({
-  entry,
+  entries,
+  onAdd,
   onEdit,
   onDelete,
 }: {
-  entry?: PlanningEntry
-  onEdit: () => void
+  entries: PlanningEntry[]
+  onAdd: () => void
+  onEdit: (entry: PlanningEntry) => void
   onDelete: (entry: PlanningEntry) => void
 }) {
-  if (!entry) {
+  if (entries.length === 0) {
     return (
       <PermissionGate module="planning" mode="write">
         <button
           type="button"
-          onClick={onEdit}
+          onClick={onAdd}
           title="Planifier une commande"
           className="flex h-full min-h-12 w-full items-center justify-center rounded-md border border-dashed border-border text-muted-foreground/60 transition-colors hover:border-primary/50 hover:text-primary"
         >
@@ -538,49 +540,61 @@ function CellContent({
   }
 
   return (
-    <PermissionGate module="planning" mode="write">
-      <div className="group flex min-h-12 w-full items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-2 py-1">
-        <div className="min-w-0 flex-1 text-left">
-          <button
-            type="button"
-            onClick={onEdit}
-            title={`Modifier ${entry.numeroCommande}`}
-            className="block w-full cursor-pointer text-left"
+    <div className="flex min-h-12 w-full flex-col gap-1 rounded-md border border-border/70 bg-muted/30 p-1">
+      <div className="max-h-[8.75rem] space-y-1 overflow-y-auto pr-0.5">
+        {entries.map((entry) => (
+          <div
+            key={entry.id}
+            className="group flex w-full items-center gap-1.5 rounded-md border border-border/70 bg-card px-2 py-1"
           >
-            <span className="block truncate text-sm font-medium">{entry.numeroCommande}</span>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              {entry.estLivree ? (
-                <CheckCircle2 className="size-3 text-emerald-500" />
-              ) : (
-                <Circle className="size-3" />
-              )}
-              {entry.estLivree ? 'Livrée' : 'En cours'}
-              {entry.quantite != null && <> · {entry.quantite}</>}
-            </span>
-          </button>
-        </div>
-        <div className="flex shrink-0 flex-col gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
-          <Button variant="ghost" size="icon-xs" title="Modifier" onClick={onEdit}>
-            <Pencil className="size-3" />
-          </Button>
-          <ConfirmDialog
-            title={`Supprimer « ${entry.numeroCommande} » ?`}
-            description="La commande sera retirée du planning."
-            onConfirm={() => onDelete(entry)}
-            trigger={
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="text-destructive hover:text-destructive"
-                title="Supprimer"
-              >
-                <Trash2 className="size-3" />
-              </Button>
-            }
-          />
-        </div>
+            <div className="min-w-0 flex-1 text-left">
+              <span className="block truncate text-sm font-medium">{entry.numeroCommande}</span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                {entry.estLivree ? (
+                  <CheckCircle2 className="size-3 text-emerald-500" />
+                ) : (
+                  <Circle className="size-3" />
+                )}
+                {entry.estLivree ? 'Livrée' : 'En cours'}
+                {entry.quantite != null && <> · {entry.quantite}</>}
+              </span>
+            </div>
+            <PermissionGate module="planning" mode="write">
+              <div className="flex shrink-0 gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+                <Button variant="ghost" size="icon-xs" title="Modifier" onClick={() => onEdit(entry)}>
+                  <Pencil className="size-3" />
+                </Button>
+                <ConfirmDialog
+                  title={`Supprimer « ${entry.numeroCommande} » ?`}
+                  description="La commande sera retirée du planning."
+                  onConfirm={() => onDelete(entry)}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      className="text-destructive hover:text-destructive"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="size-3" />
+                    </Button>
+                  }
+                />
+              </div>
+            </PermissionGate>
+          </div>
+        ))}
       </div>
-    </PermissionGate>
+      <PermissionGate module="planning" mode="write">
+        <button
+          type="button"
+          onClick={onAdd}
+          title="Ajouter une commande à cette semaine"
+          className="flex h-7 w-full items-center justify-center rounded-md border border-dashed border-border text-muted-foreground/50 transition-colors hover:border-primary/50 hover:text-primary"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </PermissionGate>
+    </div>
   )
 }
 
@@ -618,10 +632,12 @@ export default function PlanningPage() {
     { chaine: ChainePlanning; date: Date; entry?: PlanningEntry } | null
   >(null)
 
-  const entryFor = (chaineId: number, date: Date): PlanningEntry | undefined =>
-    cellules.find(
-      (e) => e.chaineProductionId === chaineId && dateKeyOf(e.dateSamedi) === toIsoDate(date),
-    )
+  const entriesFor = (chaineId: number, date: Date): PlanningEntry[] =>
+    cellules
+      .filter(
+        (e) => e.chaineProductionId === chaineId && dateKeyOf(e.dateSamedi) === toIsoDate(date),
+      )
+      .sort((a, b) => a.id - b.id)
 
   const totalPlanifiees = cellules.length
   const totalLivrees = cellules.filter((e) => e.estLivree).length
@@ -787,12 +803,13 @@ export default function PlanningPage() {
                       )}
                     </th>
                     {chaines.map((c) => {
-                      const entry = entryFor(c.id, date)
+                      const entries = entriesFor(c.id, date)
                       return (
                         <td key={c.id} className="w-36 px-2 py-1.5 align-top">
                           <CellContent
-                            entry={entry}
-                            onEdit={() => openCell(c, date, entry)}
+                            entries={entries}
+                            onAdd={() => openCell(c, date)}
+                            onEdit={(entry) => openCell(c, date, entry)}
                             onDelete={(e) => supprimer.mutate(e.id)}
                           />
                         </td>
