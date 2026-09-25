@@ -7,6 +7,8 @@ export type Matelas = {
   dateMatelas: string
   piecePliage: number
   coupeEstimee: number
+  longueur: number | null
+  laize: number | null
   notes: string | null
   estActif: boolean
   nombreCoupes: number
@@ -105,6 +107,8 @@ export type CreerMatelasPayload = {
   dateMatelas?: string | null
   piecePliage?: number
   coupeEstimee?: number
+  longueur?: number | null
+  laize?: number | null
   notes?: string | null
 }
 

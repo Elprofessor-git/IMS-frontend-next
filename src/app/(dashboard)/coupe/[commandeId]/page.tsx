@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
-import { Layers, Scissors } from 'lucide-react'
+import { Layers, Layers2, Scissors } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
 import { RapportCoupeSection } from '@/components/rapport-coupe/rapport-coupe-section'
 import { OrdreDeCoupeSection } from '@/components/rapport-coupe/ordre-de-coupe-section'
+import { PlanDeCoupeSection } from '@/components/rapport-coupe/plan-de-coupe-section'
 import { ForbiddenState } from '@/components/shared/forbidden-state'
 import { PermissionGate } from '@/components/auth/permission-gate'
 
@@ -28,6 +29,10 @@ export default function CoupeCommandePage() {
               <Scissors className="size-4" />
               Rapport de coupe
             </TabsTrigger>
+            <TabsTrigger value="plan">
+              <Layers2 className="size-4" />
+              Plan de coupe
+            </TabsTrigger>
             <TabsTrigger value="ordre">
               <Layers className="size-4" />
               Ordre de coupe
@@ -35,6 +40,9 @@ export default function CoupeCommandePage() {
           </TabsList>
           <TabsContent value="rapport">
             <RapportCoupeSection commandeId={commandeId} />
+          </TabsContent>
+          <TabsContent value="plan">
+            <PlanDeCoupeSection commandeId={commandeId} />
           </TabsContent>
           <TabsContent value="ordre">
             <OrdreDeCoupeSection commandeId={commandeId} />

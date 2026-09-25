@@ -35,6 +35,7 @@ export type TacheProduction = {
   creePar?: string | null
   dateMiseAJour?: string | null
   modifiePar?: string | null
+  groupeTacheId?: number | null
   commandeClient?: {
     id: number
     numeroCommande: string
@@ -52,4 +53,29 @@ export type TacheDashboard = {
   tachesUrgentes: number
   tachesEnRetard: number
   avancementMoyen: number
+}
+
+// ── Groupes de tâches (gabarits répétitifs applicables aux commandes) ──
+
+export type GroupeTacheLigne = {
+  id: number
+  groupeTacheId: number
+  titre: string
+  description?: string | null
+  equipeAssignee?: string | null
+  responsableAssigne?: string | null
+  priorite: number // 0=Basse 1=Normale 2=Haute 3=Urgente
+  ordre: number
+  dureeEstimeeHeures: number
+}
+
+export type GroupeTache = {
+  id: number
+  nom: string
+  description?: string | null
+  estActif: boolean
+  dateCreation: string
+  lignes: GroupeTacheLigne[]
+  nombreCommandesAppliquees: number
+  nombreTachesGenerees: number
 }

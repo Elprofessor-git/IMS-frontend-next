@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, type ReactNode } from 'react'
-import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap, Clock, LoaderCircle } from 'lucide-react'
+import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap, Clock, LoaderCircle, Layers } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
@@ -45,6 +45,8 @@ import { PRIORITE_TACHE } from '@/types/tache'
 import type { TacheProduction } from '@/types/tache'
 import { tacheSchema } from '@/lib/validations/tache'
 import type { TacheSchema } from '@/lib/validations/tache'
+import { useGetCommandes } from '@/hooks/use-commandes'
+import { GroupesTab } from '@/components/taches/groupes-tab'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -117,6 +119,7 @@ function KpiCard({
 
 function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const createMutation = useCreateTache()
+  const { data: commandes, isLoading: commandesLoading } = useGetCommandes()
   const {
     register,
     handleSubmit,
@@ -219,14 +222,31 @@ function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () =>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label>ID Commande (optionnel)</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="Ex : 5"
-                  {...register('commandeClientId', {
-                    setValueAs: (v) => (v === '' || v === null ? null : Number(v)),
-                  })}
+                <Label>Commande (optionnel)</Label>
+                <Controller
+                  name="commandeClientId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value === null || field.value === undefined ? '' : String(field.value)}
+                      onValueChange={(v) => field.onChange(v === '' ? null : Number(v))}
+                      disabled={commandesLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Aucune — tâche libre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Aucune — tâche libre</SelectItem>
+                        {(commandes ?? []).map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.numeroCommande}
+                            {c.titreCommande ? ` · ${c.titreCommande}` : ''}
+                            {c.client?.nom ? ` — ${c.client.nom}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
               </div>
               <div className="grid gap-1.5">
@@ -701,8 +721,20 @@ export default function TachesPage() {
         }
       />
 
-      {/* KPI Cards */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Tabs principaux : Tâches (planning) / Groupes & suivi */}
+      <Tabs defaultValue="taches">
+        <TabsList className="mb-5">
+          <TabsTrigger value="taches">
+            <Clock className="size-4" /> Tâches
+          </TabsTrigger>
+          <TabsTrigger value="groupes">
+            <Layers className="size-4" /> Groupes & suivi
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="taches">
+        {/* KPI Cards */}
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
           title="Total tâches"
           value={dashboard?.totalTaches ?? '—'}
@@ -829,6 +861,12 @@ export default function TachesPage() {
           </div>
         </>
       )}
+        </TabsContent>
+
+        <TabsContent value="groupes">
+          <GroupesTab />
+        </TabsContent>
+      </Tabs>
 
       {/* Dialog création */}
       <NouvellesTacheDialog open={newDialogOpen} onClose={() => setNewDialogOpen(false)} />

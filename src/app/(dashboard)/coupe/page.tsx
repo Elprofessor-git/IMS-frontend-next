@@ -46,6 +46,8 @@ type MatelasEnEdition = {
   dateMatelas: string
   piecePliage: number
   coupeEstimee: number
+  longueur: number | null
+  laize: number | null
   notes: string
   estActif: boolean
 }
@@ -70,6 +72,8 @@ function CreerMatelasDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   const [date, setDate] = useState('')
   const [pliage, setPliage] = useState('')
   const [estimee, setEstimee] = useState('')
+  const [longueur, setLongueur] = useState('')
+  const [laize, setLaize] = useState('')
   const [notes, setNotes] = useState('')
 
   const commandeSel = Number(commandeId) || 0
@@ -81,6 +85,8 @@ function CreerMatelasDialog({ open, onOpenChange }: { open: boolean; onOpenChang
     setDate('')
     setPliage('')
     setEstimee('')
+    setLongueur('')
+    setLaize('')
     setNotes('')
   }
 
@@ -95,6 +101,8 @@ function CreerMatelasDialog({ open, onOpenChange }: { open: boolean; onOpenChang
         dateMatelas: date ? new Date(date + 'T12:00:00').toISOString() : null,
         piecePliage: Number(pliage) || 0,
         coupeEstimee: Number(estimee) || 0,
+        longueur: longueur.trim() !== '' ? Number(longueur) : null,
+        laize: laize.trim() !== '' ? Number(laize) : null,
         notes: notes.trim() || null,
       },
       {
@@ -145,6 +153,16 @@ function CreerMatelasDialog({ open, onOpenChange }: { open: boolean; onOpenChang
               <Input type="number" min="0" value={estimee} onChange={(e) => setEstimee(e.target.value)} placeholder="0" />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Longueur (m)</Label>
+              <Input type="number" min="0" step="0.1" value={longueur} onChange={(e) => setLongueur(e.target.value)} placeholder="ex. 148,5" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Laize (cm)</Label>
+              <Input type="number" min="0" step="0.1" value={laize} onChange={(e) => setLaize(e.target.value)} placeholder="défaut : tissu" />
+            </div>
+          </div>
           <div className="grid gap-1.5">
             <Label>Notes</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
@@ -175,6 +193,8 @@ function EditerMatelasDialog({
   const [date, setDate] = useState(matelas?.dateMatelas ? matelas.dateMatelas.slice(0, 10) : '')
   const [pliage, setPliage] = useState(String(matelas?.piecePliage ?? 0))
   const [estimee, setEstimee] = useState(String(matelas?.coupeEstimee ?? 0))
+  const [longueur, setLongueur] = useState(matelas?.longueur != null ? String(matelas.longueur) : '')
+  const [laize, setLaize] = useState(matelas?.laize != null ? String(matelas.laize) : '')
   const [notes, setNotes] = useState(matelas?.notes ?? '')
   const [estActif, setEstActif] = useState(matelas?.estActif ?? true)
 
@@ -209,6 +229,16 @@ function EditerMatelasDialog({
               <Input type="number" min="0" value={estimee} onChange={(e) => setEstimee(e.target.value)} placeholder="0" />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label>Longueur (m)</Label>
+              <Input type="number" min="0" step="0.1" value={longueur} onChange={(e) => setLongueur(e.target.value)} placeholder="ex. 148,5" />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Laize (cm)</Label>
+              <Input type="number" min="0" step="0.1" value={laize} onChange={(e) => setLaize(e.target.value)} placeholder="défaut : tissu" />
+            </div>
+          </div>
           <div className="grid gap-1.5">
             <Label>Notes</Label>
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
@@ -229,6 +259,8 @@ function EditerMatelasDialog({
                 dateMatelas: date ? new Date(date + 'T12:00:00').toISOString() : null,
                 piecePliage: Number(pliage) || 0,
                 coupeEstimee: Number(estimee) || 0,
+                longueur: longueur.trim() !== '' ? Number(longueur) : null,
+                laize: laize.trim() !== '' ? Number(laize) : null,
                 notes: notes.trim() || null,
                 estActif,
               }
@@ -312,6 +344,21 @@ function OngletMatelas({ matelas, isLoading }: { matelas: MatelasGlobal[]; isLoa
             cell: (m: MatelasGlobal) => <span className="text-muted-foreground">{m.piecePliage}</span>,
           },
           {
+            key: 'PlanTheorique',
+            header: 'Plan',
+            cell: (m: MatelasGlobal) => <span className="font-mono">{m.totalPlanTheorique || '—'}</span>,
+          },
+          {
+            key: 'Longueur',
+            header: 'Longueur (m)',
+            cell: (m: MatelasGlobal) => <span className="text-muted-foreground">{m.longueur != null ? m.longueur : '—'}</span>,
+          },
+          {
+            key: 'Laize',
+            header: 'Laize (cm)',
+            cell: (m: MatelasGlobal) => <span className="text-muted-foreground">{m.laize != null ? m.laize : '—'}</span>,
+          },
+          {
             key: 'CoupeEstimee',
             header: 'Coupe est.',
             cell: (m: MatelasGlobal) => <span className="text-muted-foreground">{m.coupeEstimee}</span>,
@@ -351,6 +398,8 @@ function OngletMatelas({ matelas, isLoading }: { matelas: MatelasGlobal[]; isLoa
                         dateMatelas: m.dateMatelas,
                         piecePliage: m.piecePliage,
                         coupeEstimee: m.coupeEstimee,
+                        longueur: m.longueur,
+                        laize: m.laize,
                         notes: m.notes ?? '',
                         estActif: m.estActif,
                       })

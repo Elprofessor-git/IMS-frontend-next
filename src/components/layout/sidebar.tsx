@@ -53,6 +53,7 @@ type NavGroup = {
 
 const NAV: (NavItem | NavGroup)[] = [
   { href: '/dashboard',   label: 'Dashboard',    icon: LayoutDashboard, iconColor: 'text-sky-600 group-data-[active=true]:text-white dark:text-sky-400', module: 'dashboard' },
+  { href: '/planning',    label: 'Planning',     icon: CalendarRange,   iconColor: 'text-cyan-600 group-data-[active=true]:text-white dark:text-cyan-400', module: 'planning' },
   { href: '/articles',    label: 'Articles',     icon: Package,         iconColor: 'text-rose-600 group-data-[active=true]:text-white dark:text-rose-400', module: 'articles' },
   { href: '/stock',       label: 'Stock',        icon: Warehouse,       iconColor: 'text-amber-600 group-data-[active=true]:text-white dark:text-amber-400', module: 'stock' },
   { href: '/mouvements',  label: 'Mouvements',   icon: ArrowLeftRight,  iconColor: 'text-violet-600 group-data-[active=true]:text-white dark:text-violet-400', module: 'mouvements' },
@@ -65,7 +66,6 @@ const NAV: (NavItem | NavGroup)[] = [
   { href: '/coupe',       label: 'Coupe',        icon: Scissors,        iconColor: 'text-orange-600 group-data-[active=true]:text-white dark:text-orange-400', module: 'coupe' },
   { href: '/qualite',     label: 'Qualité',      icon: CheckSquare,     iconColor: 'text-emerald-600 group-data-[active=true]:text-white dark:text-emerald-400', module: 'qualite' },
   { href: '/production',  label: 'Production',   icon: Warehouse,       iconColor: 'text-indigo-600 group-data-[active=true]:text-white dark:text-indigo-400', module: 'production' },
-  { href: '/planning',    label: 'Planning',     icon: CalendarRange,   iconColor: 'text-cyan-600 group-data-[active=true]:text-white dark:text-cyan-400', module: 'planning' },
   {
     label: 'Partenaires',
     icon: Users,

@@ -44,5 +44,5 @@ next-env.d.ts
 /test-results/
 /playwright-report/
 
-# preuves e2e (captures d'écran) — hors dépôt comme convenu
+# preuves e2e (captures d'écran) — hors dépôt comme convenu (les spec .ts sont suivis)
 /e2e/*.png
