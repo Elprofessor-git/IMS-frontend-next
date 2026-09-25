@@ -16,11 +16,22 @@ import type {
   CreerReceptionPayload,
   CreerEnvoiPayload,
 } from '@/types/fourniture'
-import type { MettreAJourMatelasPayload } from '@/types/matelas'
+import type { MettreAJourMatelasPayload, JournalCoupe } from '@/types/matelas'
 import type { ApiError } from '@/types'
 
 const KEY = ['fournitures'] as const
 const CHAINES_KEY = ['chaines-production'] as const
+const JOURNAL_KEY = ['coupes-du-jour'] as const
+
+// Journal du jour du module Coupe (toutes commandes) — tableau de bord global /coupe.
+// Invalidation depuis les mutations de coupe : voir use-rapport-coupe.useInvalidate.
+export function useGetCoupesDuJour() {
+  return useQuery<JournalCoupe>({
+    queryKey: JOURNAL_KEY,
+    queryFn: () => apiClient.get<JournalCoupe>('/api/Matelas/CoupesDuJour'),
+    refetchInterval: 60_000,
+  })
+}
 
 export function useGetMatelas(commandeId: number) {
   return useQuery<Matelas[]>({
@@ -37,6 +48,9 @@ export function useCreerMatelas(commandeId: number) {
     qc.invalidateQueries({ queryKey: ['matelas'] })
     qc.invalidateQueries({ queryKey: ['commandes'] })
     qc.invalidateQueries({ queryKey: ['commandes', commandeId] })
+    // Onglet « Ordre de coupe » de /coupe/{commandeId} : la liste des matelas et
+    // leurs rests à couper sont lus dans ce document agrégé.
+    qc.invalidateQueries({ queryKey: ['rapport-coupe'] })
   }
   return useMutation({
     mutationFn: (data: CreerMatelasPayload) =>
@@ -56,6 +70,7 @@ export function useModifierMatelas(commandeId?: number) {
   const qc = useQueryClient()
   const invalidate = (cid?: number) => {
     qc.invalidateQueries({ queryKey: ['matelas'] })
+    qc.invalidateQueries({ queryKey: ['rapport-coupe'] })
     if (cid) {
       qc.invalidateQueries({ queryKey: [...KEY, cid, 'matelas'] })
       qc.invalidateQueries({ queryKey: ['commandes', cid] })
@@ -77,6 +92,7 @@ export function useSupprimerMatelas(commandeId?: number) {
   const qc = useQueryClient()
   const invalidate = (cid?: number) => {
     qc.invalidateQueries({ queryKey: ['matelas'] })
+    qc.invalidateQueries({ queryKey: ['rapport-coupe'] })
     if (cid) {
       qc.invalidateQueries({ queryKey: [...KEY, cid, 'matelas'] })
       qc.invalidateQueries({ queryKey: ['commandes', cid] })

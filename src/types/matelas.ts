@@ -67,10 +67,17 @@ export type ModifierPlanDeCoupeLignePayload = Partial<CreerPlanDeCoupeLignePaylo
 // ─── Ordre de coupe document (vue agrégée) — L2 ───
 // Contrat RÉEL GET /api/RapportCoupe/{commandeId}/OrdreDeCoupe.
 export interface OrdreCoupePlanLigne {
+  // Identifiant de la ligne de plan : permet l'édition/suppression directement
+  // depuis l'onglet « Ordre de coupe » (pas de rechargement par matelas).
+  ligneId: number
   matelasId: number
   taille: string
   occurrences: number
   theorique: number
+  // Coupes réelles déjà rattachées à CE matelas pour CETTE taille.
+  coupeReelle: number
+  // Reste à couper = theorique − coupeReelle (négatif = au-delà du plan).
+  resteACouper: number
 }
 
 export interface OrdreCoupeMatelas {
@@ -83,6 +90,8 @@ export interface OrdreCoupeMatelas {
   laize: number | null
   totalTheorique: number
   totalCoupeReelle: number
+  // Σ des restes par ligne de plan : reste à couper du matelas entier.
+  resteTotal: number
   lignes: OrdreCoupePlanLigne[]
 }
 
@@ -106,4 +115,26 @@ export interface OrdreDeCoupe {
   totalCoupesSansMatelas: number
   matelas: OrdreCoupeMatelas[]
   tailles: OrdreCoupeTaille[]
+}
+
+// ─── Journal du jour du module Coupe (toutes commandes) ───
+// Contrat RÉEL GET /api/Matelas/CoupesDuJour — lecture seule.
+export interface JournalCoupeLigne {
+  id: number
+  commandeId: number
+  numeroCommande: string
+  taille: string
+  quantiteCoupee: number
+  dateCoupe: string
+  effectuePar: string | null
+  forcerDepassement: boolean
+  matelasId: number | null
+  matelasNumero: string | null
+}
+
+export interface JournalCoupe {
+  date: string
+  nombreLignes: number
+  totalQuantite: number
+  lignes: JournalCoupeLigne[]
 }

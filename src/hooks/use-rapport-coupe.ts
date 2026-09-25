@@ -49,6 +49,8 @@ function useInvalidate(commandeId: number) {
     qc.invalidateQueries({ queryKey: ['matelas'] })
     qc.invalidateQueries({ queryKey: ['commandes'] })
     qc.invalidateQueries({ queryKey: ['commandes', commandeId] })
+    // Journal du jour du tableau de bord global /coupe.
+    qc.invalidateQueries({ queryKey: ['coupes-du-jour'] })
   }
 }
 
