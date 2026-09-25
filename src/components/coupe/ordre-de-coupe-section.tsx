@@ -182,10 +182,22 @@ export function OrdreDeCoupeSection({ commandeId }: { commandeId: number }) {
         </CardHeader>
         <CardContent className="space-y-3">
           {doc.matelas.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Aucun matelas rattaché à cette commande. Créez le premier matelas, puis saisissez son
-              plan (une ligne par taille, quantité = Occurrences × Plis).
-            </p>
+            /* État vide EXPLICITE : une commande sans matelas doit proposer l'action, pas
+               seulement constater l'absence (sinon l'utilisateur est bloqué). */
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-10 text-center">
+              <Layers2 className="size-6 text-muted-foreground" />
+              <p className="text-sm font-medium">Aucun matelas planifié</p>
+              <p className="max-w-md text-sm text-muted-foreground">
+                Créez le premier matelas, puis saisissez son plan (une ligne par taille, quantité
+                = Occurrences × Plis). Un matelas à la fois, avec son ordre de coupe.
+              </p>
+              <PermissionGate module="coupe" mode="write" fallback={null}>
+                <Button onClick={() => setDialogCreation(true)}>
+                  <Plus className="size-3.5" />
+                  Créer le premier matelas
+                </Button>
+              </PermissionGate>
+            </div>
           ) : (
             <div className="space-y-3">
               {doc.matelas.map((m) => {
