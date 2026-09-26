@@ -98,7 +98,7 @@ function destinationLabel(
 ): string {
   const base = DESTINATION_LABELS[l.typeDestination] ?? `#${l.typeDestination}`
   if (l.typeDestination === 0 && l.commandeClientId) {
-    return libelleCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
+    return libelleCommande(l.commandeClientId, commandes) ?? 'Commande inconnue'
   }
   if (l.typeDestination === 1 && l.clientId) {
     const cl = clients?.find((c) => c.id === l.clientId)
@@ -111,7 +111,7 @@ function destinationLabel(
   }
   if (l.typeDestination === 4) {
     const noms = l.groupeCommandeMembres
-      .map((id) => libelleCommande(id, commandes) ?? `Cde #${id}`)
+      .map((id) => libelleCommande(id, commandes) ?? 'Commande inconnue')
     return noms.length ? noms.join(', ') : base
   }
   return base
@@ -834,11 +834,9 @@ export default function AchatDetailPage({
                   <div>
                     <dt className="text-muted-foreground">Commande client (en-tête)</dt>
                     <dd className="font-semibold">
-                      {achat.commandeClient
-                        ? (achat.commandeClient.titreCommande ?? achat.commandeClient.numeroCommande ?? `#${achat.commandeClientId}`)
-                        : achat.commandeClientId
-                          ? `#${achat.commandeClientId}`
-                          : '—'}
+                      {libelleCommande(achat.commandeClientId, commandes)
+                        ?? achat.commandeClient?.numeroCommande
+                        ?? (achat.commandeClientId ? 'Commande inconnue' : '—')}
                       {achat.commandeClient?.client && (
                         <span className="ml-1 text-muted-foreground">
                           ({achat.commandeClient.client.nom})

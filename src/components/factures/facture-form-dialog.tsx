@@ -23,6 +23,8 @@ import {
 } from '@/components/ui/select'
 import { useGetClients } from '@/hooks/use-clients'
 import { useGetCommandes } from '@/hooks/use-commandes'
+import { CommandeSelect } from '@/components/forms/commande-select'
+import { libelleCommande } from '@/lib/labels'
 import { useCreateFacture, useUpdateFacture } from '@/hooks/use-factures'
 import type { CommandeClient } from '@/types/commande'
 import type { FactureLigneInput } from '@/types/facture'
@@ -255,23 +257,15 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
                   return (
                     <div key={l.id} className="grid grid-cols-12 items-end gap-2">
                       <div className="col-span-6 grid gap-1">
-                        <Label className="text-xs">Commande</Label>
-                        <Select
-                          value={l.commandeId > 0 ? String(l.commandeId) : ''}
-                          onValueChange={(v) => onCommandeChange(l, Number(v))}
+                        <Label className="text-xs" htmlFor={`facture-commande-${l.id}`}>Commande</Label>
+                        <CommandeSelect
+                          id={`facture-commande-${l.id}`}
+                          value={l.commandeId > 0 ? l.commandeId : null}
+                          onChange={(id) => onCommandeChange(l, id ?? 0)}
+                          commandes={commandesDuClient}
+                          placeholder="Choisir la commande"
                           disabled={busy}
-                        >
-                          <SelectTrigger size="sm">
-                            <SelectValue placeholder="Choisir la commande" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {commandesDuClient.map((c) => (
-                              <SelectItem key={c.id} value={String(c.id)}>
-                                {c.numeroCommande} — {c.titreCommande ?? 'sans titre'}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        />
                       </div>
                       <div className="col-span-2 grid gap-1">
                         <Label className="text-xs">Qté (façon)</Label>
@@ -312,7 +306,7 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
                       </div>
                       {commande && l.commandeId > 0 && (
                         <div className="col-span-12 text-xs text-muted-foreground">
-                          {commande.numeroCommande} · prix façon enregistré :{' '}
+                          {libelleCommande(commande.id, commandes) ?? commande.numeroCommande} · prix façon enregistré :{' '}
                           {commande.prixFacon != null ? `${commande.prixFacon} ${devise || 'EUR'}` : 'non défini'}
                         </div>
                       )}

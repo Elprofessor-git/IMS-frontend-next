@@ -5,13 +5,8 @@ import { createPortal } from 'react-dom'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
+import { commandeLabelShort, commandeSearchLabel } from '@/lib/labels'
 import type { CommandeClient } from '@/types/commande'
-
-function commandeLabel(c: CommandeClient): string {
-  const title = c.titreCommande || c.client?.nom || c.numeroCommande
-  const date = new Date(c.dateCommande).toLocaleDateString('fr-FR')
-  return `${title} — ${date}`
-}
 
 interface CommandesMultiSelectProps {
   value: number[]
@@ -84,7 +79,7 @@ export function CommandesMultiSelect({
 
   const lowerSearch = search.trim().toLowerCase()
   const filtered = lowerSearch
-    ? commandes.filter((c) => commandeLabel(c).toLowerCase().includes(lowerSearch))
+    ? commandes.filter((c) => commandeSearchLabel(c).toLowerCase().includes(lowerSearch))
     : commandes
 
   return (
@@ -106,7 +101,7 @@ export function CommandesMultiSelect({
             ) : (
               selected.map((c) => (
                 <Badge key={c.id} variant="secondary" className="gap-1 text-xs">
-                  <span className="max-w-[180px] truncate">{commandeLabel(c)}</span>
+                  <span className="max-w-[180px] truncate">{commandeLabelShort(c)}</span>
                   <X
                     className="size-3 cursor-pointer"
                     onClick={(e) => {
@@ -124,7 +119,7 @@ export function CommandesMultiSelect({
         <input
           autoFocus
           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground"
-          placeholder="Rechercher par titre, client…"
+          placeholder="Rechercher par titre, client, numéro…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -160,7 +155,7 @@ export function CommandesMultiSelect({
                         value.includes(c.id) ? 'opacity-100' : 'opacity-0',
                       )}
                     />
-                    <span className="truncate">{commandeLabel(c)}</span>
+                    <span className="truncate">{commandeLabelShort(c)}</span>
                   </li>
                 ))}
               </ul>

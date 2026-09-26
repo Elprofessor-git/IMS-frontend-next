@@ -46,6 +46,8 @@ import type { TacheProduction } from '@/types/tache'
 import { tacheSchema } from '@/lib/validations/tache'
 import type { TacheSchema } from '@/lib/validations/tache'
 import { useGetCommandes } from '@/hooks/use-commandes'
+import { CommandeSelect } from '@/components/forms/commande-select'
+import { libelleCommande } from '@/lib/labels'
 import { GroupesTab } from '@/components/taches/groupes-tab'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -222,30 +224,19 @@ function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () =>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
-                <Label>Commande (optionnel)</Label>
+                <Label htmlFor="tache-commande">Commande (optionnel)</Label>
                 <Controller
                   name="commandeClientId"
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      value={field.value === null || field.value === undefined ? '' : String(field.value)}
-                      onValueChange={(v) => field.onChange(v === '' ? null : Number(v))}
+                    <CommandeSelect
+                      id="tache-commande"
+                      value={field.value ?? null}
+                      onChange={field.onChange}
+                      commandes={commandes ?? []}
+                      placeholder="Aucune — tâche libre"
                       disabled={commandesLoading}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Aucune — tâche libre" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Aucune — tâche libre</SelectItem>
-                        {(commandes ?? []).map((c) => (
-                          <SelectItem key={c.id} value={String(c.id)}>
-                            {c.numeroCommande}
-                            {c.titreCommande ? ` · ${c.titreCommande}` : ''}
-                            {c.client?.nom ? ` — ${c.client.nom}` : ''}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   )}
                 />
               </div>
@@ -500,8 +491,7 @@ function TacheCard({
       {/* Commande liée */}
       {tache.commandeClient && (
         <p className="text-xs text-muted-foreground">
-          {tache.commandeClient.numeroCommande}
-          {tache.commandeClient.client?.nom ? ` · ${tache.commandeClient.client.nom}` : ''}
+          {libelleCommande(tache.commandeClient.id, [tache.commandeClient]) ?? tache.commandeClient.numeroCommande}
         </p>
       )}
 

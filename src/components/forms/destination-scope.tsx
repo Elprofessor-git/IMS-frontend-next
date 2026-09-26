@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { CommandeSelect } from '@/components/forms/commande-select'
 import { CommandesMultiSelect } from '@/components/forms/commandes-multi-select'
+import { libelleCommande } from '@/lib/labels'
 import {
   destinationEffectif,
   DESTINATION_LABELS,
@@ -81,10 +82,9 @@ export function DestinationScopeFields<T extends FieldValues>({
   })
 
   const groupeLabel = commandeClientIds && commandeClientIds.length >= 2
-    ? commandeClientIds.map(id => {
-        const c = commandes?.find(cc => cc.id === id)
-        return c ? (c.titreCommande ?? c.numeroCommande ?? `#${id}`) : `#${id}`
-      }).join(', ')
+    ? commandeClientIds
+        .map(id => libelleCommande(id, commandes) ?? 'Commande inconnue')
+        .join(', ')
     : null
   const commande = commandes?.find((c) => c.id === commandeClientId)
   const client = clients?.find((c) => c.id === clientId)
@@ -122,9 +122,9 @@ export function DestinationScopeFields<T extends FieldValues>({
 
   const effectiveLabel =
     effectif === 'GroupeCommandes'
-      ? (groupeLabel ?? `Groupe`)
+      ? (groupeLabel ?? 'Groupe')
       : effectif === 'Commande'
-        ? `${commande?.titreCommande ?? commande?.numeroCommande ?? `#${commandeClientId}`}`
+        ? (libelleCommande(commandeClientId, commandes) ?? 'Commande inconnue')
         : effectif === 'Marque'
           ? (client ? clientLabel(client) : `#${clientId}`)
           : effectif === 'Plateforme'
@@ -135,7 +135,7 @@ export function DestinationScopeFields<T extends FieldValues>({
   if (effectif !== 'GroupeCommandes' && commandeClientIds && commandeClientIds.length >= 2)
     secondary.push(`Groupe [${groupeLabel}]`)
   if (effectif !== 'Commande' && commande)
-    secondary.push(`Commande ${commande.titreCommande ?? commande.numeroCommande}`)
+    secondary.push(`Commande ${libelleCommande(commande.id, commandes) ?? 'inconnue'}`)
   if (effectif !== 'Marque' && client) secondary.push(`Client ${clientLabel(client)}`)
   if (effectif !== 'Plateforme' && plateforme) secondary.push(`Plateforme ${plateforme.nom}`)
 

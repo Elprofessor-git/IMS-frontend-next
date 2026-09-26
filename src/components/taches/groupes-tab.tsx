@@ -39,21 +39,17 @@ import {
 } from '@/hooks/use-groupes-taches'
 import { useGetTaches } from '@/hooks/use-taches'
 import { useGetCommandes } from '@/hooks/use-commandes'
+import { CommandeSelect } from '@/components/forms/commande-select'
+import { libelleCommande } from '@/lib/labels'
 import type { GroupeTache, GroupeTacheLigne, TacheProduction } from '@/types/tache'
 
 const PRIORITE_LABELS = ['Basse', 'Normale', 'Haute', 'Urgente'] as const
 
 const PRIORITE_VARIANT: Record<number, string> = {
   0: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-  1: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  2: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
-  3: 'bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
-}
-
-function commandeLabel(c: { id: number; numeroCommande: string; titreCommande?: string | null; client?: { nom: string } | null }) {
-  const titre = c.titreCommande ? ` · ${c.titreCommande}` : ''
-  const client = c.client?.nom ? ` — ${c.client.nom}` : ''
-  return `${c.numeroCommande}${titre}${client}`
+  1: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  2: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
+  3: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
 }
 
 // ── Nouveau groupe ─────────────────────────────────────────────────────────────
@@ -323,7 +319,7 @@ function GroupeCard({ groupe }: { groupe: GroupeTache }) {
   const [editMode, setEditMode] = useState(false)
   const [nom, setNom] = useState(groupe.nom)
   const [description, setDescription] = useState(groupe.description ?? '')
-  const [commandeId, setCommandeId] = useState<string>('')
+  const [commandeId, setCommandeId] = useState<number | null>(null)
   const [editLigneId, setEditLigneId] = useState<number | null>(null)
   const [addLigne, setAddLigne] = useState(false)
   const [erreur, setErreur] = useState('')
@@ -346,10 +342,10 @@ function GroupeCard({ groupe }: { groupe: GroupeTache }) {
     if (!commandeId) return
     const res = await appliquerMutation.mutateAsync({
       groupeId: groupe.id,
-      commandeId: Number(commandeId),
+      commandeId,
     })
     toast.success(res.message ?? 'Groupe appliqué à la commande')
-    setCommandeId('')
+    setCommandeId(null)
   }
 
   return (
@@ -479,16 +475,12 @@ function GroupeCard({ groupe }: { groupe: GroupeTache }) {
               {commandesLoading ? (
                 <Skeleton className="h-9 w-full rounded-md" />
               ) : (
-                <Select value={commandeId} onValueChange={setCommandeId}>
-                  <SelectTrigger className="h-9"><SelectValue placeholder="Choisir une commande…" /></SelectTrigger>
-                  <SelectContent>
-                    {(commandes ?? []).map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {commandeLabel(c)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CommandeSelect
+                  value={commandeId}
+                  onChange={setCommandeId}
+                  commandes={commandes ?? []}
+                  placeholder="Choisir une commande…"
+                />
               )}
             </div>
             <Button
@@ -560,7 +552,7 @@ function SuiviParCommande() {
           <div key={r.commande.id} className="rounded-lg border bg-card p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm font-medium">
-                {commandeLabel(r.commande)}
+                {libelleCommande(r.commande.id, [r.commande]) ?? r.commande.numeroCommande}
               </p>
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <Badge variant="secondary">{r.total} tâches</Badge>

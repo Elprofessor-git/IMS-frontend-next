@@ -1,6 +1,13 @@
 import type { CommandeClient } from '@/types/commande'
 import type { Client } from '@/types/client'
 
+type CommandeLibelle = {
+  id: number
+  numeroCommande: string
+  titreCommande?: string | null
+  client?: { nom: string } | null
+}
+
 /**
  * Libellé d'une commande pour un id donné.
  * Les utilisateurs identifient une commande par son TITRE — le numéro reste en secours.
@@ -8,10 +15,10 @@ import type { Client } from '@/types/client'
  */
 export function libelleCommande(
   id: number | null | undefined,
-  commandes: CommandeClient[] | undefined,
+  commandes: readonly CommandeLibelle[] | null | undefined,
 ): string | null {
   const c = commandes?.find((c) => c.id === id)
-  if (!c) return id ? `#${id}` : null
+  if (!c) return null
   const nom = c.titreCommande || c.client?.nom || null
   return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
@@ -24,7 +31,12 @@ export function libelleCommande(
 export function commandeLabelShort(c: CommandeClient): string {
   const title = c.titreCommande || c.client?.nom || c.numeroCommande
   const date = new Date(c.dateCommande).toLocaleDateString('fr-FR')
-  return `${title} — ${date}`
+  return `${title} (${c.numeroCommande}) — ${date}`
+}
+
+export function commandeSearchLabel(c: CommandeClient): string {
+  const date = new Date(c.dateCommande).toLocaleDateString('fr-FR')
+  return [c.titreCommande, c.client?.nom, c.numeroCommande, date].filter(Boolean).join(' ')
 }
 
 /**

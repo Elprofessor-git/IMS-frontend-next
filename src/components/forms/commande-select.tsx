@@ -1,16 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useId } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, ChevronDown, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { commandeSearchLabel } from '@/lib/labels'
 import type { CommandeClient } from '@/types/commande'
-
-export function commandeLabel(c: CommandeClient): string {
-  const title = c.titreCommande || c.client?.nom || c.numeroCommande
-  const date = new Date(c.dateCommande).toLocaleDateString('fr-FR')
-  return `${title} — ${date}`
-}
 
 export function CommandeLabel({ commande }: { commande: CommandeClient }) {
   const title = commande.titreCommande || commande.client?.nom || commande.numeroCommande
@@ -18,7 +13,9 @@ export function CommandeLabel({ commande }: { commande: CommandeClient }) {
   return (
     <span className="truncate">
       {title}
-      <span className="ml-1.5 text-[13px] text-muted-foreground">{date}</span>
+      <span className="ml-1.5 text-[13px] text-muted-foreground">
+        ({commande.numeroCommande}) · {date}
+      </span>
     </span>
   )
 }
@@ -29,6 +26,7 @@ interface CommandeSelectProps {
   commandes: CommandeClient[]
   placeholder?: string
   disabled?: boolean
+  id?: string
 }
 
 export function CommandeSelect({
@@ -37,7 +35,11 @@ export function CommandeSelect({
   commandes,
   placeholder = 'Sélectionner une commande…',
   disabled,
+  id,
 }: CommandeSelectProps) {
+  const generatedId = useId()
+  const selectId = id ?? generatedId
+  const listboxId = `${selectId}-listbox`
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
@@ -84,14 +86,19 @@ export function CommandeSelect({
 
   const lowerSearch = search.trim().toLowerCase()
   const filtered = lowerSearch
-    ? commandes.filter((c) => commandeLabel(c).toLowerCase().includes(lowerSearch))
+    ? commandes.filter((c) => commandeSearchLabel(c).toLowerCase().includes(lowerSearch))
     : commandes
 
   return (
     <div ref={containerRef} className="relative">
       {!open ? (
         <button
+          id={selectId}
           type="button"
+          role="combobox"
+          aria-controls={listboxId}
+          aria-expanded={false}
+          aria-haspopup="listbox"
           disabled={disabled}
           onClick={() => setOpen(true)}
           className={cn(
@@ -116,9 +123,15 @@ export function CommandeSelect({
         </button>
       ) : (
         <input
+          id={selectId}
           autoFocus
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded
+          aria-haspopup="listbox"
           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none placeholder:text-muted-foreground"
-          placeholder="Rechercher par titre, client…"
+          placeholder="Rechercher par titre, client, numéro…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -133,6 +146,8 @@ export function CommandeSelect({
           // stopPropagation évite la fermeture du dialog lors d'un clic sur une option.
           <div
             ref={dropdownRef}
+            id={listboxId}
+            role="listbox"
             className="fixed z-50 rounded-md border bg-card shadow-md"
             style={{ top: coords.top, left: coords.left, width: coords.width, pointerEvents: 'auto' }}
             onPointerDown={(e) => e.stopPropagation()}
@@ -146,6 +161,8 @@ export function CommandeSelect({
                 {filtered.map((c) => (
                   <li
                     key={c.id}
+                    role="option"
+                    aria-selected={value === c.id}
                     onMouseDown={(e) => {
                       e.preventDefault()
                       onChange(c.id)

@@ -15,13 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { CommandeSelect } from '@/components/forms/commande-select'
 
 function fmt2(v: number) {
   return Number(v).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
@@ -35,8 +29,8 @@ function fmt(v: number) {
 // Les montants sont sommés en TND (devise de référence système) par le backend.
 export function CoutageSection() {
   const { data: commandes, isLoading: commandesLoading } = useGetCommandes()
-  const [commandeId, setCommandeId] = useState(0)
-  const { data: coutage, isLoading } = useGetCoutage(commandeId, commandeId > 0)
+  const [commandeId, setCommandeId] = useState<number | null>(null)
+  const { data: coutage, isLoading } = useGetCoutage(commandeId ?? 0, (commandeId ?? 0) > 0)
 
   return (
     <div className="space-y-4">
@@ -48,24 +42,15 @@ export function CoutageSection() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid w-full max-w-sm gap-1.5">
-            <label className="text-sm font-medium">Commande</label>
-            <Select
-              value={commandeId > 0 ? String(commandeId) : '0'}
-              onValueChange={(v) => setCommandeId(Number(v))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choisir une commande…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Choisir une commande…</SelectItem>
-                {(commandes ?? []).map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.numeroCommande}
-                    {c.titreCommande ? ` — ${c.titreCommande}` : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium" htmlFor="coutage-commande">Commande</label>
+            <CommandeSelect
+              id="coutage-commande"
+              value={commandeId}
+              onChange={setCommandeId}
+              commandes={commandes ?? []}
+              placeholder="Choisir une commande…"
+              disabled={commandesLoading}
+            />
           </div>
 
           <div className="flex items-start gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
@@ -81,7 +66,7 @@ export function CoutageSection() {
 
       {commandesLoading ? (
         <Skeleton className="h-40 w-full" />
-      ) : commandeId === 0 ? (
+      ) : !commandeId ? (
         <Card>
           <CardContent className="py-6 text-center text-sm text-muted-foreground">
             Sélectionnez une commande pour afficher son coûtage.

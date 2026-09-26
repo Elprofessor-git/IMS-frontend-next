@@ -85,11 +85,11 @@ function destinationLabel(
   commandes?: CommandeClient[],
 ): string {
   if (l.typeDestination === 0 && l.commandeClientId) {
-    return libelleCommande(l.commandeClientId, commandes) ?? `Cde #${l.commandeClientId}`
+    return libelleCommande(l.commandeClientId, commandes) ?? 'Commande inconnue'
   }
   if (l.typeDestination === 4) {
     const noms = l.groupeCommandeMembres
-      .map((id) => libelleCommande(id, commandes) ?? `Cde #${id}`)
+      .map((id) => libelleCommande(id, commandes) ?? 'Commande inconnue')
     return noms.length
       ? noms.join(', ')
       : (DESTINATION_LABEL_BY_NUMBER[4] ?? 'Groupe de commandes')
@@ -945,7 +945,7 @@ export default function ImportationDetailPage({
                         )}
                         {l.commandeClientId && (
                           <p className="break-words text-xs text-muted-foreground">
-                            Commande {libelleCommande(l.commandeClientId, commandes) ?? `#${l.commandeClientId}`}
+                            Commande {libelleCommande(l.commandeClientId, commandes) ?? 'inconnue'}
                           </p>
                         )}
                       </TableCell>
