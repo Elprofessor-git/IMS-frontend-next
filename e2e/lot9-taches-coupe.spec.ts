@@ -191,10 +191,7 @@ test('LOT 9 — Coupe : plan de coupe par matelas + document Ordre de coupe', as
 
   // Appliquer le groupe à la commande créée
   await groupeCard.getByRole('combobox').last().click()
-  await page.getByPlaceholder('Rechercher par titre, client, numéro…').fill(clientNom.slice(0, 2))
-  const option = page.getByRole('option').filter({ hasText: numeroCommande })
-  await expect(option.first()).toBeVisible({ timeout: 15_000 })
-  await option.first().click()
+  await page.getByRole('option').filter({ hasText: clientNom }).first().click()
   await groupeCard.getByRole('button', { name: 'Appliquer', exact: true }).click()
   await expect(page.getByText(/tâche\(s\) générée\(s\) pour la commande/).first()).toBeVisible({ timeout: 20_000 })
 
@@ -219,8 +216,7 @@ test('LOT 9 — Coupe : plan de coupe par matelas + document Ordre de coupe', as
   await expect(tacheDialog.locator('input[type="number"]')).toHaveCount(1) // seule la durée, plus d'ID
   await tacheDialog.locator('input').first().fill('Tache directe L9')
   await tacheDialog.getByRole('combobox').filter({ hasText: 'Aucune — tâche libre' }).click()
-  await page.getByPlaceholder('Rechercher par titre, client, numéro…').fill(clientNom.slice(0, 2))
-  await page.getByRole('option').filter({ hasText: numeroCommande }).first().click()
+  await page.getByRole('option').filter({ hasText: clientNom }).first().click()
   await tacheDialog.getByRole('button', { name: 'Créer', exact: true }).click()
   await expect(page.getByText('Tache directe L9').first()).toBeAttached({ timeout: 15_000 })
 
