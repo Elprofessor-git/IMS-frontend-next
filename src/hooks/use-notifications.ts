@@ -62,11 +62,22 @@ export function useLivrerToutesNotifications() {
   })
 }
 
-// Cible de navigation d'une notification. Aujourd'hui le SEUL émetteur est le
-// planning → toutes mènent à /planning. La forme « fonction dérivée de la
-// notification » (au lieu d'une constante) laisse la place à d'autres émetteurs
-// (coupe, qualité…) qui pourront rouler vers d'autres pages sans casser la cloche.
+// Cible de navigation d'une notification : la page liée à son origine.
+//
+// Ordre de priorité : la TÂCHE d'abord, l'email ensuite. Une notification
+// « tâche créée depuis un email » porte les deux identifiants, mais son destinataire
+// est le responsable de la tâche — pas le propriétaire du courrier, qu'il n'a pas le
+// droit de lire (isolation des emails). En privilégiant la tâche, le clic aboutit
+// toujours à une page réellement accessible, sans jamais contourner une permission.
+//
+// Repli sur le planning : c'est le seul émetteur historique, et une notification dont
+// la cible a été supprimée (FK SetNull) reste lisible ici.
 export function getNotificationHref(notification: NotificationItem): string {
-  void notification
+  if (notification.tacheProductionId != null) {
+    return `/taches?taskId=${notification.tacheProductionId}`
+  }
+  if (notification.gmailMessageId != null) {
+    return `/courriels?messageId=${notification.gmailMessageId}`
+  }
   return '/planning'
 }

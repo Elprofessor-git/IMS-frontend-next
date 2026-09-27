@@ -2,7 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCheck, Inbox } from 'lucide-react'
+import {
+  Bell,
+  CalendarClock,
+  CheckCheck,
+  Inbox,
+  ListChecks,
+  Mail,
+  UserMinus,
+  type LucideIcon,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -12,8 +21,18 @@ import {
   useLivrerToutesNotifications,
 } from '@/hooks/use-notifications'
 import { usePlanningHub } from '@/hooks/use-planning-hub'
-import type { NotificationItem } from '@/types/notification'
+import type { NotificationItem, NotificationType } from '@/types/notification'
 import { cn } from '@/lib/utils'
+
+// Une icône et un libellé par origine : le lecteur doit savoir POURQUOI la cloche a
+// sonné d'un coup d'œil, avant même de lire le message. Type inconnu → icône neutre,
+// la notification reste lisible (aucune information supprimée).
+const ICONES: Record<NotificationType, { icon: LucideIcon; libelle: string }> = {
+  Planning: { icon: CalendarClock, libelle: 'Planning' },
+  TacheAssignee: { icon: ListChecks, libelle: 'Tâche assignée' },
+  TacheDesassignee: { icon: UserMinus, libelle: 'Tâche retirée' },
+  TacheDepuisEmail: { icon: Mail, libelle: 'Tâche issue d’un email' },
+}
 
 function NotificationRow({
   notification,
@@ -25,10 +44,13 @@ function NotificationRow({
   const date = notification.dateNotification
     ? new Date(notification.dateNotification).toLocaleDateString('fr-FR')
     : ''
+  const meta = ICONES[notification.type]
+  const Icone = meta?.icon ?? Bell
   return (
     <button
       type="button"
       onClick={() => onOpen(notification)}
+      title={meta?.libelle}
       className={cn(
         'flex w-full items-start gap-2 rounded-lg border p-3 text-left transition-colors hover:bg-muted/60',
         notification.estLivree
@@ -39,9 +61,15 @@ function NotificationRow({
       {!notification.estLivree && (
         <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
       )}
+      <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-md bg-muted text-muted-foreground">
+        <Icone className="size-4" aria-hidden="true" />
+      </span>
       <span className="min-w-0">
         <span className="block text-sm font-medium">{notification.message}</span>
-        {date && <span className="mt-0.5 block text-xs text-muted-foreground/80">{date}</span>}
+        <span className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground/80">
+          <span>{meta?.libelle ?? 'Notification'}</span>
+          {date && <span>· {date}</span>}
+        </span>
       </span>
     </button>
   )
@@ -116,7 +144,7 @@ export function NotificationBell() {
               <div className="min-w-0">
                 <p className="text-sm font-semibold">Notifications</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  Modifications du planning de production.
+                  Planning, tâches et courriels.
                 </p>
               </div>
               {notifications.length > 0 && (

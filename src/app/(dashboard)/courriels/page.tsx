@@ -23,6 +23,8 @@ function CourrielsContent() {
   const searchParams = useSearchParams()
   const oauthResult = searchParams.get('connexion')
   const oauthError = searchParams.get('message')
+  // Lien profond « /courriels?messageId=42 » (cloche LOT 17).
+  const messageIdUrl = searchParams.get('messageId')
 
   const { data: status } = useGmailStatus()
   const connected = status?.connected ?? false
@@ -33,16 +35,31 @@ function CourrielsContent() {
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  // Message ouvert par lien profond : il est épinglé, car il n'est pas forcément
+  // dans la page affichée (pagination, filtres). Sans cette épingle, la liste le
+  // fermerait dès son chargement et le lien ne mènerait nulle part.
+  const [pinnedId, setPinnedId] = useState<number | null>(null)
 
   // Anti-rebond : on ne part pas au backend à chaque frappe.
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query)
       setPage(1)
-      setSelectedId(null)
+      setSelectedId(pinnedId)
     }, 350)
     return () => clearTimeout(timer)
-  }, [query])
+  }, [query, pinnedId])
+
+  // Lien profond : on valide l'identifiant avant tout usage (un paramètre corrompu
+  // ne doit pas casser la page) puis on nettoie l'URL, comme pour le callback OAuth.
+  useEffect(() => {
+    const id = messageIdUrl ? Number.parseInt(messageIdUrl, 10) : Number.NaN
+    if (!Number.isInteger(id) || id <= 0) return
+    setPage(1)
+    setSelectedId(id)
+    setPinnedId(id)
+    window.history.replaceState(null, '', '/courriels')
+  }, [messageIdUrl])
 
   const { data, isLoading, isFetching } = useGmailMessages({
     page,
@@ -64,21 +81,32 @@ function CourrielsContent() {
   }, [oauthResult, oauthError])
 
   // Le message sélectionné peut disparaître (filtre changé, suppression) : on
-  // désélectionne pour ne pas laisser un panneau orphelin.
+  // désélectionne pour ne pas laisser un panneau orphelin. Le message épinglé par un
+  // lien profond échappe à cette règle : il est récupéré par son ID, pas par la page.
   useEffect(() => {
     if (!data) return
-    if (selectedId != null && !data.items.some((m) => m.id === selectedId)) {
-      setSelectedId(null)
-    }
-  }, [data, selectedId])
+    if (selectedId == null || selectedId === pinnedId) return
+    if (!data.items.some((m) => m.id === selectedId)) setSelectedId(null)
+  }, [data, selectedId, pinnedId])
 
   const total = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const selected = data?.items.find((m) => m.id === selectedId)
+  // Le message affiché vient d'un lien profond mais n'est pas dans la page courante :
+  // on le dit, sinon l'utilisateur cherche une ligne absente de la liste.
+  const horsPageCourante =
+    selectedId != null && !isLoading && !(data?.items ?? []).some((m) => m.id === selectedId)
+
+  // Un clic dans la liste annule l'épingle : l'utilisateur reprend la main.
+  const handleSelect = (id: number) => {
+    setPinnedId(null)
+    setSelectedId(id)
+  }
 
   const applyUnreadOnly = (value: boolean) => {
     setUnreadOnly(value)
     setPage(1)
+    setPinnedId(null)
     setSelectedId(null)
   }
 
@@ -129,6 +157,7 @@ function CourrielsContent() {
                       : `${total} email(s) synchronisé(s)`}
                     {unreadOnly ? ' · filtre non lus' : ''}
                     {debouncedQuery ? ` · recherche « ${debouncedQuery} »` : ''}
+                    {horsPageCourante ? ' · email ouvert hors de la page courante' : ''}
                   </p>
                 </div>
 
@@ -136,7 +165,7 @@ function CourrielsContent() {
                   <MessageList
                     messages={data?.items ?? []}
                     selectedId={selectedId}
-                    onSelect={setSelectedId}
+                    onSelect={handleSelect}
                     isLoading={isLoading}
                     hasMessages={total > 0}
                   />
@@ -150,6 +179,7 @@ function CourrielsContent() {
                     label="emails"
                     onPageChange={(p) => {
                       setPage(p)
+                      setPinnedId(null)
                       setSelectedId(null)
                     }}
                   />
