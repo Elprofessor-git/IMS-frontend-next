@@ -68,6 +68,8 @@ const roleSchema = z.object({
   peutGererCoupe: z.boolean(),
   peutVoirPlanning: z.boolean(),
   peutGererPlanning: z.boolean(),
+  peutVoirCourriels: z.boolean(),
+  peutGererCourriels: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
@@ -85,6 +87,7 @@ const PERM_ECRITURE = [
   { key: 'peutGererMachines', label: 'Gérer les machines' },
   { key: 'peutGererCoupe', label: 'Gérer la coupe' },
   { key: 'peutGererPlanning', label: 'Gérer le planning' },
+  { key: 'peutGererCourriels', label: 'Gérer les courriels (connexion Gmail, synchronisation, envoi)' },
 ] as const
 
 const PERM_LECTURE = [
@@ -103,6 +106,7 @@ const PERM_LECTURE = [
   { key: 'peutVoirMachines', label: 'Voir les machines' },
   { key: 'peutVoirCoupe', label: 'Voir la coupe' },
   { key: 'peutVoirPlanning', label: 'Voir le planning' },
+  { key: 'peutVoirCourriels', label: 'Voir les courriels' },
 ] as const
 
 const DEFAULT_VALUES: RoleSchema = {
@@ -140,6 +144,8 @@ const DEFAULT_VALUES: RoleSchema = {
   peutGererCoupe: false,
   peutVoirPlanning: false,
   peutGererPlanning: false,
+  peutVoirCourriels: false,
+  peutGererCourriels: false,
 }
 
 function roleToSchema(r: Role): RoleSchema {
@@ -178,6 +184,8 @@ function roleToSchema(r: Role): RoleSchema {
     peutGererCoupe: r.peutGererCoupe,
     peutVoirPlanning: r.peutVoirPlanning,
     peutGererPlanning: r.peutGererPlanning,
+    peutVoirCourriels: r.peutVoirCourriels,
+    peutGererCourriels: r.peutGererCourriels,
   }
 }
 

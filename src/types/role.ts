@@ -35,6 +35,8 @@ export type Role = {
   peutGererCoupe: boolean
   peutVoirPlanning: boolean
   peutGererPlanning: boolean
+  peutVoirCourriels: boolean
+  peutGererCourriels: boolean
 }
 
 export type CreateRolePayload = Omit<Role, 'id' | 'estActif'>
