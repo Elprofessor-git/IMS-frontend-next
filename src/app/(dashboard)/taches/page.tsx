@@ -317,15 +317,16 @@ function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () =>
 // Dialogs de transition — montés avec key=tache.id pour fresh state à chaque ouverture
 
 function CommencerDialog({ tache, onClose }: { tache: TacheProduction; onClose: () => void }) {
-  const [responsable, setResponsable] = useState('')
   const mutation = useCommencerTache()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!responsable.trim()) return
-    await mutation.mutateAsync({ id: tache.id, responsable: responsable.trim() })
+    await mutation.mutateAsync(tache.id)
     onClose()
   }
+
+  // Afficher le responsable actuel si assigné (lecture seule)
+  const responsableAffiche = tache.responsable ?? tache.responsableAssigne ?? '— (vous êtes le créateur)'
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
@@ -337,22 +338,21 @@ function CommencerDialog({ tache, onClose }: { tache: TacheProduction; onClose: 
           <div className="py-2">
             <p className="mb-3 text-sm text-muted-foreground">{tache.titre}</p>
             <div className="grid gap-1.5">
-              <Label>
-                Responsable assigné <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                value={responsable}
-                onChange={(e) => setResponsable(e.target.value)}
-                placeholder="Nom du responsable"
-                autoFocus
-              />
+              <Label>Responsable</Label>
+              <p className="flex h-9 items-center gap-1.5 rounded-md border border-dashed bg-muted/40 px-3 text-sm text-muted-foreground">
+                {responsableAffiche}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Le responsable est déjà assigné (créateur ou assignation explicite). Cette action
+                passe simplement la tâche à « En cours » et horodate le début réel.
+              </p>
             </div>
           </div>
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={onClose}>
               Annuler
             </Button>
-            <Button type="submit" disabled={!responsable.trim() || mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? 'Démarrage…' : 'Commencer'}
             </Button>
           </DialogFooter>

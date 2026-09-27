@@ -7,6 +7,8 @@ export type Role = {
   peutGererStock: boolean
   peutGererCommandes: boolean
   peutGererTaches: boolean
+  peutVoirToutesTaches: boolean
+  peutAssignerTaches: boolean
   peutGererClients: boolean
   peutGererFournisseurs: boolean
   peutGererAchats: boolean
@@ -35,6 +37,10 @@ export type Role = {
   peutGererCoupe: boolean
   peutVoirPlanning: boolean
   peutGererPlanning: boolean
+  peutVoirProduction: boolean
+  peutGererProduction: boolean
+  peutVoirQualite: boolean
+  peutGererQualite: boolean
   peutVoirCourriels: boolean
   peutGererCourriels: boolean
 }

@@ -118,12 +118,12 @@ export function useDeleteTache() {
   })
 }
 
-// POST /{id}/Commencer — [FromBody] string → raw JSON string
+// POST /{id}/Commencer — aucun body (le responsable = AssignedToUserId déjà posé)
 export function useCommencerTache() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, responsable }: { id: number; responsable: string }) =>
-      apiClient.post<{ message: string }>(`/api/TacheProduction/${id}/Commencer`, responsable),
+    mutationFn: (id: number) =>
+      apiClient.post<{ message: string }>(`/api/TacheProduction/${id}/Commencer`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })
       toast.success('Tâche commencée')

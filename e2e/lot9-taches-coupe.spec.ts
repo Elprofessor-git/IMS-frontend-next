@@ -189,8 +189,8 @@ test('LOT 9 — Coupe : plan de coupe par matelas + document Ordre de coupe', as
   await groupeCard.getByRole('button', { name: /Ajouter la ligne/ }).click()
   await expect(groupeCard.getByText('Piquer manches')).toBeVisible()
 
-  // Appliquer le groupe à la commande créée
-  await groupeCard.getByRole('combobox').last().click()
+  // Appliquer le groupe à la commande créée — combobox scoppée à la carte du groupe (pas .last())
+  await groupeCard.getByRole('combobox').click()
   await page.getByRole('option').filter({ hasText: clientNom }).first().click()
   await groupeCard.getByRole('button', { name: 'Appliquer', exact: true }).click()
   await expect(page.getByText(/tâche\(s\) générée\(s\) pour la commande/).first()).toBeVisible({ timeout: 20_000 })

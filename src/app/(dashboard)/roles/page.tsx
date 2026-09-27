@@ -40,6 +40,8 @@ const roleSchema = z.object({
   peutGererStock: z.boolean(),
   peutGererCommandes: z.boolean(),
   peutGererTaches: z.boolean(),
+  peutVoirToutesTaches: z.boolean(),
+  peutAssignerTaches: z.boolean(),
   peutGererClients: z.boolean(),
   peutGererFournisseurs: z.boolean(),
   peutGererAchats: z.boolean(),
@@ -68,6 +70,10 @@ const roleSchema = z.object({
   peutGererCoupe: z.boolean(),
   peutVoirPlanning: z.boolean(),
   peutGererPlanning: z.boolean(),
+  peutVoirProduction: z.boolean(),
+  peutGererProduction: z.boolean(),
+  peutVoirQualite: z.boolean(),
+  peutGererQualite: z.boolean(),
   peutVoirCourriels: z.boolean(),
   peutGererCourriels: z.boolean(),
 })
@@ -84,9 +90,12 @@ const PERM_ECRITURE = [
   { key: 'peutGererMouvements', label: 'Gérer les mouvements de stock' },
   { key: 'peutGererPlateformes', label: 'Gérer les plateformes' },
   { key: 'peutGererFactures', label: 'Gérer les factures' },
+  { key: 'peutGererUtilisateurs', label: 'Gérer les utilisateurs' },
   { key: 'peutGererMachines', label: 'Gérer les machines' },
   { key: 'peutGererCoupe', label: 'Gérer la coupe' },
   { key: 'peutGererPlanning', label: 'Gérer le planning' },
+  { key: 'peutGererProduction', label: 'Gérer la production' },
+  { key: 'peutGererQualite', label: 'Gérer la qualité' },
   { key: 'peutGererCourriels', label: 'Gérer les courriels (connexion Gmail, synchronisation, envoi)' },
 ] as const
 
@@ -97,6 +106,8 @@ const PERM_LECTURE = [
   { key: 'peutVoirFournisseurs', label: 'Voir les fournisseurs' },
   { key: 'peutVoirPlateformes', label: 'Voir les plateformes' },
   { key: 'peutVoirTaches', label: 'Voir les tâches' },
+  { key: 'peutVoirUtilisateurs', label: 'Voir les utilisateurs' },
+  { key: 'peutVoirRoles', label: 'Voir les rôles' },
   { key: 'peutGererStock', label: 'Voir le stock' },
   { key: 'peutGererAchats', label: 'Voir les achats' },
   { key: 'peutGererImportations', label: 'Voir les importations' },
@@ -106,8 +117,58 @@ const PERM_LECTURE = [
   { key: 'peutVoirMachines', label: 'Voir les machines' },
   { key: 'peutVoirCoupe', label: 'Voir la coupe' },
   { key: 'peutVoirPlanning', label: 'Voir le planning' },
+  { key: 'peutVoirProduction', label: 'Voir la production' },
+  { key: 'peutVoirQualite', label: 'Voir la qualité' },
   { key: 'peutVoirCourriels', label: 'Voir les courriels' },
 ] as const
+
+/**
+ * Droits de RESSOURCE (LOT 16) : ils ne portent pas sur l'accès au module Tâches
+ * mais sur la propriété des données. Un rôle peut donc voir le module Tâches et
+ * ne voir que ses propres tâches — c'est le cas par défaut.
+ * Voir `PermissionService.CanViewAllTachesAsync` / `CanAssignerTachesAsync`.
+ */
+const PERM_PORTEE = [
+  {
+    key: 'peutVoirToutesTaches',
+    label: 'Voir toutes les tâches (y compris celles des autres utilisateurs)',
+  },
+  {
+    key: 'peutAssignerTaches',
+    label: 'Assigner une tâche à un autre utilisateur',
+  },
+] as const
+
+/**
+ * Garde-fou d'exhaustivité.
+ *
+ * Toute permission booléenne de `Role` doit être proposée par l'écran Rôles.
+ * Si le modèle gagne une permission sans que l'UI ne la liste ici,
+ * `AssertNever` échoue à la compilation : le bug « permission accordable
+ * uniquement en base » ne peut plus réapparaître silencieusement.
+ *
+ * `estActif` n'est pas une permission (état technique du rôle, non saisissable).
+ * `estAdministrateur` est rendu à part (section Administration) : il est déclaré
+ * dans `PermAdminKey` pour l'exhaustivité.
+ */
+type BooleanPermissionKey = {
+  [K in keyof Role]: Role[K] extends boolean ? K : never
+}[keyof Role]
+
+type PermAdminKey = 'estAdministrateur'
+
+type AssertNever<T extends never> = T
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _ToutesPermissionsExposees = AssertNever<
+  Exclude<
+    BooleanPermissionKey,
+    | (typeof PERM_ECRITURE)[number]['key']
+    | (typeof PERM_LECTURE)[number]['key']
+    | (typeof PERM_PORTEE)[number]['key']
+    | PermAdminKey
+    | 'estActif'
+  >
+>
 
 const DEFAULT_VALUES: RoleSchema = {
   name: '',
@@ -116,6 +177,8 @@ const DEFAULT_VALUES: RoleSchema = {
   peutGererStock: false,
   peutGererCommandes: false,
   peutGererTaches: false,
+  peutVoirToutesTaches: false,
+  peutAssignerTaches: false,
   peutGererClients: false,
   peutGererFournisseurs: false,
   peutGererAchats: false,
@@ -144,6 +207,10 @@ const DEFAULT_VALUES: RoleSchema = {
   peutGererCoupe: false,
   peutVoirPlanning: false,
   peutGererPlanning: false,
+  peutVoirProduction: false,
+  peutGererProduction: false,
+  peutVoirQualite: false,
+  peutGererQualite: false,
   peutVoirCourriels: false,
   peutGererCourriels: false,
 }
@@ -156,6 +223,8 @@ function roleToSchema(r: Role): RoleSchema {
     peutGererStock: r.peutGererStock,
     peutGererCommandes: r.peutGererCommandes,
     peutGererTaches: r.peutGererTaches,
+    peutVoirToutesTaches: r.peutVoirToutesTaches,
+    peutAssignerTaches: r.peutAssignerTaches,
     peutGererClients: r.peutGererClients,
     peutGererFournisseurs: r.peutGererFournisseurs,
     peutGererAchats: r.peutGererAchats,
@@ -184,6 +253,10 @@ function roleToSchema(r: Role): RoleSchema {
     peutGererCoupe: r.peutGererCoupe,
     peutVoirPlanning: r.peutVoirPlanning,
     peutGererPlanning: r.peutGererPlanning,
+    peutVoirProduction: r.peutVoirProduction,
+    peutGererProduction: r.peutGererProduction,
+    peutVoirQualite: r.peutVoirQualite,
+    peutGererQualite: r.peutGererQualite,
     peutVoirCourriels: r.peutVoirCourriels,
     peutGererCourriels: r.peutGererCourriels,
   }
@@ -302,6 +375,28 @@ function RoleDialog({
                   ))}
                 </div>
               </div>
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Portée des tâches</p>
+                <p className="text-xs text-muted-foreground">
+                  Ces droits ne portent pas sur l&apos;accès au module Tâches mais sur la
+                  propriété des données. Sans eux, un rôle voit le module mais uniquement ses
+                  propres tâches.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {PERM_PORTEE.map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={key}
+                        checked={watch(key)}
+                        onCheckedChange={(v) => setValue(key, !!v)}
+                      />
+                      <Label htmlFor={key} className="font-normal cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </>
           )}
 
@@ -361,6 +456,7 @@ export default function RolesPage() {
               <TableHead>Type</TableHead>
               <TableHead>Écriture</TableHead>
               <TableHead>Lecture</TableHead>
+              <TableHead>Portée tâches</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -368,7 +464,7 @@ export default function RolesPage() {
             {isLoading &&
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((_, j) => (
+                  {Array.from({ length: 7 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -378,7 +474,7 @@ export default function RolesPage() {
 
             {!isLoading && roles?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="p-0">
+                <TableCell colSpan={7} className="p-0">
                   <EmptyState
                     title="Aucun rôle configuré"
                     description="Créez un premier rôle et assignez les permissions métier."
@@ -388,39 +484,12 @@ export default function RolesPage() {
             )}
 
             {roles?.map((r) => {
-              const nbEcriture = [
-                r.peutValiderStock,
-                r.peutGererCommandes,
-                r.peutGererTaches,
-                r.peutGererClients,
-                r.peutGererFournisseurs,
-                r.peutConfirmerAchats,
-                r.peutValiderImportations,
-                r.peutGererMouvements,
-                r.peutGererPlateformes,
-                r.peutGererFactures,
-                r.peutGererMachines,
-                r.peutGererCoupe,
-                r.peutGererPlanning,
-              ].filter(Boolean).length
-
-              const nbLecture = [
-                r.peutVoirMouvements,
-                r.peutVoirCommandes,
-                r.peutVoirClients,
-                r.peutVoirFournisseurs,
-                r.peutVoirPlateformes,
-                r.peutVoirTaches,
-                r.peutGererStock,
-                r.peutGererAchats,
-                r.peutGererImportations,
-                r.peutVoirDashboard,
-                r.peutVoirRapports,
-                r.peutVoirFactures,
-                r.peutVoirMachines,
-                r.peutVoirCoupe,
-                r.peutVoirPlanning,
-              ].filter(Boolean).length
+              // Comptages dérivés des listes ci-dessus : une permission ajoutée à
+              // PERM_ECRITURE / PERM_LECTURE est automatiquement comptée, sans
+              // compteur figé à mettre à jour à la main.
+              const nbEcriture = PERM_ECRITURE.filter(({ key }) => r[key]).length
+              const nbLecture = PERM_LECTURE.filter(({ key }) => r[key]).length
+              const nbPortee = PERM_PORTEE.filter(({ key }) => r[key]).length
 
               return (
                 <TableRow key={r.id}>
@@ -442,10 +511,13 @@ export default function RolesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / 13`}
+                    {r.estAdministrateur ? 'Tous' : `${nbEcriture} / ${PERM_ECRITURE.length}`}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / 15`}
+                    {r.estAdministrateur ? 'Tous' : `${nbLecture} / ${PERM_LECTURE.length}`}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {r.estAdministrateur ? 'Tous' : `${nbPortee} / ${PERM_PORTEE.length}`}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">
