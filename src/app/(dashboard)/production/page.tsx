@@ -291,7 +291,7 @@ export default function ProductionPage() {
                           const c = row as ProductionDashboardCommande
                           return (
                             <PermissionGate module="production" mode="write" fallback={null}>
-                              <Button size="sm" variant="outline" asChild onClick={() => { setDetailCommandeId(c.commandeId); setActiveTab('detail'); }}>
+                              <Button size="sm" variant="outline" onClick={() => { setDetailCommandeId(c.commandeId); setActiveTab('detail'); }}>
                                 <Layers className="size-3.5" /> Planifier
                               </Button>
                             </PermissionGate>

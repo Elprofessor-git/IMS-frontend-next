@@ -605,7 +605,7 @@ function NouveauControleDialog({
   const { mutateAsync: creer, isPending } = useCreateControleQualite()
 
   // Plafond de référence recalculé sur la saisie réelle (OF / chaîne / taille / type).
-  const { data: reference } = useGetReferenceQualite({
+  const { data: reference, isLoading: refLoading, isError: refError } = useGetReferenceQualite({
     commandeId,
     chaineProductionId: chaineId ? Number(chaineId) : null,
     taille,
@@ -631,6 +631,12 @@ function NouveauControleDialog({
   const b = Number(rebut) || 0
   const reste = c - a - r - b
   const plafond = reference?.referenceDisponible ?? 0
+  // Le plafond est strict : une référence disponible à 0 interdit toute saisie.
+  // Tant que la référence n'est pas chargée (chargement / erreur réseau) on refuse
+  // de laisser saisir, plutôt que d'autoriser une saisie non plafonnée.
+  const referenceIndisponible = refLoading || refError || !reference
+  const referenceSoldee = reference?.estSolde === true
+  const plafondDepasse = !referenceIndisponible && c > plafond
 
   const submit = async () => {
     const ordreFabricationId = Number(ofId)
@@ -642,14 +648,29 @@ function NouveauControleDialog({
       toast.error('La quantité contrôlée est requise.')
       return
     }
-    if (reste < 0) {
+    if (referenceIndisponible) {
       toast.error(
-        `Invariant A + R + B = C violated : ${a} + ${r} + ${b} = ${a + r + b} > ${c} contrôlée.`,
+        'Référence indisponible : impossible de vérifier le plafond. Rechargez puis réessayez.',
       )
       return
     }
-    if (plafond > 0 && c > plafond) {
+    if (referenceSoldee) {
+      toast.error('Ce triplet est déjà soldé : aucune saisie supplémentaire possible.')
+      return
+    }
+    if (plafondDepasse) {
       toast.error(`Quantité contrôlée (${c}) > référence disponible (${plafond}). Saisie rejetée.`)
+      return
+    }
+    // Invariant strict : A + R + B doit être ÉGAL à C (une ventilation incomplète
+    // laisserait des pièces non comptabilisées, ce que le serveur refuserait).
+    if (reste !== 0) {
+      toast.error(
+        reste < 0
+          ? `Invariant A + R + B = C violé : ${a} + ${r} + ${b} = ${a + r + b} > ${c} contrôlée.`
+          : `Ventilation incomplète : ${a} + ${r} + ${b} = ${a + r + b} < ${c} contrôlée. ` +
+            `Il reste ${reste} pièce(s) à ventiler en retouche, rebut ou acceptée.`,
+      )
       return
     }
     await creer({
@@ -862,9 +883,23 @@ function NouveauControleDialog({
             )}
             <span className="tabular-nums">
               A + R + B = {a + r + b} / C = {c} — reste {reste}
-              {reste > 0 ? ' (à ventiler en défauts ou en acceptée)' : ''}
+              {reste > 0 ? ` — ${reste} pièce(s) à ventiler avant validation` : ''}
             </span>
           </div>
+
+          {plafondDepasse && (
+            <p className="flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 p-2 text-sm text-rose-800">
+              <AlertTriangle className="size-4 shrink-0" />
+              Quantité contrôlée ({c}) supérieure à la référence disponible ({plafond}) : la saisie
+              sera rejetée.
+            </p>
+          )}
+          {referenceSoldee && (
+            <p className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-800">
+              <AlertTriangle className="size-4 shrink-0" />
+              Triplet soldé : la quantité exportée a déjà été entièrement contrôlée.
+            </p>
+          )}
 
           {/* Lignes de défauts */}
           <div className="grid gap-1.5">
@@ -976,7 +1011,18 @@ function NouveauControleDialog({
           <DialogClose asChild>
             <Button variant="outline">Annuler</Button>
           </DialogClose>
-          <Button onClick={submit} disabled={isPending || commandeId <= 0}>
+          <Button
+            onClick={submit}
+            disabled={
+              isPending ||
+              commandeId <= 0 ||
+              c <= 0 ||
+              reste !== 0 ||
+              plafondDepasse ||
+              referenceIndisponible ||
+              referenceSoldee
+            }
+          >
             <ClipboardCheck className="size-3.5" /> Enregistrer
           </Button>
         </DialogFooter>
