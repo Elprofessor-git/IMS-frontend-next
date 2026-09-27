@@ -28,6 +28,8 @@ import {
   useCreateEnvoiRetouche,
 } from '@/hooks/use-qualite'
 import { useGetChainesProduction } from '@/hooks/use-fournitures'
+import { useGetCommandes } from '@/hooks/use-commandes'
+import { CommandeSelect } from '@/components/forms/commande-select'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
 import type { ControleQualite } from '@/types/controle-qualite'
@@ -48,10 +50,11 @@ function KpiCard({ label, value, className = '' }: { label: string; value: numbe
 }
 
 export default function QualitePage() {
-  const [commandeId, setCommandeId] = useState('')
+  const { data: commandes } = useGetCommandes()
+  const [commandeId, setCommandeId] = useState<number | null>(null)
   const [typeControle, setTypeControle] = useState<'Interne' | 'RetourSousTraitant'>('Interne')
 
-  const commande = Number(commandeId) || 0
+  const commande = commandeId ?? 0
   const { data: controles = [], isLoading } = useGetControlesQualite(commande > 0 ? commande : undefined)
   const { data: chaines = [] } = useGetChainesProduction()
   const { data: reference } = useGetReferenceQualite({
@@ -90,17 +93,14 @@ export default function QualitePage() {
           <CardContent className="p-4">
             <Tabs value={typeControle} onValueChange={(v) => setTypeControle(v as 'Interne' | 'RetourSousTraitant')}>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="grid w-40 gap-1.5">
-                  <Label className="text-xs">Commande (id)</Label>
-                  <Input
-                    type="number" min={1}
+                <div className="grid w-80 max-w-full gap-1.5">
+                  <Label className="text-xs" htmlFor="qualite-commande">Commande</Label>
+                  <CommandeSelect
+                    id="qualite-commande"
                     value={commandeId}
-                    onChange={(e) => {
-                      const v = e.target.value
-                      setCommandeId(v)
-                      if (Number(v) <= 0) toast.info('Saisissez un id de commande valide')
-                    }}
-                    placeholder="ex. 3"
+                    onChange={setCommandeId}
+                    commandes={commandes ?? []}
+                    placeholder="Sélectionner une commande…"
                   />
                 </div>
                 <div className="flex gap-2">
