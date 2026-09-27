@@ -93,3 +93,165 @@ export function useGetEnvoisRetouche(controleId?: number) {
     retry: false,
   })
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// DASHBOARD QUALITÉ (LOT 14)
+// Une ligne par triplet (commande, chaîne, taille) ayant un export,
+// plus une ligne de synthèse par commande active sans export.
+// ═══════════════════════════════════════════════════════════════════
+
+export type QualiteDashboardLigne = {
+  commandeId: number
+  numeroCommande: string
+  titreCommande: string | null
+  clientNom: string | null
+  statutCommande: string
+  dateCommande: string
+  ordreFabricationId: number | null
+  numeroOF: string | null
+  chaineProductionId: number | null
+  chaineNom: string | null
+  taille: string | null
+  estCommandeSansExport: boolean
+  quantiteExportee: number
+  quantiteControleeTotale: number
+  quantiteAccepteeTotale: number
+  quantiteRetoucheTotale: number
+  quantiteRebutTotale: number
+  r1Restant: number
+  rRestant: number
+  erRestant: number
+  enCours: number
+  estSolde: boolean
+  statut: string
+  statutLabel: string
+  nombreControles: number
+  nombreEnvois: number
+}
+
+export type QualiteDashboard = {
+  date: string
+  nombreCommandesActives: number
+  nombreLignes: number
+  quantiteExporteeTotale: number
+  quantiteControleeTotale: number
+  quantiteAccepteeTotale: number
+  quantiteRetoucheTotale: number
+  quantiteRebutTotale: number
+  commandesAvecControle: number
+  commandesSansControle: number
+  commandesSoldees: number
+  lignes: QualiteDashboardLigne[]
+}
+
+const DASH_KEY = ['qualite-dashboard'] as const
+
+export function useGetQualiteDashboard(params?: { recherche?: string; statut?: string | null }) {
+  const q = new URLSearchParams()
+  if (params?.recherche) q.set('recherche', params.recherche)
+  if (params?.statut) q.set('statut', params.statut)
+  const qs = q.toString()
+  return useQuery<QualiteDashboard>({
+    queryKey: [...DASH_KEY, params?.recherche ?? '', params?.statut ?? ''],
+    queryFn: () => apiClient.get<QualiteDashboard>(`/api/Qualite/Dashboard${qs ? `?${qs}` : ''}`),
+    retry: false,
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// JOURNAL DU JOUR
+// ═══════════════════════════════════════════════════════════════════
+
+export type QualiteJournalLigne = {
+  id: number
+  type: 'controle' | 'envoi'
+  numeroCommande: string | null
+  taille: string
+  chaineNom: string | null
+  quantiteControlee: number | null
+  quantiteAcceptee: number | null
+  quantiteRetouche: number | null
+  quantiteRebut: number | null
+  typeControle: string | null
+  quantiteRenvoyee: number | null
+  effectuePar: string | null
+  dateOperation: string
+  notes: string | null
+}
+
+export function useGetQualiteJournal() {
+  return useQuery<QualiteJournalLigne[]>({
+    queryKey: [...KEY, 'journal'],
+    queryFn: () => apiClient.get<QualiteJournalLigne[]>('/api/Qualite/Journal'),
+    retry: false,
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CODES DÉFAUTS (référentiel, CRUD complet)
+// ═══════════════════════════════════════════════════════════════════
+
+export type DefautCode = {
+  id: number
+  code: string
+  libelle: string
+  estActif: boolean
+}
+
+export type CreateDefautCodePayload = {
+  code: string
+  libelle: string
+  estActif?: boolean
+}
+
+export type UpdateDefautCodePayload = {
+  code?: string
+  libelle?: string
+  estActif?: boolean
+}
+
+const DEFAUT_KEY = ['qualite', 'defaut-codes'] as const
+
+export function useGetDefautCodes() {
+  return useQuery<DefautCode[]>({
+    queryKey: DEFAUT_KEY,
+    queryFn: () => apiClient.get<DefautCode[]>('/api/DefautCode'),
+    retry: false,
+  })
+}
+
+export function useCreateDefautCode() {
+  const qc = useQueryClient()
+  return useMutation<{ id: number }, ApiError, CreateDefautCodePayload>({
+    mutationFn: (data) => apiClient.post<{ id: number }>('/api/DefautCode', data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: DEFAUT_KEY })
+      toast.success('Code défaut créé')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la création'),
+  })
+}
+
+export function useUpdateDefautCode() {
+  const qc = useQueryClient()
+  return useMutation<unknown, ApiError, { id: number } & UpdateDefautCodePayload>({
+    mutationFn: ({ id, ...data }) => apiClient.put(`/api/DefautCode/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: DEFAUT_KEY })
+      toast.success('Code défaut mis à jour')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la mise à jour'),
+  })
+}
+
+export function useDeleteDefautCode() {
+  const qc = useQueryClient()
+  return useMutation<unknown, ApiError, number>({
+    mutationFn: (id) => apiClient.del(`/api/DefautCode/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: DEFAUT_KEY })
+      toast.success('Code défaut supprimé')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la suppression'),
+  })
+}
