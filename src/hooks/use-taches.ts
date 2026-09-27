@@ -3,15 +3,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
-import type { TacheProduction, TacheDashboard } from '@/types/tache'
+import type {
+  TacheEcriturePayload,
+  TacheProduction,
+  TacheDashboard,
+  TacheScope,
+  UtilisateurAssignable,
+} from '@/types/tache'
 import type { ApiError } from '@/types'
 
 const KEY = ['taches'] as const
 
-export function useGetTaches() {
+/**
+ * Liste des tâches visibles par l'utilisateur connecté.
+ *
+ * `mine` (défaut) = tâches dont l'utilisateur est créateur ou responsable.
+ * `all` = toutes les tâches, et le serveur répond 403 si l'utilisateur n'a pas le
+ * droit de ressource correspondant. L'UI n'affiche ce mode que s'il est autorisé.
+ */
+export function useGetTaches(scope: TacheScope = 'mine') {
   return useQuery<TacheProduction[]>({
-    queryKey: KEY,
-    queryFn: () => apiClient.get<TacheProduction[]>('/api/TacheProduction'),
+    queryKey: [...KEY, 'liste', scope],
+    queryFn: () =>
+      apiClient.get<TacheProduction[]>(`/api/TacheProduction?scope=${scope}`),
   })
 }
 
@@ -20,6 +34,8 @@ export function useGetTache(id: number) {
     queryKey: [...KEY, id],
     queryFn: () => apiClient.get<TacheProduction>(`/api/TacheProduction/${id}`),
     enabled: id > 0,
+    // 404 = tâche d'autrui ou inexistante : inutile de réessayer en boucle.
+    retry: false,
   })
 }
 
@@ -30,10 +46,23 @@ export function useGetTachesDashboard() {
   })
 }
 
+/**
+ * Utilisateurs actifs proposés à l'assignation. La liste permet de choisir un
+ * destinataire sans jamais saisir un identifiant à la main ; le serveur revalide
+ * systématiquement le droit et l'activité du destinataire.
+ */
+export function useGetUtilisateursAssignables() {
+  return useQuery<UtilisateurAssignable[]>({
+    queryKey: [...KEY, 'utilisateurs-assignables'],
+    queryFn: () =>
+      apiClient.get<UtilisateurAssignable[]>('/api/TacheProduction/UtilisateursAssignables'),
+  })
+}
+
 export function useCreateTache() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
+    mutationFn: (data: TacheEcriturePayload) =>
       apiClient.post<TacheProduction>('/api/TacheProduction', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })
@@ -46,14 +75,34 @@ export function useCreateTache() {
 export function useUpdateTache() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: TacheProduction) =>
-      apiClient.put<void>(`/api/TacheProduction/${data.id}`, data),
+    mutationFn: ({ id, data }: { id: number; data: TacheEcriturePayload }) =>
+      apiClient.put<void>(`/api/TacheProduction/${id}`, data),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: KEY })
       qc.invalidateQueries({ queryKey: [...KEY, vars.id] })
       toast.success('Tâche mise à jour')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur'),
+  })
+}
+
+/**
+ * Assigne la tâche à un utilisateur IMS, ou la désassigne si `assignedToUserId` est
+ * vide. Le propriétaire (créateur) n'est jamais modifié par cet appel.
+ */
+export function useAssignerTache() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, assignedToUserId }: { id: number; assignedToUserId: string | null }) =>
+      apiClient.post<{ message: string; assignedToUserId: string | null; responsable: string | null }>(
+        `/api/TacheProduction/${id}/Assigner`,
+        { assignedToUserId },
+      ),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: KEY })
+      toast.success(data.responsable ? `Tâche assignée à ${data.responsable}` : 'Tâche désassignée')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Assignation impossible'),
   })
 }
 

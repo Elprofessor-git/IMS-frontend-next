@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, type ReactNode } from 'react'
-import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap, Clock, LoaderCircle, Layers } from 'lucide-react'
+import { useState, useMemo, useEffect, type ReactNode } from 'react'
+import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap, Clock, LoaderCircle, Layers, UserCheck, Lock } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
@@ -33,6 +33,8 @@ import { PermissionGate } from '@/components/auth/permission-gate'
 import {
   useGetTaches,
   useGetTachesDashboard,
+  useGetUtilisateursAssignables,
+  useAssignerTache,
   useCreateTache,
   useCommencerTache,
   useMettreAJourAvancement,
@@ -42,12 +44,11 @@ import {
   useAnnulerTache,
 } from '@/hooks/use-taches'
 import { PRIORITE_TACHE } from '@/types/tache'
-import type { TacheProduction } from '@/types/tache'
+import type { TacheEcriturePayload, TacheProduction, TacheScope } from '@/types/tache'
 import { tacheSchema } from '@/lib/validations/tache'
 import type { TacheSchema } from '@/lib/validations/tache'
 import { useGetCommandes } from '@/hooks/use-commandes'
 import { CommandeSelect } from '@/components/forms/commande-select'
-import { libelleCommande } from '@/lib/labels'
 import { GroupesTab } from '@/components/taches/groupes-tab'
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -69,21 +70,45 @@ const PRIORITE_CFG: Record<number, { variant: 'default' | 'secondary' | 'destruc
 
 const PRIORITE_LABELS = ['Basse', 'Normale', 'Haute', 'Urgente'] as const
 
-const PRIORITE_INT: Record<string, number> = { Basse: 0, Normale: 1, Haute: 2, Urgente: 3 }
-
-function toTachePayload(data: TacheSchema) {
+/**
+ * Convertit le formulaire en charge utile d'écriture.
+ *
+ * Le payload ne contient volontairement aucun identifiant de propriétaire : ni
+ * `createdByUserId`, ni un nom de responsable saisi à la main. Seul
+ * `assignedToUserId` est transmis, et encore seulement s'il a été choisi dans la
+ * liste proposée — le serveur en déduit le nom du responsable.
+ */
+function toTachePayload(data: TacheSchema): TacheEcriturePayload {
   return {
     titre: data.titre,
     description: data.description || null,
     commandeClientId: data.commandeClientId || null,
     equipeAssignee: data.equipeAssignee || null,
-    responsableAssigne: data.responsableAssigne || null,
-    priorite: PRIORITE_INT[data.priorite] ?? 1,
+    priorite: data.priorite,
     dateDebutPrevue: data.dateDebutPrevue || null,
     dateFinPrevue: data.dateFinPrevue || null,
     dureeEstimeeHeures: data.dureeEstimeeHeures ?? 0,
-    creePar: data.creePar || null,
+    assignedToUserId: data.assignedToUserId || null,
   }
+}
+
+/**
+ * Nom du responsable à afficher.
+ *
+ * `responsable` est le libellé résolu par le serveur à partir de l'identifiant ;
+ * `responsableAssigne` est l'ancien champ texte, conservé uniquement en repli pour
+ * les tâches historiques. `null` = personne de désigné.
+ */
+function displayResponsable(tache: TacheProduction): string | null {
+  return tache.responsable ?? tache.responsableAssigne ?? null
+}
+
+/** Libellé de la commande liée à une tâche (résumé fourni par l'API). */
+function libelleTacheCommande(tache: TacheProduction): string | null {
+  const c = tache.commandeClient
+  if (!c) return null
+  const nom = c.titreCommande || c.clientNom || null
+  return nom ? `${nom} (${c.numeroCommande})` : c.numeroCommande
 }
 
 // ── KPI Card ───────────────────────────────────────────────────────────────────
@@ -122,6 +147,7 @@ function KpiCard({
 function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const createMutation = useCreateTache()
   const { data: commandes, isLoading: commandesLoading } = useGetCommandes()
+  const { data: assignables } = useGetUtilisateursAssignables()
   const {
     register,
     handleSubmit,
@@ -135,17 +161,16 @@ function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () =>
       description: null,
       commandeClientId: null,
       equipeAssignee: null,
-      responsableAssigne: null,
+      assignedToUserId: null,
       priorite: 'Normale',
       dateDebutPrevue: null,
       dateFinPrevue: null,
       dureeEstimeeHeures: 0,
-      creePar: null,
     },
   })
 
   const onSubmit = async (data: TacheSchema) => {
-    await createMutation.mutateAsync(toTachePayload(data) as Record<string, unknown>)
+    await createMutation.mutateAsync(toTachePayload(data))
     reset()
     onClose()
   }
@@ -176,9 +201,35 @@ function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () =>
               </div>
               <div className="grid gap-1.5">
                 <Label>Responsable</Label>
-                <Input {...register('responsableAssigne')} />
+                <Controller
+                  name="assignedToUserId"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? ''}
+                      onValueChange={(v) => field.onChange(v === '' ? null : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Moi (par défaut)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Moi (par défaut)</SelectItem>
+                        {(assignables ?? []).map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.displayName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
+            <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+              <Lock className="mt-0.5 size-3 shrink-0" />
+              Vous serez le créateur de la tâche. Choisir un autre responsable exige
+              le droit d&apos;assignation, vérifié côté serveur.
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <Label>Priorité</Label>
@@ -242,7 +293,10 @@ function NouvellesTacheDialog({ open, onClose }: { open: boolean; onClose: () =>
               </div>
               <div className="grid gap-1.5">
                 <Label>Créé par</Label>
-                <Input {...register('creePar')} />
+                <p className="flex h-9 items-center gap-1.5 rounded-md border border-dashed bg-muted/40 px-3 text-sm text-muted-foreground">
+                  <Lock className="size-3 shrink-0" />
+                  Vous, automatiquement
+                </p>
               </div>
             </div>
           </div>
@@ -457,16 +511,90 @@ function TerminerDialog({ tache, onClose }: { tache: TacheProduction; onClose: (
   )
 }
 
+// ── Dialogue d'assignation ─────────────────────────────────────────────────────
+
+/**
+ * Assigne la tâche à un utilisateur proposé par le serveur, ou la désassigne.
+ *
+ * La liste vient de l'API : aucun identifiant n'est saisi à la main. Le destinataire
+ * est envoyé tel quel, le serveur revalidant le droit d'assigner ainsi que l'activité
+ * du compte.
+ */
+function AssignerDialog({ tache, onClose }: { tache: TacheProduction; onClose: () => void }) {
+  const { data: assignables, isLoading } = useGetUtilisateursAssignables()
+  const assigner = useAssignerTache()
+  const [cible, setCible] = useState<string>(tache.assignedToUserId ?? '')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await assigner.mutateAsync({
+      id: tache.id,
+      // Une valeur vide est une désassignation explicite.
+      assignedToUserId: cible === '' ? null : cible,
+    })
+    onClose()
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Assigner la tâche</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">{tache.titre}</p>
+
+            <div className="grid gap-1.5">
+              <Label>Responsable</Label>
+              <Select value={cible} onValueChange={setCible} disabled={isLoading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir un utilisateur" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Aucun responsable</SelectItem>
+                  {(assignables ?? []).map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.displayName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Le créateur de la tâche n&apos;est pas modifié par cette action. Une tâche
+              sans responsable reste visible de son créateur.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={assigner.isPending || isLoading}>
+              {assigner.isPending && <LoaderCircle className="size-4 animate-spin" />}
+              Assigner
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ── Tache Card ─────────────────────────────────────────────────────────────────
 
-type DialogType = 'commencer' | 'avancement' | 'bloquer' | 'terminer'
+type DialogType = 'commencer' | 'avancement' | 'bloquer' | 'terminer' | 'assigner'
 
 function TacheCard({
   tache,
   onOpenDialog,
+  miseEnAvant = false,
 }: {
   tache: TacheProduction
   onOpenDialog: (type: DialogType, tache: TacheProduction) => void
+  /** Tâche cible d'un lien profond (`?taskId=`) : mise en évidence au chargement. */
+  miseEnAvant?: boolean
 }) {
   const debloquerMutation = useDebloquerTache()
   const annulerMutation = useAnnulerTache()
@@ -479,7 +607,16 @@ function TacheCard({
   const cfg = PRIORITE_CFG[tache.priorite] ?? { variant: 'secondary' as const }
 
   return (
-    <div className="space-y-2 rounded-lg border bg-card p-3 shadow-sm">
+    <div
+      ref={(el) => {
+        // Défilement vers la tâche ciblée par le lien profond, une fois montée.
+        if (el && miseEnAvant) el.scrollIntoView({ block: 'center' })
+      }}
+      className={cn(
+        'space-y-2 rounded-lg border bg-card p-3 shadow-sm',
+        miseEnAvant && 'ring-2 ring-primary border-primary/40',
+      )}
+    >
       {/* Titre + priorité */}
       <div className="flex items-start justify-between gap-2">
         <p className="text-sm font-medium leading-snug">{tache.titre}</p>
@@ -491,13 +628,15 @@ function TacheCard({
       {/* Commande liée */}
       {tache.commandeClient && (
         <p className="text-xs text-muted-foreground">
-          {libelleCommande(tache.commandeClient.id, [tache.commandeClient]) ?? tache.commandeClient.numeroCommande}
+          {libelleTacheCommande(tache)}
         </p>
       )}
 
-      {/* Responsable */}
-      {tache.responsableAssigne && (
-        <p className="text-xs text-muted-foreground">👤 {tache.responsableAssigne}</p>
+      {/* Responsable — libellé résolu par le serveur, `responsableAssigne` en repli */}
+      {displayResponsable(tache) && (
+        <p className="text-xs text-muted-foreground">
+          👤 {displayResponsable(tache)}
+        </p>
       )}
 
       {/* Barre avancement (sauf NonCommence et Annule) */}
@@ -538,6 +677,15 @@ function TacheCard({
       {!isTerminal && (
         <PermissionGate module="taches" mode="write">
           <div className="flex flex-wrap gap-1 pt-1">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => onOpenDialog('assigner', tache)}
+            >
+              <UserCheck className="size-3" /> Assigner
+            </Button>
+
             {tache.statut === 0 && (
               <Button
                 size="sm"
@@ -628,6 +776,7 @@ function KanbanColumn({
   headerClass,
   taches,
   onOpenDialog,
+  tacheMiseEnAvant,
 }: {
   statut: number
   label: string
@@ -635,6 +784,7 @@ function KanbanColumn({
   headerClass: string
   taches: TacheProduction[]
   onOpenDialog: (type: DialogType, tache: TacheProduction) => void
+  tacheMiseEnAvant?: number | null
 }) {
   return (
     <div className="flex w-72 shrink-0 flex-col rounded-lg border bg-muted/30">
@@ -650,7 +800,12 @@ function KanbanColumn({
           <p className="py-8 text-center text-xs text-muted-foreground">Aucune tâche</p>
         )}
         {taches.map((t) => (
-          <TacheCard key={t.id} tache={t} onOpenDialog={onOpenDialog} />
+          <TacheCard
+            key={t.id}
+            tache={t}
+            onOpenDialog={onOpenDialog}
+            miseEnAvant={tacheMiseEnAvant === t.id}
+          />
         ))}
       </div>
     </div>
@@ -660,8 +815,15 @@ function KanbanColumn({
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function TachesPage() {
-  const { data: taches, isLoading } = useGetTaches()
+  // Le tableau de bord est chargé en premier : il indique si l'utilisateur a le
+  // droit de consulter toutes les tâches. Tant que cette information manque, on
+  // reste sur « Mes tâches » — le mode par défaut, toujours autorisé.
   const { data: dashboard } = useGetTachesDashboard()
+  const peutToutVoir = dashboard?.peutVoirToutesLesTaches ?? false
+
+  const [scope, setScope] = useState<TacheScope>('mine')
+  const scopeEffectif: TacheScope = scope === 'all' && peutToutVoir ? 'all' : 'mine'
+  const { data: taches, isLoading } = useGetTaches(scopeEffectif)
 
   const [filterEquipe, setFilterEquipe] = useState('')
   const [filterSearch, setFilterSearch] = useState('')
@@ -670,6 +832,35 @@ export default function TachesPage() {
     type: DialogType
     tache: TacheProduction
   } | null>(null)
+
+  // Si le droit global est retiré en cours de session, on retombe sur « Mes tâches »
+  // au lieu d'afficher une liste vide en 403.
+  useEffect(() => {
+    if (scope === 'all' && !peutToutVoir) setScope('mine')
+  }, [scope, peutToutVoir])
+
+  // ── Lien profond « /taches?taskId=42 » ──
+  // Ouvert depuis le module Courriels après la création d'une tâche depuis un email.
+  // La lecture passe par `window` (et non `useSearchParams`) pour ne pas imposer de
+  // frontière Suspense à une page déjà entièrement côté client.
+  const [tacheMiseEnAvant, setTacheMiseEnAvant] = useState<number | null>(null)
+
+  useEffect(() => {
+    const brut = new URLSearchParams(window.location.search).get('taskId')
+    const id = brut ? Number.parseInt(brut, 10) : Number.NaN
+    if (Number.isInteger(id) && id > 0) setTacheMiseEnAvant(id)
+  }, [])
+
+  // Une tâche créée pour moi y figure déjà (« Mes tâches »), mais un utilisateur
+  // disposant du droit global doit pouvoir suivre un lien vers la tâche d'autrui :
+  // on élargit alors automatiquement le périmètre.
+  useEffect(() => {
+    if (tacheMiseEnAvant != null && peutToutVoir) setScope('all')
+  }, [tacheMiseEnAvant, peutToutVoir])
+
+  // Message explicite si le lien pointe vers une tâche invisible (autrui, ou 404).
+  const lienIntrouvable =
+    tacheMiseEnAvant != null && !isLoading && !(taches ?? []).some((t) => t.id === tacheMiseEnAvant)
 
   const filtered = useMemo(() => {
     if (!taches) return []
@@ -761,8 +952,26 @@ export default function TachesPage() {
         />
       </div>
 
+      {lienIntrouvable && (
+        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+          Cette tâche n&apos;est pas dans votre périmètre : elle appartient à un autre
+          utilisateur ou n&apos;existe plus.
+        </p>
+      )}
+
       {/* Filtres */}
-      <div className="mb-4 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        {peutToutVoir && (
+          <Select value={scope} onValueChange={(v) => setScope(v as TacheScope)}>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="mine">Mes tâches</SelectItem>
+              <SelectItem value="all">Toutes les tâches</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Input
           placeholder="Rechercher par titre…"
           value={filterSearch}
@@ -826,7 +1035,12 @@ export default function TachesPage() {
                         <p className="py-8 text-center text-xs text-muted-foreground">Aucune tâche</p>
                       )}
                       {(byColumn[col.statut] ?? []).map((t) => (
-                        <TacheCard key={t.id} tache={t} onOpenDialog={handleOpenDialog} />
+                        <TacheCard
+                          key={t.id}
+                          tache={t}
+                          onOpenDialog={handleOpenDialog}
+                          miseEnAvant={tacheMiseEnAvant === t.id}
+                        />
                       ))}
                     </div>
                   </div>
@@ -846,6 +1060,7 @@ export default function TachesPage() {
                 headerClass={col.headerClass}
                 taches={byColumn[col.statut] ?? []}
                 onOpenDialog={handleOpenDialog}
+                tacheMiseEnAvant={tacheMiseEnAvant}
               />
             ))}
           </div>
@@ -885,6 +1100,13 @@ export default function TachesPage() {
       )}
       {activeDialog?.type === 'terminer' && (
         <TerminerDialog
+          key={activeDialog.tache.id}
+          tache={activeDialog.tache}
+          onClose={handleCloseDialog}
+        />
+      )}
+      {activeDialog?.type === 'assigner' && (
+        <AssignerDialog
           key={activeDialog.tache.id}
           tache={activeDialog.tache}
           onClose={handleCloseDialog}

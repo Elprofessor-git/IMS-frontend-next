@@ -167,8 +167,9 @@ export function TaskSuggestionPanel({
           Une tâche a déjà été créée depuis cet email.
         </p>
         <Button variant="outline" size="sm" asChild>
-          <Link href="/taches">
-            Ouvrir le module Tâches
+          {/* Lien profond : le module Tâches met en évidence la tâche concernée. */}
+          <Link href={`/taches?taskId=${message.createdTaskId}`}>
+            Ouvrir la tâche dans le module Tâches
             <ExternalLink className="size-4" />
           </Link>
         </Button>
