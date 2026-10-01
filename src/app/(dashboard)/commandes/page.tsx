@@ -12,9 +12,11 @@ import { PageHeader } from '@/components/shared/page-header'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
 import { PermissionGate } from '@/components/auth/permission-gate'
+import { BoutonPartage } from '@/components/partage/bouton-partage'
 import { type ColDef } from '@/components/ui/responsive-table'
 import { useGetCommandes, useDeleteCommande } from '@/hooks/use-commandes'
 import { STATUT_COMMANDE, MODE_PILOTAGE } from '@/types/commande'
+import { SHARE_SCOPE_TYPE } from '@/types/partage'
 import type { CommandeClient } from '@/types/commande'
 
 const STATUT_CFG: Record<number, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; className?: string; icon?: React.ReactNode }> = {
@@ -158,6 +160,15 @@ export default function CommandesPage() {
                   <ExternalLink className="size-3.5" />
                 </Link>
               </Button>
+              <BoutonPartage
+                iconOnly
+                variant="ghost"
+                preset={{
+                  type: SHARE_SCOPE_TYPE.Commande,
+                  id: c.id,
+                  libelle: c.numeroCommande,
+                }}
+              />
               <PermissionGate module="commandes" mode="write">
                 <ConfirmDialog
                   trigger={

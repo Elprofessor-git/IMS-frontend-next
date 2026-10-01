@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/page-header'
+import { BoutonPartage } from '@/components/partage/bouton-partage'
 import { PaginationBar } from '@/components/shared/pagination'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { CommandeSelect } from '@/components/forms/commande-select'
@@ -537,6 +538,7 @@ export default function ImportationsPage() {
               <Download className="size-4" />
               Exporter CSV
             </Button>
+            <BoutonPartage />
             <PermissionGate module="importations" mode="write">
               <Button size="sm" asChild>
                 <Link href="/importations/nouveau">

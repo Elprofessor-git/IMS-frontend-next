@@ -76,6 +76,7 @@ const roleSchema = z.object({
   peutGererQualite: z.boolean(),
   peutVoirCourriels: z.boolean(),
   peutGererCourriels: z.boolean(),
+  peutPartagerLiens: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
@@ -140,6 +141,16 @@ const PERM_PORTEE = [
 ] as const
 
 /**
+ * Capacités transversales (indépendantes d'un module métier).
+ */
+const PERM_TRANSVERSE = [
+  {
+    key: 'peutPartagerLiens',
+    label: 'Créer des liens de partage en lecture seule',
+  },
+] as const
+
+/**
  * Garde-fou d'exhaustivité.
  *
  * Toute permission booléenne de `Role` doit être proposée par l'écran Rôles.
@@ -165,6 +176,7 @@ type _ToutesPermissionsExposees = AssertNever<
     | (typeof PERM_ECRITURE)[number]['key']
     | (typeof PERM_LECTURE)[number]['key']
     | (typeof PERM_PORTEE)[number]['key']
+    | (typeof PERM_TRANSVERSE)[number]['key']
     | PermAdminKey
     | 'estActif'
   >
@@ -213,6 +225,7 @@ const DEFAULT_VALUES: RoleSchema = {
   peutGererQualite: false,
   peutVoirCourriels: false,
   peutGererCourriels: false,
+  peutPartagerLiens: false,
 }
 
 function roleToSchema(r: Role): RoleSchema {
@@ -259,6 +272,7 @@ function roleToSchema(r: Role): RoleSchema {
     peutGererQualite: r.peutGererQualite,
     peutVoirCourriels: r.peutVoirCourriels,
     peutGererCourriels: r.peutGererCourriels,
+    peutPartagerLiens: r.peutPartagerLiens,
   }
 }
 
@@ -397,6 +411,29 @@ function RoleDialog({
                   ))}
                 </div>
               </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Partage</p>
+                <p className="text-xs text-muted-foreground">
+                  Autorise la création de liens publics en lecture seule (stock, commandes,
+                  importations). Les liens restent limités au périmètre choisi et peuvent être
+                  révoqués à tout moment.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {PERM_TRANSVERSE.map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={key}
+                        checked={watch(key)}
+                        onCheckedChange={(v) => setValue(key, !!v)}
+                      />
+                      <Label htmlFor={key} className="font-normal cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </>
           )}
 
@@ -457,6 +494,7 @@ export default function RolesPage() {
               <TableHead>Écriture</TableHead>
               <TableHead>Lecture</TableHead>
               <TableHead>Portée tâches</TableHead>
+              <TableHead>Partage</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -464,7 +502,7 @@ export default function RolesPage() {
             {isLoading &&
               Array.from({ length: 3 }).map((_, i) => (
                 <TableRow key={i}>
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: 8 }).map((_, j) => (
                     <TableCell key={j}>
                       <Skeleton className="h-4 w-full" />
                     </TableCell>
@@ -474,7 +512,7 @@ export default function RolesPage() {
 
             {!isLoading && roles?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="p-0">
+                <TableCell colSpan={8} className="p-0">
                   <EmptyState
                     title="Aucun rôle configuré"
                     description="Créez un premier rôle et assignez les permissions métier."
@@ -518,6 +556,9 @@ export default function RolesPage() {
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {r.estAdministrateur ? 'Tous' : `${nbPortee} / ${PERM_PORTEE.length}`}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {r.estAdministrateur || r.peutPartagerLiens ? 'Oui' : '—'}
                   </TableCell>
                   <TableCell>
                     <PermissionGate module="roles" mode="write">

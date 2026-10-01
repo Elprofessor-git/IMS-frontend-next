@@ -17,10 +17,14 @@ export function middleware(request: NextRequest) {
   // /mot-de-passe-oublie DOIT être listée ici : la page login y renvoie (lien
   // « Mot de passe oublié ? »). Non listée, le middleware la redirige vers
   // /login?reason=unauthenticated et le formulaire est inatteignable.
+  // /partage : cible des liens de partage lecture seule, accessible sans session.
+  // Le token voyage dans le FRAGMENT d'URL (#), jamais envoyé au serveur.
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/reset-password') ||
-    pathname.startsWith('/mot-de-passe-oublie')
+    pathname.startsWith('/mot-de-passe-oublie') ||
+    pathname === '/partage' ||
+    pathname.startsWith('/partage/')
   )
     return NextResponse.next()
 

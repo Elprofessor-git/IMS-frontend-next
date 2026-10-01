@@ -31,6 +31,7 @@ import {
   CableCar,
   Scissors,
   CalendarRange,
+  Share2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetClose, SheetTrigger } from '@/components/ui/sheet'
@@ -43,6 +44,8 @@ type NavItem = {
   icon: React.ElementType
   iconColor: string
   module?: string
+  // Capacité transverse (permission non rattachée à un module) requise en plus.
+  besoinPartage?: boolean
 }
 
 type NavGroup = {
@@ -85,6 +88,7 @@ const NAV: (NavItem | NavGroup)[] = [
     children: [
       { href: '/utilisateurs',       label: 'Utilisateurs', icon: UserCog,  iconColor: 'text-slate-700 group-data-[active=true]:text-white dark:text-slate-300', module: 'utilisateurs' },
       { href: '/roles',              label: 'Rôles',        icon: Shield,    iconColor: 'text-purple-600 group-data-[active=true]:text-white dark:text-purple-400', module: 'roles' },
+      { href: '/partages',           label: 'Liens de partage', icon: Share2, iconColor: 'text-sky-600 group-data-[active=true]:text-white dark:text-sky-400', besoinPartage: true },
       { href: '/parametres/taux-change', label: 'Taux de change', icon: Settings, iconColor: 'text-zinc-600 group-data-[active=true]:text-white dark:text-zinc-400', module: 'parametres' },
     ],
   },
@@ -112,13 +116,16 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     Partenaires: pathname.startsWith('/partenaires'),
     Rapports:    pathname.startsWith('/rapports'),
-    Paramètres:  pathname.startsWith('/parametres') || pathname.startsWith('/utilisateurs') || pathname.startsWith('/roles'),
+    Paramètres:  pathname.startsWith('/parametres') || pathname.startsWith('/utilisateurs') || pathname.startsWith('/roles') || pathname.startsWith('/partages'),
   })
 
   const toggleGroup = (label: string) =>
     setOpenGroups((prev) => ({ ...prev, [label]: !prev[label] }))
 
-  function canAccess(module?: string): boolean {
+  const peutPartager = permissions?.[0]?.peutPartagerLiens ?? false
+
+  function canAccess(module?: string, besoinPartage?: boolean): boolean {
+    if (besoinPartage && !peutPartager) return false
     if (!module) return true
     if (!permissions) return true
     return permissions.find((p) => p.module === module)?.canAccess ?? false
@@ -126,11 +133,13 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   const visibleNav = NAV.map((item) => {
     if (isGroup(item)) {
-      const visibleChildren = item.children.filter((c) => canAccess(c.module))
+      const visibleChildren = item.children.filter((c) =>
+        canAccess(c.module, c.besoinPartage),
+      )
       if (!visibleChildren.length) return null
       return { ...item, children: visibleChildren }
     }
-    return canAccess(item.module) ? item : null
+    return canAccess(item.module, item.besoinPartage) ? item : null
   }).filter(Boolean) as (NavItem | NavGroup)[]
 
   return (

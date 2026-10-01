@@ -43,6 +43,7 @@ export type Role = {
   peutGererQualite: boolean
   peutVoirCourriels: boolean
   peutGererCourriels: boolean
+  peutPartagerLiens: boolean
 }
 
 export type CreateRolePayload = Omit<Role, 'id' | 'estActif'>

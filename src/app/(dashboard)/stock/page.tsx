@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
+import { BoutonPartage } from '@/components/partage/bouton-partage'
 import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
@@ -393,12 +394,15 @@ export default function StockPage() {
       <PageHeader
         title="Stock"
         action={
-          <PermissionGate module="stock" mode="write">
-            <Button size="sm" onClick={openCreateDialog}>
-              <Plus className="mr-1.5 size-4" />
-              Nouveau stock
-            </Button>
-          </PermissionGate>
+          <div className="flex items-center gap-2">
+            <BoutonPartage />
+            <PermissionGate module="stock" mode="write">
+              <Button size="sm" onClick={openCreateDialog}>
+                <Plus className="mr-1.5 size-4" />
+                Nouveau stock
+              </Button>
+            </PermissionGate>
+          </div>
         }
       />
 

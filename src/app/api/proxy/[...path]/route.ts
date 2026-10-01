@@ -36,6 +36,15 @@ async function handler(
   const contentType = request.headers.get('Content-Type')
   if (contentType) outHeaders.set('Content-Type', contentType)
 
+  // IP réelle du client, pour le rate limiting backend du endpoint public.
+  // Au bord (Vercel), x-forwarded-for est posé par la plateforme et le client ne
+  // peut pas le forger ; le backend ne fait confiance qu'à ce proxy (KnownProxies
+  // vide côté ASP.NET). On ne transmet PAS les en-têtes bruts entrants : seul ce
+  // que la plateforme a établi. x-real-ip sert de repli.
+  const clientIp =
+    request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip')
+  if (clientIp) outHeaders.set('X-Forwarded-For', clientIp)
+
   const isBodyless = ['GET', 'HEAD', 'DELETE'].includes(request.method)
   // Use arrayBuffer to preserve binary data (multipart uploads, etc.)
   const body = isBodyless ? undefined : await request.arrayBuffer()
