@@ -41,3 +41,13 @@ export function useCanPartagerLiens(): boolean {
   if (!data || data.length === 0) return false
   return data[0].peutPartagerLiens ?? false
 }
+
+/**
+ * Droit d'assigner une tâche à un autre utilisateur. Fermé par défaut tant que
+ * la réponse n'est pas chargée (on ne déclenche pas l'appel à l'annuaire à tort).
+ */
+export function useCanAssignerTaches(): boolean {
+  const { data } = useMyPermissions()
+  if (!data || data.length === 0) return false
+  return data[0].peutAssignerTaches ?? false
+}

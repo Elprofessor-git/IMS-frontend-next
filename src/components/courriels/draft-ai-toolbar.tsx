@@ -13,7 +13,7 @@ import { TRANSLATE_LANGUAGES } from '@/types/gmail'
  * Barre d'édition IA d'un brouillon : reformuler et traduire.
  *
  * Contrainte de conception : le modèle ne reçoit QUE le texte du champ de composition.
- * Aucun email, aucun fil, aucune donnée IMS ne lui sont transmis, et le résultat
+ * Aucun email, aucun fil, aucune donnée du système ne lui sont transmis, et le résultat
  * remplace le champ — il n'est jamais persisté par cet écran.
  *
  * Les langues sont une liste fermée (FR/EN/AR) : le serveur la refuse aussi de son

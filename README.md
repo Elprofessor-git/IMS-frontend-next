@@ -1,6 +1,6 @@
-# IMS Frontend — Interface Next.js pour la Gestion d'Atelier Textile
+# Système de Gestion Textile — Interface Next.js
 
-Interface web moderne développée en **Next.js 15 (App Router)**, migrée depuis une ancienne application Angular vers une architecture plus légère et performante, consommant l'API [IMS Backend](#) via un proxy sécurisé.
+Interface web moderne développée en **Next.js 15 (App Router)**, migrée depuis une ancienne application Angular vers une architecture plus légère et performante, consommant l'API [Backend](#) via un proxy sécurisé.
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)

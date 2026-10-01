@@ -11,6 +11,7 @@ import type {
   UtilisateurAssignable,
 } from '@/types/tache'
 import type { ApiError } from '@/types'
+import { useCanAssignerTaches } from '@/hooks/use-permissions'
 
 const KEY = ['taches'] as const
 
@@ -52,10 +53,15 @@ export function useGetTachesDashboard() {
  * systématiquement le droit et l'activité du destinataire.
  */
 export function useGetUtilisateursAssignables() {
+  // L'annuaire n'est exposé qu'aux utilisateurs ayant le droit d'assigner des
+  // tâches. Sans ce droit, l'API répond 403 : on n'appelle donc PAS l'endpoint
+  // (évite des requêtes en échec et l'affichage d'une liste vide trompeuse).
+  const canAssigner = useCanAssignerTaches()
   return useQuery<UtilisateurAssignable[]>({
     queryKey: [...KEY, 'utilisateurs-assignables'],
     queryFn: () =>
       apiClient.get<UtilisateurAssignable[]>('/api/TacheProduction/UtilisateursAssignables'),
+    enabled: canAssigner,
   })
 }
 
@@ -87,7 +93,7 @@ export function useUpdateTache() {
 }
 
 /**
- * Assigne la tâche à un utilisateur IMS, ou la désassigne si `assignedToUserId` est
+ * Assigne la tâche à un utilisateur du système, ou la désassigne si `assignedToUserId` est
  * vide. Le propriétaire (créateur) n'est jamais modifié par cet appel.
  */
 export function useAssignerTache() {

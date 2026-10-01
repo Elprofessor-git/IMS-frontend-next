@@ -63,7 +63,7 @@ export default function NouvelleCommandePage() {
       titreCommande: null,
       descriptionCommande: null,
       dateLivraisonSouhaitee: null,
-      devise: 'EUR',
+      devise: 'TND',
       notesSpeciales: null,
       specificationsClient: null,
       creePar: null,

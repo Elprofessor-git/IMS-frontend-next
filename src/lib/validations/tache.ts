@@ -3,7 +3,7 @@ import { z } from 'zod'
 /**
  * Formulaire de création d'une tâche.
  *
- * Le champ d'assignation est un `assignedToUserId` (identifiant IMS choisi dans une
+ * Le champ d'assignation est un `assignedToUserId` (identifiant système choisi dans une
  * liste), et non un nom libre : le nom du responsable est dérivé côté serveur de
  * l'utilisateur choisi, il ne doit donc jamais être saisi ni transmis tel quel.
  * Aucun champ d'ownership ni d'audit n'est présent : le serveur les décide.

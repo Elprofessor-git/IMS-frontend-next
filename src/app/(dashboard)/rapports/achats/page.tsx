@@ -327,7 +327,7 @@ export default function RapportAchatsPage() {
           Quantité: l?.quantite ?? 0,
           'Prix unitaire': l?.prixUnitaire ?? 0,
           'Montant ligne (TND)': l?.montantLigneTND ?? 0,
-          Devise: l?.devise ?? a.devise ?? 'EUR',
+          Devise: l?.devise ?? a.devise ?? 'TND',
           Plateforme: plateforme,
           'Commande destinée': l?.commandeClientId
             ? (commandes?.find((c) => c.id === l.commandeClientId)?.numeroCommande ?? '')

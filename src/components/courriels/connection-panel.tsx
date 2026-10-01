@@ -53,7 +53,7 @@ export function ConnectionPanel() {
             <div className="space-y-1">
               <h2 className="text-base font-semibold">Aucun compte Gmail connecté</h2>
               <p className="text-sm text-muted-foreground">
-                Connectez votre boîte Gmail pour synchroniser les emails dans IMS, détecter les
+                Connectez votre boîte Gmail pour synchroniser les emails dans le système, détecter les
                 demandes d&apos;action et rédiger des réponses.
               </p>
             </div>

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 
-export const TOKEN_COOKIE = 'ims_token'
+export const TOKEN_COOKIE = 'sgt_token'
 
 export function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {

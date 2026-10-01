@@ -30,7 +30,7 @@ function money(n: number, devise: string | null) {
   return (
     <span className="tabular-nums">
       {n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}{' '}
-      {devise ?? 'EUR'}
+      {devise ?? 'TND'}
     </span>
   )
 }

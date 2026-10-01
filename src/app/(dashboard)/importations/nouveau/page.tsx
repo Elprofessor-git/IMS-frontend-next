@@ -91,7 +91,7 @@ export default function NouvelleImportationPage() {
       plateformeId: null,
       dateReceptionPrevue: null,
       modeExpedition: 0,
-      devise: 'EUR',
+      devise: 'TND',
       notesImportation: null,
       creePar: null,
       lignes: [],
@@ -104,7 +104,7 @@ export default function NouvelleImportationPage() {
   const parentDevise = watch('devise')
 
   function addLigne() {
-    append({ ...LIGNE_DEFAULTS, devise: parentDevise || 'EUR' })
+    append({ ...LIGNE_DEFAULTS, devise: parentDevise || 'TND' })
   }
 
   const totalEstime = (watchedLignes ?? []).reduce(
@@ -443,7 +443,7 @@ export default function NouvelleImportationPage() {
                               <Label>Devise</Label>
                               <Input
                                 {...register(`lignes.${i}.devise`)}
-                                placeholder={parentDevise || 'EUR'}
+                                placeholder={parentDevise || 'TND'}
                                 maxLength={10}
                               />
                             </div>

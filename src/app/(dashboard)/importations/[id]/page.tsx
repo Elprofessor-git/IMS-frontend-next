@@ -159,7 +159,7 @@ const EMPTY_LIGNE_FORM = {
   dimension: null,
   nature: null,
   unite: null,
-  devise: 'EUR',
+  devise: 'TND',
   notes: null,
   numeroBain: null,
 }
@@ -179,7 +179,7 @@ function ligneToFormValues(l: LigneImportation): LigneImportationSchema {
     dimension: l.dimension,
     nature: l.nature,
     unite: l.unite,
-    devise: l.devise ?? 'EUR',
+    devise: l.devise ?? 'TND',
     notes: l.notes,
     numeroBain: l.numeroBain,
   }

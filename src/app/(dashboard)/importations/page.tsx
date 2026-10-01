@@ -510,7 +510,7 @@ export default function ImportationsPage() {
       Quantité: ligne?.quantite ?? 0,
       'Prix unitaire': ligne?.prixUnitaire ?? 0,
       'Montant ligne': ligne?.montantLigne ?? 0,
-      Devise: ligne?.devise ?? importation.devise ?? 'EUR',
+      Devise: ligne?.devise ?? importation.devise ?? 'TND',
       Plateforme: ligne ? (plateformeDeLaLigne(ligne, plateformes) ?? '') : '',
       'Commande destinée': libelleCommande(ligne?.commandeClientId ?? null, commandes) ?? '',
       'Mode expédition': MODE_EXPEDITION[importation.modeExpedition] ?? String(importation.modeExpedition),

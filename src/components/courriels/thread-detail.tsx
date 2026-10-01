@@ -58,7 +58,7 @@ function AttachmentList({ attachments }: { attachments: GmailAttachment[] }) {
         ))}
       </ul>
       <p className="text-[11px] text-muted-foreground">
-        Le contenu est relu depuis Gmail au téléchargement : il n&apos;est jamais stocké par l&apos;IMS.
+        Le contenu est relu depuis Gmail au téléchargement : il n&apos;est jamais stocké par le système.
       </p>
     </section>
   )

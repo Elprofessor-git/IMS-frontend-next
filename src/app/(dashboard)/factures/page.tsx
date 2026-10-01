@@ -113,7 +113,7 @@ export default function FacturesPage() {
         cell: (f) => (
           <span className="font-semibold tabular-nums">
             {f.montantTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}{' '}
-            {f.devise ?? 'EUR'}
+            {f.devise ?? 'TND'}
           </span>
         ),
       },

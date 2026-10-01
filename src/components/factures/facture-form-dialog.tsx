@@ -67,7 +67,7 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
 
   const [clientId, setClientId] = useState(0)
   const [dateFacture, setDateFacture] = useState('')
-  const [devise, setDevise] = useState('EUR')
+  const [devise, setDevise] = useState('TND')
   const [modePaiement, setModePaiement] = useState('')
   const [rib, setRib] = useState('')
   const [iban, setIban] = useState('')
@@ -87,7 +87,7 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
     if (isEdit && detail) {
       setClientId(detail.clientId)
       setDateFacture(detail.dateFacture?.substring(0, 10) ?? new Date().toISOString().substring(0, 10))
-      setDevise(detail.devise ?? 'EUR')
+      setDevise(detail.devise ?? 'TND')
       setModePaiement(detail.modePaiement ?? '')
       setRib(detail.rib ?? '')
       setIban(detail.iban ?? '')
@@ -111,7 +111,7 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
     } else {
       setClientId(0)
       setDateFacture(new Date().toISOString().substring(0, 10))
-      setDevise('EUR')
+      setDevise('TND')
       setModePaiement('')
       setRib('')
       setIban('')
@@ -164,7 +164,7 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
     const base = {
       clientId,
       dateFacture: dateFacture ? new Date(dateFacture).toISOString() : null,
-      devise: devise || 'EUR',
+      devise: devise || 'TND',
       modePaiement: modePaiement || null,
       rib: rib || null,
       iban: iban || null,
@@ -307,7 +307,7 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
                       {commande && l.commandeId > 0 && (
                         <div className="col-span-12 text-xs text-muted-foreground">
                           {libelleCommande(commande.id, commandes) ?? commande.numeroCommande} · prix façon enregistré :{' '}
-                          {commande.prixFacon != null ? `${commande.prixFacon} ${devise || 'EUR'}` : 'non défini'}
+                          {commande.prixFacon != null ? `${commande.prixFacon} ${devise || 'TND'}` : 'non défini'}
                         </div>
                       )}
                     </div>
@@ -315,7 +315,7 @@ export function FactureFormDialog({ open, onOpenChange, factureId, detail }: Pro
                 })}
               </div>
               <div className="mt-3 text-right text-sm font-semibold">
-                Total : {total.toFixed(2)} {devise || 'EUR'}
+                Total : {total.toFixed(2)} {devise || 'TND'}
               </div>
             </div>
           )}

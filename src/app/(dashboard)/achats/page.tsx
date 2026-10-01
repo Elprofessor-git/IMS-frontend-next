@@ -541,7 +541,7 @@ export default function AchatsPage() {
         Quantité: ligne?.quantite ?? 0,
         'Prix unitaire': ligne?.prixUnitaire ?? 0,
         'Montant ligne': ligne?.montantLigne ?? 0,
-        Devise: ligne?.devise ?? achat.devise ?? 'EUR',
+        Devise: ligne?.devise ?? achat.devise ?? 'TND',
         Plateforme: plateforme,
         'Commande destinée': libelleCommande(commandeIdDeLaLigne(ligne, achat), commandes) ?? '',
         'Commandé par': achat.creePar ?? '',

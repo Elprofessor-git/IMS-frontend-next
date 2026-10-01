@@ -40,7 +40,7 @@ export type GmailMessageDetail = {
   subject?: string | null
   bodyText?: string | null
   /** HTML déjà assaini côté serveur (scripts, on*, javascript:, iframes retirés).
-   *  Les images intégrées pointent vers le proxy IMS : afficher via dangerouslySetInnerHTML. */
+   *  Les images intégrées pointent vers le proxy du système : afficher via dangerouslySetInnerHTML. */
   bodyHtml?: string | null
   receivedAt: string
   isRead: boolean
@@ -64,12 +64,12 @@ export type GmailThreadListItem = {
   gmailThreadId: string
   subject?: string | null
   snippet?: string | null
-  /** Message de référence de la ligne (le plus récent du fil), clé IMS. */
+  /** Message de référence de la ligne (le plus récent du fil), clé interne. */
   lastMessageId: number
   /**
-   * Identifiant Gmail du message le plus récent (et non sa clé IMS) : c'est lui que
+   * Identifiant Gmail du message le plus récent (et non sa clé interne) : c'est lui que
    * l'API Gmail attend comme parent d'une réponse. `lastMessageId` sert aux écrans
-   * IMS (tâche, réponse IA) ; `lastGmailMessageId` sert à l'envoi d'un email.
+   * système (tâche, réponse IA) ; `lastGmailMessageId` sert à l'envoi d'un email.
    */
   lastGmailMessageId: string
   lastMessageAt: string

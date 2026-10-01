@@ -6,7 +6,7 @@ const PASSWORD = 'Admin123!'
 type ApiResult = { status: number; data: unknown }
 
 // Toutes les requêtes passent par le proxy Next (/api/proxy) : l'authentification
-// vient du cookie httpOnly ims_token posé lors du login UI.
+// vient du cookie httpOnly sgt_token posé lors du login UI.
 async function api(page: Page, path: string, method = 'GET', body?: unknown): Promise<ApiResult> {
   return page.evaluate(
     async ({ path, method, body }) => {
