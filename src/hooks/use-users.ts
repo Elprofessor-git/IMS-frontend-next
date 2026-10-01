@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 import { PERMISSIONS_KEY } from '@/hooks/use-permissions'
-import type { User } from '@/types/user'
+import type { User, InviteUserPayload } from '@/types/user'
 import type { ApiError } from '@/types'
 
 const KEY = ['users'] as const
@@ -89,19 +89,23 @@ export function useDeleteUser() {
   })
 }
 
+/**
+ * Invitation d'un utilisateur (POST /api/Auth/register).
+ *
+ * Le toast d'avertissement est indispensable ici : l'API renvoie 201 sans Corps
+ * contenant ni token ni mot de passe, l'information à rendre visible est
+ * « l'utilisateur doit choisir son mot de passe via l'email reçu ».
+ */
 export function useRegisterUser() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: {
-      nom: string
-      prenom?: string
-      email: string
-      password: string
-      roleId?: number
-    }) => apiClient.post<void>('/api/Auth/register', data),
+    mutationFn: (data: InviteUserPayload) =>
+      apiClient.post<void>('/api/Auth/register', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })
-      toast.success('Utilisateur créé avec succès')
+      toast.success(
+        'Invitation envoyée. L’utilisateur doit choisir son mot de passe via le lien reçu par email.',
+      )
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Erreur lors de la création'),
   })

@@ -10,3 +10,19 @@ export type User = {
   estActif: boolean
   dateCreation: string
 }
+
+/**
+ * Corps de POST /api/Auth/register.
+ *
+ * Aucun mot de passe : l'endpoint est une INVITATION. Le compte est créé sans
+ * `PasswordHash` et un lien « choisir mon mot de passe » est envoyé par email — un
+ * mot de passe choisi ou transmis par un administrateur reviendrait à demander au
+ * compte de le changer, et le premier facteur ne serait jamais connu de la personne
+ * concernée.
+ */
+export type InviteUserPayload = {
+  nom: string
+  prenom?: string
+  email: string
+  roleId?: number
+}

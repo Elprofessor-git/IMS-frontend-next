@@ -49,7 +49,6 @@ const EMPTY_FORM = {
   nom: '',
   prenom: '',
   email: '',
-  password: '',
   roleId: '0',
 }
 
@@ -83,7 +82,6 @@ export default function UtilisateursPage() {
         nom: form.nom,
         prenom: form.prenom || undefined,
         email: form.email,
-        password: form.password,
         roleId: parseInt(form.roleId) || undefined,
       },
       {
@@ -100,7 +98,7 @@ export default function UtilisateursPage() {
           <PermissionGate module="utilisateurs" mode="write">
             <Button size="sm" onClick={handleOpenDialog}>
               <Plus className="mr-1.5 size-4" />
-              Ajouter un utilisateur
+              Inviter un utilisateur
             </Button>
           </PermissionGate>
         }
@@ -253,9 +251,19 @@ export default function UtilisateursPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Ajouter un utilisateur</DialogTitle>
+            <DialogTitle>Inviter un utilisateur</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/*
+              Pas de champ mot de passe, et c'est volontaire : le compte est créé sans
+              secret et la personne choisit son propre mot de passe via le lien reçu par
+              email. Un mot de passe saisi ici par un administrateur serait connu de deux
+              personnes, transmis hors canal chiffré, et oublié dès la première connexion.
+            */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+              Aucun mot de passe n&apos;est défini maintenant. Un lien de choix du mot de
+              passe sera envoyé à cette adresse ; il est à usage unique et expire.
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="nom">Nom *</Label>
@@ -286,18 +294,6 @@ export default function UtilisateursPage() {
                 onChange={(e) => handleField('email', e.target.value)}
                 required
                 autoComplete="off"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">Mot de passe temporaire *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={form.password}
-                onChange={(e) => handleField('password', e.target.value)}
-                required
-                minLength={6}
-                autoComplete="new-password"
               />
             </div>
             <div className="space-y-1.5">
@@ -336,7 +332,7 @@ export default function UtilisateursPage() {
                 Annuler
               </Button>
               <Button type="submit" disabled={registerMutation.isPending}>
-                {registerMutation.isPending ? 'Création…' : 'Créer'}
+                {registerMutation.isPending ? 'Envoi…' : 'Envoyer l’invitation'}
               </Button>
             </DialogFooter>
           </form>

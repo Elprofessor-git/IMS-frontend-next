@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { LogOut, ChevronDown, Shirt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -43,9 +44,10 @@ export function Topbar() {
       {/* Zone droite : notifications + compte utilisateur + déconnexion */}
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <NotificationBell />
-        <div
+        <Link
+          href="/mon-compte"
           className="flex items-center gap-2 rounded-full bg-white/15 py-1 pl-1 pr-2.5 transition-colors hover:bg-white/20"
-          title="Compte utilisateur"
+          title="Mon compte — changer mon mot de passe"
         >
           <span className="grid size-7 shrink-0 place-items-center rounded-full bg-white text-sm font-semibold text-header">
             {initials}
@@ -54,7 +56,7 @@ export function Topbar() {
             {displayName}
           </span>
           <ChevronDown className="size-4 shrink-0 text-white/80" />
-        </div>
+        </Link>
         <Button
           variant="ghost"
           size="sm"

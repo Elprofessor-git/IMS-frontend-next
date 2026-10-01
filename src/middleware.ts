@@ -14,7 +14,15 @@ export function middleware(request: NextRequest) {
   }
 
   // Routes publiques
-  if (pathname.startsWith('/login')) return NextResponse.next()
+  // /mot-de-passe-oublie DOIT être listée ici : la page login y renvoie (lien
+  // « Mot de passe oublié ? »). Non listée, le middleware la redirige vers
+  // /login?reason=unauthenticated et le formulaire est inatteignable.
+  if (
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/mot-de-passe-oublie')
+  )
+    return NextResponse.next()
 
   // Routes protégées : token absent ou expiré → /login
   if (!token || isTokenExpired(token)) {

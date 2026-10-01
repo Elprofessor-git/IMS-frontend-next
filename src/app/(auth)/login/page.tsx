@@ -1,6 +1,7 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -145,6 +146,15 @@ function LoginForm() {
               {serverError}
             </div>
           )}
+
+          <div className="text-right">
+            <Link
+              href="/mot-de-passe-oublie"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Connexion…' : 'Se connecter'}
