@@ -10,6 +10,19 @@ async function handler(
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params
+  // L'hôte vient de API_URL, jamais de l'appelant : ce n'est pas un proxy ouvert.
+  // En revanche le chemin est fourni par l'appelant, donc « .. » doit être écarté —
+  // sans cela, /api/proxy/../interne viserait une route hors du préfixe /api sur
+  // le même hôte. On ne restreint pas le jeu de caractères : un content-id
+  // d'image inline contient « @ » et « . », et le bannir casserait les logos
+  // embarqués dans les emails.
+  if (path.some((segment) => segment === '..' || segment === '.' || /[/\\]/.test(segment))) {
+    return new NextResponse('Chemin invalide.', {
+      status: 400,
+      headers: { 'Content-Type': 'text/plain' },
+    })
+  }
+
   const backendUrl =
     BACKEND + '/' + path.join('/') + (request.nextUrl.search ?? '')
 

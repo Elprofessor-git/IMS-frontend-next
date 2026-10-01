@@ -1,21 +1,25 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Search } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/page-header'
 import { ForbiddenState } from '@/components/shared/forbidden-state'
 import { PaginationBar } from '@/components/shared/pagination'
 import { PermissionGate } from '@/components/auth/permission-gate'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConnectionPanel } from '@/components/courriels/connection-panel'
-import { MessageList } from '@/components/courriels/message-list'
-import { MessageDetail } from '@/components/courriels/message-detail'
-import { useGmailMessages, useGmailStatus } from '@/hooks/use-gmail'
+import { ThreadList } from '@/components/courriels/thread-list'
+import { ThreadDetail } from '@/components/courriels/thread-detail'
+import { ComposeEmail } from '@/components/courriels/compose-email'
+import { useCanWrite } from '@/hooks/use-permissions'
+import { useGmailMessage, useGmailStatus, useGmailThreads, useUpdateThreadFlags } from '@/hooks/use-gmail'
+import type { GmailThreadListItem } from '@/types/gmail'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 25
 
 function CourrielsContent() {
   // useSearchParams() force un rendu client : la page reste entièrement dynamique,
@@ -23,50 +27,36 @@ function CourrielsContent() {
   const searchParams = useSearchParams()
   const oauthResult = searchParams.get('connexion')
   const oauthError = searchParams.get('message')
-  // Lien profond « /courriels?messageId=42 » (cloche LOT 17).
+  // Lien profond « /courriels?threadId=… » (nouvelle unité : le fil) ou
+  // « ?messageId=42 » (ancienne cloche LOT 17, résolu en fil ci-dessous).
+  const threadIdUrl = searchParams.get('threadId')
   const messageIdUrl = searchParams.get('messageId')
 
   const { data: status } = useGmailStatus()
   const connected = status?.connected ?? false
   const aiAvailable = status?.aiAvailable ?? false
+  const canWrite = useCanWrite('courriels')
 
   const [page, setPage] = useState(1)
   const [unreadOnly, setUnreadOnly] = useState(false)
   const [query, setQuery] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-  // Message ouvert par lien profond : il est épinglé, car il n'est pas forcément
-  // dans la page affichée (pagination, filtres). Sans cette épingle, la liste le
-  // fermerait dès son chargement et le lien ne mènerait nulle part.
-  const [pinnedId, setPinnedId] = useState<number | null>(null)
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null)
+  const [composing, setComposing] = useState(false)
+  // Fil ouvert par lien profond : il est épinglé, car il n'est pas forcément dans la page
+  // affichée (pagination, filtres). Sans cette épingle, la liste le fermerait dès son
+  // chargement et le lien ne mènerait nulle part.
+  const [pinnedThreadId, setPinnedThreadId] = useState<string | null>(null)
 
   // Anti-rebond : on ne part pas au backend à chaque frappe.
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query)
       setPage(1)
-      setSelectedId(pinnedId)
+      setSelectedThreadId(pinnedThreadId)
     }, 350)
     return () => clearTimeout(timer)
-  }, [query, pinnedId])
-
-  // Lien profond : on valide l'identifiant avant tout usage (un paramètre corrompu
-  // ne doit pas casser la page) puis on nettoie l'URL, comme pour le callback OAuth.
-  useEffect(() => {
-    const id = messageIdUrl ? Number.parseInt(messageIdUrl, 10) : Number.NaN
-    if (!Number.isInteger(id) || id <= 0) return
-    setPage(1)
-    setSelectedId(id)
-    setPinnedId(id)
-    window.history.replaceState(null, '', '/courriels')
-  }, [messageIdUrl])
-
-  const { data, isLoading, isFetching } = useGmailMessages({
-    page,
-    pageSize: PAGE_SIZE,
-    unreadOnly,
-    search: debouncedQuery,
-  })
+  }, [query, pinnedThreadId])
 
   // Retour du callback OAuth → feedback immédiat, puis on nettoie l'URL.
   useEffect(() => {
@@ -80,35 +70,71 @@ function CourrielsContent() {
     }
   }, [oauthResult, oauthError])
 
-  // Le message sélectionné peut disparaître (filtre changé, suppression) : on
-  // désélectionne pour ne pas laisser un panneau orphelin. Le message épinglé par un
-  // lien profond échappe à cette règle : il est récupéré par son ID, pas par la page.
+  // Lien profond par fil : validation stricte de l'identifiant (une URL corrompue ne
+  // doit pas casser la page) puis nettoyage de l'URL, comme pour le callback OAuth.
+  useEffect(() => {
+    if (!threadIdUrl || threadIdUrl.length === 0 || threadIdUrl.length > 255) return
+    setPage(1)
+    setSelectedThreadId(threadIdUrl)
+    setPinnedThreadId(threadIdUrl)
+    window.history.replaceState(null, '', '/courriels')
+  }, [threadIdUrl])
+
+  const { data, isLoading, isFetching } = useGmailThreads({
+    page,
+    pageSize: PAGE_SIZE,
+    unreadOnly,
+    search: debouncedQuery,
+  })
+
+  // Le fil sélectionné peut disparaître (filtre changé, archivé, corbeille) : on
+  // désélectionne pour ne pas laisser un panneau orphelin. Le fil épinglé par un lien
+  // profond échappe à cette règle : il est récupéré par identifiant, pas par la page.
   useEffect(() => {
     if (!data) return
-    if (selectedId == null || selectedId === pinnedId) return
-    if (!data.items.some((m) => m.id === selectedId)) setSelectedId(null)
-  }, [data, selectedId, pinnedId])
+    if (selectedThreadId == null || selectedThreadId === pinnedThreadId) return
+    if (!data.items.some((t) => t.gmailThreadId === selectedThreadId)) setSelectedThreadId(null)
+  }, [data, selectedThreadId, pinnedThreadId])
+
+  // Lien profond « ?messageId=42 » : on remonte au fil qui le contient, pour que
+  // l'utilisateur atterrisse sur la conversation et non sur une ligne de liste.
+  const { data: messageForLink } = useGmailThreadForDeepLink(messageIdUrl)
+  useEffect(() => {
+    if (!messageForLink?.gmailThreadId) return
+    if (pinnedThreadId === messageForLink.gmailThreadId) return
+    setPage(1)
+    setSelectedThreadId(messageForLink.gmailThreadId)
+    setPinnedThreadId(messageForLink.gmailThreadId)
+    window.history.replaceState(null, '', '/courriels')
+  }, [messageForLink?.gmailThreadId, pinnedThreadId])
 
   const total = data?.total ?? 0
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-  const selected = data?.items.find((m) => m.id === selectedId)
-  // Le message affiché vient d'un lien profond mais n'est pas dans la page courante :
-  // on le dit, sinon l'utilisateur cherche une ligne absente de la liste.
+  const selected = data?.items.find((t) => t.gmailThreadId === selectedThreadId) ?? null
+  // Le fil affiché vient d'un lien profond mais n'est pas dans la page courante : on le
+  // dit, sinon l'utilisateur cherche une ligne absente de la liste.
   const horsPageCourante =
-    selectedId != null && !isLoading && !(data?.items ?? []).some((m) => m.id === selectedId)
+    selectedThreadId != null &&
+    !isLoading &&
+    !(data?.items ?? []).some((t) => t.gmailThreadId === selectedThreadId)
 
   // Un clic dans la liste annule l'épingle : l'utilisateur reprend la main.
-  const handleSelect = (id: number) => {
-    setPinnedId(null)
-    setSelectedId(id)
+  const handleSelect = (threadId: string) => {
+    setPinnedThreadId(null)
+    setSelectedThreadId(threadId)
+    setComposing(false)
   }
 
   const applyUnreadOnly = (value: boolean) => {
     setUnreadOnly(value)
     setPage(1)
-    setPinnedId(null)
-    setSelectedId(null)
+    setPinnedThreadId(null)
+    setSelectedThreadId(null)
   }
+
+  // En-tête du panneau de droite : une action par conversation, pour éviter d'ouvrir
+  // chaque message d'un fil de 12 messages.
+  const threadActions = useMemo(() => buildThreadActions(selected), [selected])
 
   return (
     <>
@@ -122,7 +148,7 @@ function CourrielsContent() {
           <ConnectionPanel />
 
           {connected && (
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
               <section className="overflow-hidden rounded-xl border bg-card">
                 <div className="space-y-3 border-b p-4">
                   <div className="flex flex-wrap items-end justify-between gap-3">
@@ -151,23 +177,45 @@ function CourrielsContent() {
                       Non lus uniquement
                     </label>
                   </div>
+
+                  {canWrite && (
+                    <Button
+                      variant={composing ? 'secondary' : 'default'}
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setComposing((v) => !v)}
+                    >
+                      <Plus className="size-4" />
+                      {composing ? 'Annuler la rédaction' : 'Nouveau message'}
+                    </Button>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
                     {isFetching && !isLoading
                       ? 'Actualisation…'
-                      : `${total} email(s) synchronisé(s)`}
+                      : `${total} conversation(s) synchronisée(s)`}
                     {unreadOnly ? ' · filtre non lus' : ''}
                     {debouncedQuery ? ` · recherche « ${debouncedQuery} »` : ''}
-                    {horsPageCourante ? ' · email ouvert hors de la page courante' : ''}
+                    {horsPageCourante ? ' · conversation ouverte hors de la page courante' : ''}
                   </p>
                 </div>
 
+                {composing && (
+                  <div className="border-b p-4">
+                    <ComposeEmail
+                      replyTo={selected}
+                      onSent={() => setComposing(false)}
+                    />
+                  </div>
+                )}
+
                 <div className="max-h-[32rem] overflow-y-auto">
-                  <MessageList
-                    messages={data?.items ?? []}
-                    selectedId={selectedId}
+                  <ThreadList
+                    threads={data?.items ?? []}
+                    selectedThreadId={selectedThreadId}
                     onSelect={handleSelect}
                     isLoading={isLoading}
-                    hasMessages={total > 0}
+                    hasFilter={unreadOnly || debouncedQuery.length > 0}
                   />
                 </div>
 
@@ -176,18 +224,30 @@ function CourrielsContent() {
                     page={page}
                     totalPages={totalPages}
                     total={total}
-                    label="emails"
+                    label="conversations"
                     onPageChange={(p) => {
                       setPage(p)
-                      setPinnedId(null)
-                      setSelectedId(null)
+                      setPinnedThreadId(null)
+                      setSelectedThreadId(null)
                     }}
                   />
                 </div>
               </section>
 
               <section className="min-h-[32rem] overflow-hidden rounded-xl border bg-card">
-                <MessageDetail messageId={selectedId} summary={selected} aiAvailable={aiAvailable} />
+                <ThreadDetail gmailThreadId={selectedThreadId} aiAvailable={aiAvailable} />
+
+                {selected && threadActions.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 border-t px-4 py-2">
+                    {threadActions.map((action) => (
+                      <ThreadActionButton
+                        key={action.key}
+                        action={action}
+                        gmailThreadId={selected.gmailThreadId}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             </div>
           )}
@@ -195,6 +255,68 @@ function CourrielsContent() {
       </PermissionGate>
     </>
   )
+}
+
+/**
+ * Actions proposées pour une conversation. Elles visent le fil entier : l'utilisateur
+ * n'a pas à ouvrir 12 messages pour marquer une discussion comme lue.
+ */
+type ThreadAction = {
+  key: string
+  label: string
+  payload: { isRead?: boolean; isStarred?: boolean; archive?: boolean; trash?: boolean }
+  destructive?: boolean
+}
+
+function buildThreadActions(thread: GmailThreadListItem | null): ThreadAction[] {
+  if (!thread) return []
+  return [
+    ...(thread.unreadCount > 0
+      ? [{ key: 'read', label: 'Marquer comme lu', payload: { isRead: true } as const }]
+      : [{ key: 'unread', label: 'Marquer comme non lu', payload: { isRead: false } as const }]),
+    {
+      key: 'star',
+      label: thread.isStarred ? 'Retirer le suivi' : 'Suivre',
+      payload: { isStarred: !thread.isStarred },
+    },
+    { key: 'archive', label: 'Archiver', payload: { archive: true } },
+    { key: 'trash', label: 'Mettre à la corbeille', payload: { trash: true }, destructive: true },
+  ]
+}
+
+function ThreadActionButton({
+  action,
+  gmailThreadId,
+}: {
+  action: ThreadAction
+  gmailThreadId: string
+}) {
+  const update = useUpdateThreadFlags()
+  return (
+    <Button
+      size="sm"
+      variant={action.destructive ? 'ghost' : 'outline'}
+      disabled={update.isPending}
+      onClick={() => update.mutate({ gmailThreadId, ...action.payload })}
+      className={action.destructive ? 'text-destructive hover:bg-destructive/10' : undefined}
+    >
+      {action.label}
+    </Button>
+  )
+}
+
+
+/**
+ * Résolution du lien profond `?messageId=42` : le détail du message renvoie déjà son
+ * `gmailThreadId`, ce qui évite un endpoint de plus et un aller-retour supplémentaire.
+ */
+function useGmailThreadForDeepLink(messageIdUrl: string | null) {
+  const messageId = useMemo(() => {
+    const parsed = Number.parseInt(messageIdUrl ?? '', 10)
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+  }, [messageIdUrl])
+
+  return useGmailMessage(messageId)
 }
 
 // ── Export avec Suspense (requis par useSearchParams) ───────────────────────

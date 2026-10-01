@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { DraftAiToolbar } from '@/components/courriels/draft-ai-toolbar'
 import {
   useCreateGmailDraft,
   useGenerateReply,
@@ -83,6 +84,12 @@ function ReplyEditor({ reply, messageId }: { reply: EmailAiReply; messageId: num
           className="font-mono text-[13px]"
         />
       </div>
+
+      {/* Reformulation et traduction du texte saisi : le modèle ne voit que ce champ,
+          et le résultat le remplace sans être persisté par cet écran. */}
+      {!isSent && (
+        <DraftAiToolbar text={body} onReplace={setBody} disabled={busy} />
+      )}
 
       {isSent ? (
         <p className="text-xs text-muted-foreground">
