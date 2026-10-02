@@ -51,8 +51,13 @@ function ReplyEditor({ reply, messageId }: { reply: EmailAiReply; messageId: num
   useEffect(() => {
     setBody(reply.body)
     setSubject(reply.subject ?? '')
-    setAttachments([])
   }, [reply.id, reply.body, reply.subject])
+
+  // Réinitialisation sur le seul changement de brouillon : « Enregistrer » rafraîchit
+  // le corps du serveur, et la sélection de fichiers doit survivre à cette sauvegarde.
+  useEffect(() => {
+    setAttachments([])
+  }, [reply.id])
 
   const isSent = reply.statut === 'Sent' || !canWrite
   const busy = updateReply.isPending || createDraft.isPending || send.isPending || reject.isPending
