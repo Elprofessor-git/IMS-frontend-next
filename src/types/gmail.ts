@@ -119,6 +119,30 @@ export type GmailSyncResult = {
   lastSyncAt?: string | null
 }
 
+/**
+ * Compte-rendu d'un passage de maintenance des pièces jointes.
+ *
+ * `restants` n'est renvoyé que par le rattrapage : nombre de messages candidats non
+ * couverts par le budget. Tant qu'il est positif, un second passage reprend exactement
+ * où le premier s'est arrêté.
+ */
+export type AttachmentMaintenanceReport = {
+  /** Messages réellement relus auprès de Gmail pendant le passage. */
+  examines: number
+  /** Lignes de pièces créées — absent du rapport de requalification. */
+  creees?: number
+  /**
+   * Qualification corrigée sur des lignes EXISTANTES — absent du rattrapage, qui ne
+   * traite que des messages sans aucune pièce : la qualification y est appliquée à la
+   * création, il n'y a donc rien à reclasser.
+   */
+  reclasses?: number
+  erreurs: number
+  restants?: number
+  /** Détail par message : ce qu'un lancement supervisé doit pouvoir relire. */
+  messages: string[]
+}
+
 export type StatutAnalyse = 'Pending' | 'Approved' | 'Rejected'
 
 export type EmailTaskSuggestion = {

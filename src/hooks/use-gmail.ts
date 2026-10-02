@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 import type {
+  AttachmentMaintenanceReport,
   CreateTaskFromEmail,
   EmailAiReply,
   EmailTaskSuggestion,
@@ -469,5 +470,60 @@ export function useComposeEmail() {
       toast.success('Email envoyé')
     },
     onError: (err: ApiError) => toast.error(err.message ?? "L'envoi de l'email a échoué"),
+  })
+}
+
+// ── Maintenance des pièces jointes (administrateur) ─────────────────────────
+//
+// Jamais automatique : ces endpoints relancent une boîte Gmail et consomment le quota
+// du compte qui la porte. Ils ne sont lancés qu'à la demande, depuis l'écran
+// d'administration, et la page affiche le compte-rendu. Le message n'est jamais modifié :
+// seules les lignes de pièces jointes le sont.
+
+export type AttachmentMaintenanceParams = {
+  /** Taille des lots côté serveur (plafonnée par l'API). */
+  batchSize?: number
+  /** Budget de messages relus pour ce passage : 50 par défaut, 250 au maximum. */
+  maxMessages?: number
+}
+
+function maintenanceQuery(params?: AttachmentMaintenanceParams): string {
+  const search = new URLSearchParams()
+  if (params?.batchSize) search.set('batchSize', String(params.batchSize))
+  if (params?.maxMessages) search.set('maxMessages', String(params.maxMessages))
+  return search.toString() ? `?${search}` : ''
+}
+
+/**
+ * Rattrapage : crée les lignes de pièces MANQUANTES des messages historiques
+ * (importés avant que le produit ne stocke les pièces). Idempotent — un message
+ * rattrapé quitte la liste des candidats, donc une relance ne refait rien.
+ */
+export function useBackfillAttachments() {
+  const qc = useQueryClient()
+  return useMutation<AttachmentMaintenanceReport, ApiError, AttachmentMaintenanceParams | undefined>({
+    mutationFn: (params) =>
+      apiClient.post<AttachmentMaintenanceReport>(
+        `/api/gmail/maintenance/attachments/rattrapage${maintenanceQuery(params)}`,
+      ),
+    onSuccess: () => {
+      // Le trombone des fils dépend des pièces présentes : la liste doit refléter
+      // immédiatement le résultat du rattrapage.
+      qc.invalidateQueries({ queryKey: KEY })
+    },
+    onError: (err: ApiError) =>
+      toast.error(err.message ?? 'Rattrapage impossible'),
+  })
+}
+
+/** Requalification : réapplique la règle Content-Disposition / cid: aux pièces existantes. */
+export function useRequalifyAttachments() {
+  return useMutation<AttachmentMaintenanceReport, ApiError, AttachmentMaintenanceParams | undefined>({
+    mutationFn: (params) =>
+      apiClient.post<AttachmentMaintenanceReport>(
+        `/api/gmail/maintenance/attachments/requalify${maintenanceQuery(params)}`,
+      ),
+    onError: (err: ApiError) =>
+      toast.error(err.message ?? 'Requalification impossible'),
   })
 }
