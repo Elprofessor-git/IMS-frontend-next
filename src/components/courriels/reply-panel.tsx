@@ -9,15 +9,21 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DraftAiToolbar } from '@/components/courriels/draft-ai-toolbar'
 import {
+  AttachmentBadge,
+  AttachmentPicker,
+  attachmentsSize,
+} from '@/components/courriels/attachment-picker'
+import {
   useCreateGmailDraft,
   useGenerateReply,
   useGmailReplies,
   useRejectReply,
   useSendReply,
   useUpdateReply,
+  type ComposeAttachment,
 } from '@/hooks/use-gmail'
 import { useCanWrite } from '@/hooks/use-permissions'
-import { STATUT_REPONSE, type EmailAiReply, type StatutReponseIa } from '@/types/gmail'
+import { MAX_ATTACHMENT_BYTES, STATUT_REPONSE, type EmailAiReply, type StatutReponseIa } from '@/types/gmail'
 
 const STATUT_BADGE: Record<StatutReponseIa, string> = {
   Generated: 'border-sky-200 bg-sky-50 text-sky-800',
@@ -37,15 +43,21 @@ function ReplyEditor({ reply, messageId }: { reply: EmailAiReply; messageId: num
 
   const [body, setBody] = useState(reply.body)
   const [subject, setSubject] = useState(reply.subject ?? '')
+  // Les pièces jointes vivent dans l'écran, pas dans l'entité : rien n'est envoyé sans
+  // que l'utilisateur les ait choisies ici (A4). Elles disparaissent au changement de
+  // brouillon, puisqu'elles n'ont alors plus de sens.
+  const [attachments, setAttachments] = useState<ComposeAttachment[]>([])
 
   useEffect(() => {
     setBody(reply.body)
     setSubject(reply.subject ?? '')
+    setAttachments([])
   }, [reply.id, reply.body, reply.subject])
 
   const isSent = reply.statut === 'Sent' || !canWrite
   const busy = updateReply.isPending || createDraft.isPending || send.isPending || reject.isPending
   const dirty = body !== reply.body || subject !== (reply.subject ?? '')
+  const overLimit = attachmentsSize(attachments) > MAX_ATTACHMENT_BYTES
 
   return (
     <div className="space-y-3 rounded-lg border p-4">
@@ -91,6 +103,17 @@ function ReplyEditor({ reply, messageId }: { reply: EmailAiReply; messageId: num
         <DraftAiToolbar text={body} onReplace={setBody} disabled={busy} />
       )}
 
+      {/* Pièces jointes (A4) : ajoutées à la réponse relue, elles partent avec le
+          message. Elles ne sont pas enregistrées par « Enregistrer » — seul « Envoyer »
+          les transmet, comme le texte affiché. */}
+      {!isSent && (
+        <AttachmentPicker
+          attachments={attachments}
+          onChange={setAttachments}
+          disabled={busy}
+        />
+      )}
+
       {isSent ? (
         <p className="text-xs text-muted-foreground">
           {canWrite
@@ -123,14 +146,23 @@ function ReplyEditor({ reply, messageId }: { reply: EmailAiReply; messageId: num
           </Button>
           <Button
             size="sm"
-            disabled={busy}
+            disabled={busy || overLimit}
             // Le texte affiché est envoyé tel quel : « Enregistrer » n'est plus un
             // préalable obligatoire, ce qui supprime l'ambiguïté entre les deux boutons.
-            onClick={() => send.mutate({ id: reply.id, body, subject })}
-            title="Envoie le message affiché ci-dessus, sans qu'il faille l'enregistrer d'abord"
+            // Les pièces jointes choisies ici partent avec lui, et avec lui seulement.
+            onClick={() =>
+              send.mutate({
+                id: reply.id,
+                body,
+                subject,
+                attachments: attachments.length > 0 ? attachments : null,
+              })
+            }
+            title="Envoie le message affiché ci-dessus, avec les pièces jointes choisies"
           >
             {send.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             Envoyer
+            <AttachmentBadge count={attachments.length} />
           </Button>
           <Button
             size="sm"

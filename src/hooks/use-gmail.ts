@@ -365,11 +365,21 @@ export function useSendReply(messageId: number) {
   const qc = useQueryClient()
   return useMutation({
     // Le texte affiché est transmis : sans lui, l'API relirait l'entité et
-    // enverrait la version enregistrée, pas celle relue à l'écran.
-    mutationFn: (payload: { id: number; body: string; subject?: string | null }) =>
+    // enverrait la version enregistrée, pas celle relue à l'écran. Les pièces
+    // jointes suivent le même chemin (A4) : elles sont choisies côté écran, jamais
+    // relues en base.
+    mutationFn: (payload: {
+      id: number
+      body: string
+      subject?: string | null
+      attachments?: ComposeAttachment[] | null
+    }) =>
       apiClient.post<EmailAiReply>(`/api/gmail/replies/${payload.id}/send`, {
         body: payload.body,
         subject: payload.subject,
+        attachments: payload.attachments && payload.attachments.length > 0
+          ? payload.attachments
+          : [],
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...KEY, 'replies', messageId] })
