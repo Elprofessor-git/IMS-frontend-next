@@ -107,6 +107,9 @@ function ReplyEditor({ reply, messageId }: { reply: EmailAiReply; messageId: num
           >
             {updateReply.isPending && <Loader2 className="size-4 animate-spin" />}
             Enregistrer
+            <span className="ml-1 font-normal text-muted-foreground">
+              ( facultatif avant l&apos;envoi )
+            </span>
           </Button>
           <Button
             size="sm"
@@ -118,7 +121,14 @@ function ReplyEditor({ reply, messageId }: { reply: EmailAiReply; messageId: num
             {createDraft.isPending ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
             Créer le brouillon Gmail
           </Button>
-          <Button size="sm" disabled={busy} onClick={() => send.mutate(reply.id)}>
+          <Button
+            size="sm"
+            disabled={busy}
+            // Le texte affiché est envoyé tel quel : « Enregistrer » n'est plus un
+            // préalable obligatoire, ce qui supprime l'ambiguïté entre les deux boutons.
+            onClick={() => send.mutate({ id: reply.id, body, subject })}
+            title="Envoie le message affiché ci-dessus, sans qu'il faille l'enregistrer d'abord"
+          >
             {send.isPending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             Envoyer
           </Button>

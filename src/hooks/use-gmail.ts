@@ -364,8 +364,13 @@ export function useCreateGmailDraft(messageId: number) {
 export function useSendReply(messageId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (replyId: number) =>
-      apiClient.post<EmailAiReply>(`/api/gmail/replies/${replyId}/send`),
+    // Le texte affiché est transmis : sans lui, l'API relirait l'entité et
+    // enverrait la version enregistrée, pas celle relue à l'écran.
+    mutationFn: (payload: { id: number; body: string; subject?: string | null }) =>
+      apiClient.post<EmailAiReply>(`/api/gmail/replies/${payload.id}/send`, {
+        body: payload.body,
+        subject: payload.subject,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...KEY, 'replies', messageId] })
       qc.invalidateQueries({ queryKey: [...KEY, 'threads'] })
