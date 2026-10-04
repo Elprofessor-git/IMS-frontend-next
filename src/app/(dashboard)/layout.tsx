@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/layout/sidebar'
 import { Topbar } from '@/components/layout/topbar'
 import { ChatbotLoader } from '@/components/layout/chatbot-loader'
+import { CalculatorLoader } from '@/components/layout/calculator-loader'
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-y-auto p-4 md:p-8">{children}</main>
       </div>
       <ChatbotLoader />
+      <CalculatorLoader />
     </div>
   )
 }
