@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { ShieldCheck, ArrowDownToLine, Trash2, Plus, LayoutGrid, Unlock, Lock, TriangleAlert, BadgeCheck, Clock } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { ShieldCheck, ArrowDownToLine, Trash2, Plus, LayoutGrid, Unlock, Lock, TriangleAlert, BadgeCheck, Clock, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Dialog,
   DialogContent,
@@ -23,16 +23,13 @@ import {
 } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/page-header'
 import { BoutonPartage } from '@/components/partage/bouton-partage'
-import { PaginatedResponsiveTable } from '@/components/shared/paginated-table'
+import { ResponsiveTable, type ColDef } from '@/components/ui/responsive-table'
+import { PaginationBar } from '@/components/shared/pagination'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
-import { type ColDef } from '@/components/ui/responsive-table'
 import { ArticleSelect } from '@/components/forms/article-select'
 import {
-  useGetStocks,
-  useGetStocksLibres,
-  useGetStocksReserves,
-  useGetStocksAlertes,
+  useGetStockListe,
   useDeleteStock,
   useValiderStock,
   useReserverStock,
@@ -40,10 +37,23 @@ import {
   useGetStockEmplacements,
   useGetReservationsExistantes,
 } from '@/hooks/use-stocks'
-import { TYPE_STOCK } from '@/types/stock'
-import type { Stock, AlerteStock } from '@/types/stock'
+import { TYPE_STOCK, TYPE_STOCK_LABEL } from '@/types/stock'
+import type { Stock, StockListeItem, StockListeFiltres } from '@/types/stock'
 import type { Article } from '@/types/article'
 import type { ReservationStock } from '@/hooks/use-stocks'
+
+const PAGE_SIZE = 20
+
+type OngletStock = 'tous' | 'libre' | 'reserve' | 'alertes'
+
+// Chaque onglet n'est plus qu'un filtre serveur : une seule requête alimente
+// toute la page, et non quatre téléchargements de la table complète.
+const FILTRES_ONGLET: Record<OngletStock, StockListeFiltres> = {
+  tous: {},
+  libre: { typeStock: 'Libre' },
+  reserve: { typeStock: 'Reserve' },
+  alertes: { alertesOnly: true },
+}
 
 const EMPTY_STOCK_FORM = {
   articleId: null as number | null,
@@ -179,10 +189,30 @@ export default function StockPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState(EMPTY_STOCK_FORM)
 
-  const { data: allStocks,      isLoading: loadingAll      } = useGetStocks()
-  const { data: libresStocks,   isLoading: loadingLibres   } = useGetStocksLibres()
-  const { data: reservesStocks, isLoading: loadingReserves } = useGetStocksReserves()
-  const { data: alertes,        isLoading: loadingAlertes  } = useGetStocksAlertes()
+  const [onglet, setOnglet] = useState<OngletStock>('tous')
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(search.trim())
+      setPage(1)
+    }, 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const filtres = useMemo<StockListeFiltres>(
+    () => ({
+      ...FILTRES_ONGLET[onglet],
+      page,
+      taille: PAGE_SIZE,
+      ...(debouncedSearch ? { q: debouncedSearch } : {}),
+    }),
+    [onglet, page, debouncedSearch],
+  )
+
+  const { data: liste, isLoading: loadingList } = useGetStockListe(filtres)
   const { data: emplacements } = useGetStockEmplacements()
   const selectedArticleId = createForm.articleId ?? 0
   const { data: reservations } = useGetReservationsExistantes({ articleId: selectedArticleId })
@@ -223,7 +253,7 @@ export default function StockPage() {
     setReserverDialog(null)
   }
 
-  const stockColumns = useMemo<ColDef<Stock>[]>(
+  const stockColumns = useMemo<ColDef<StockListeItem>[]>(
     () => [
       {
         key: 'article',
@@ -231,9 +261,9 @@ export default function StockPage() {
         cardPrimary: true,
         cell: (s) => (
           <div>
-            <p className="font-medium">{s.article?.designation ?? `#${s.articleId}`}</p>
-            {s.article?.reference && (
-              <p className="font-mono text-xs text-muted-foreground">{s.article.reference}</p>
+            <p className="font-medium">{s.articleDesignation ?? `#${s.articleId}`}</p>
+            {s.articleReference && (
+              <p className="font-mono text-xs text-muted-foreground">{s.articleReference}</p>
             )}
             {(s.couleur || s.taille) && (
               <p className="text-xs text-muted-foreground">
@@ -248,7 +278,7 @@ export default function StockPage() {
         header: 'Type',
         cardPrimary: true,
         cell: (s) => (
-          <Badge variant="outline">{TYPE_STOCK[s.typeStock] ?? s.typeStock}</Badge>
+          <Badge variant="outline">{TYPE_STOCK_LABEL[s.typeStock] ?? s.typeStock}</Badge>
         ),
       },
       {
@@ -256,7 +286,7 @@ export default function StockPage() {
         header: 'Qté',
         headerClassName: 'text-right',
         cardPrimary: true,
-        cell: (s) => <span className="font-mono">{Number(s.quantite)}</span>,
+        cell: (s) => <span className="font-mono">{s.quantite}</span>,
       },
       {
         key: 'quantiteReservee',
@@ -264,7 +294,7 @@ export default function StockPage() {
         headerClassName: 'text-right',
         cell: (s) => (
           <span className="font-mono text-muted-foreground">
-            {Number(s.quantiteReservee) > 0 ? Number(s.quantiteReservee) : '—'}
+            {s.quantiteReservee > 0 ? s.quantiteReservee : '—'}
           </span>
         ),
       },
@@ -293,12 +323,32 @@ export default function StockPage() {
           ),
       },
       {
+        key: 'alerte',
+        header: 'Niveau',
+        cell: (s) =>
+          s.estCritique ? (
+            <Badge variant="destructive">
+              <TriangleAlert className="size-3.5" />
+              Critique
+            </Badge>
+          ) : s.enAlerte ? (
+            <Badge className="border border-orange-200 bg-orange-100 text-orange-800">
+              <TriangleAlert className="size-3.5" />
+              Alerte
+            </Badge>
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              Seuil {s.seuilAlerte}
+            </span>
+          ),
+      },
+      {
         key: 'actions',
         header: 'Actions',
         cardPrimary: true,
         headerClassName: 'w-[120px]',
         cell: (s) => {
-          const disponible = Number(s.quantite) - Number(s.quantiteReservee)
+          const disponible = s.quantiteDisponible
           return (
             <PermissionGate module="stock" mode="write">
               <div className="flex items-center gap-1">
@@ -344,51 +394,6 @@ export default function StockPage() {
     [deleteMutation, setValiderDialog, setReserverDialog],
   )
 
-  const alerteColumns = useMemo<ColDef<AlerteStock>[]>(
-    () => [
-      {
-        key: 'designation',
-        header: 'Article',
-        cardPrimary: true,
-        cell: (a) => <span className="font-medium">{a.designation}</span>,
-      },
-      {
-        key: 'quantite',
-        header: 'Quantité',
-        cardPrimary: true,
-        cell: (a) => <span className="font-mono">{Number(a.quantite)}</span>,
-      },
-      {
-        key: 'seuilAlerte',
-        header: 'Seuil alerte',
-        cell: (a) => <span className="text-muted-foreground">{a.seuilAlerte}</span>,
-      },
-      {
-        key: 'seuilCritique',
-        header: 'Seuil critique',
-        cell: (a) => <span className="text-muted-foreground">{a.seuilCritique}</span>,
-      },
-      {
-        key: 'niveau',
-        header: 'Niveau',
-        cardPrimary: true,
-        cell: (a) =>
-          a.estCritique ? (
-            <Badge variant="destructive">
-              <TriangleAlert className="size-3.5" />
-              Critique
-            </Badge>
-          ) : (
-            <Badge className="border border-orange-200 bg-orange-100 text-orange-800">
-              <TriangleAlert className="size-3.5" />
-              Alerte
-            </Badge>
-          ),
-      },
-    ],
-    [],
-  )
-
   return (
     <div>
       <PageHeader
@@ -406,7 +411,13 @@ export default function StockPage() {
         }
       />
 
-      <Tabs defaultValue="tous">
+      <Tabs
+        value={onglet}
+        onValueChange={(v) => {
+          setOnglet(v as OngletStock)
+          setPage(1)
+        }}
+      >
         <div className="mb-4 overflow-x-auto">
           <TabsList variant="line">
             <TabsTrigger value="tous">
@@ -424,59 +435,42 @@ export default function StockPage() {
             <TabsTrigger value="alertes">
               <TriangleAlert className="size-4" />
               Alertes
-              {(alertes?.length ?? 0) > 0 && (
-                <Badge variant="destructive" className="ml-1.5 px-1.5 py-0 text-xs">
-                  {alertes!.length}
-                </Badge>
-              )}
             </TabsTrigger>
           </TabsList>
         </div>
-
-        <TabsContent value="tous">
-          <PaginatedResponsiveTable
-            columns={stockColumns}
-            data={allStocks ?? []}
-            keyExtractor={(s) => s.id}
-            isLoading={loadingAll}
-            emptyText="Aucune entrée de stock."
-            label="entrées"
-          />
-        </TabsContent>
-
-        <TabsContent value="libre">
-          <PaginatedResponsiveTable
-            columns={stockColumns}
-            data={libresStocks ?? []}
-            keyExtractor={(s) => s.id}
-            isLoading={loadingLibres}
-            emptyText="Aucune entrée de stock."
-            label="entrées"
-          />
-        </TabsContent>
-
-        <TabsContent value="reserve">
-          <PaginatedResponsiveTable
-            columns={stockColumns}
-            data={reservesStocks ?? []}
-            keyExtractor={(s) => s.id}
-            isLoading={loadingReserves}
-            emptyText="Aucune entrée de stock."
-            label="entrées"
-          />
-        </TabsContent>
-
-        <TabsContent value="alertes">
-          <PaginatedResponsiveTable
-            columns={alerteColumns}
-            data={alertes ?? []}
-            keyExtractor={(a) => a.id}
-            isLoading={loadingAlertes}
-            emptyText="Aucun article en alerte de stock."
-            label="articles"
-          />
-        </TabsContent>
       </Tabs>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Article, référence, couleur, taille, lot…"
+            className="pl-8"
+            aria-label="Rechercher dans le stock"
+          />
+        </div>
+        <span className="text-sm text-muted-foreground">
+          {liste?.total ?? 0} entrée(s)
+        </span>
+      </div>
+
+      <ResponsiveTable
+        columns={stockColumns}
+        data={liste?.items ?? []}
+        keyExtractor={(s) => s.id}
+        isLoading={loadingList}
+        emptyText="Aucune entrée de stock."
+      />
+
+      <PaginationBar
+        page={liste?.page ?? page}
+        totalPages={liste?.pages ?? 0}
+        total={liste?.total ?? 0}
+        label="entrées"
+        onPageChange={setPage}
+      />
 
       <ValiderDialog
         state={validerDialog}

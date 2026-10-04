@@ -35,7 +35,17 @@ export type ShareLinkFilters = {
   statut?: string | null
   dateDebut?: string | null
   dateFin?: string | null
+  /** Sélection d'articles, combinée en ET avec les autres filtres. */
+  articleIds?: number[] | null
+  categorie?: string | null
+  typeStock?: string | null
 }
+
+/**
+ * Plafond d'articles dans un lien partagé. Doit correspondre à
+ * `PartageController.MaxArticlesPartages` : au-delà, le backend refuse.
+ */
+export const MAX_ARTICLES_PARTAGES = 200
 
 export type ShareLink = {
   id: number

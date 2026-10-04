@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
-import type { Stock, AlerteStock } from '@/types/stock'
+import type { Stock, AlerteStock, StockListeFiltres, StockListeReponse } from '@/types/stock'
 import type { ApiError } from '@/types'
 
 const KEY = ['stocks'] as const
@@ -76,6 +76,34 @@ export function useGetStockEmplacements() {
   return useQuery<string[]>({
     queryKey: [...KEY, 'emplacements'],
     queryFn: () => apiClient.get<string[]>('/api/Stock/Emplacements'),
+  })
+}
+
+/**
+ * GET /api/Stock/Liste — liste paginée, filtrée et projetée, SANS prix ni note.
+ *
+ * Distincte de useGetStocks, qui interroge /api/Stock et renvoie l'entité
+ * complète : cette dernière sert aux écrans d'édition, celle-ci à la
+ * consultation, au filtrage et au partage.
+ */
+export function useGetStockListe(filtres: StockListeFiltres = {}) {
+  const sp = new URLSearchParams()
+  if (filtres.page !== undefined) sp.set('page', String(filtres.page))
+  if (filtres.taille !== undefined) sp.set('taille', String(filtres.taille))
+  if (filtres.commandeClientId !== undefined)
+    sp.set('commandeClientId', String(filtres.commandeClientId))
+  if (filtres.clientId !== undefined) sp.set('clientId', String(filtres.clientId))
+  if (filtres.plateformeId !== undefined) sp.set('plateformeId', String(filtres.plateformeId))
+  if (filtres.typeStock) sp.set('typeStock', filtres.typeStock)
+  if (filtres.categorie) sp.set('categorie', filtres.categorie)
+  if (filtres.q) sp.set('q', filtres.q)
+  if (filtres.alertesOnly) sp.set('alertesOnly', 'true')
+
+  const qs = sp.toString()
+
+  return useQuery<StockListeReponse>({
+    queryKey: [...KEY, 'liste', filtres],
+    queryFn: () => apiClient.get<StockListeReponse>(`/api/Stock/Liste?${qs}`),
   })
 }
 

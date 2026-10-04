@@ -24,12 +24,15 @@ import {
 import { useGetPlateformes } from '@/hooks/use-plateformes'
 import { useGetClients } from '@/hooks/use-clients'
 import { useGetCommandes } from '@/hooks/use-commandes'
+import { useGetArticles } from '@/hooks/use-articles'
 import { useCreatePartage } from '@/hooks/use-partage'
+import { ArticlesMultiSelect } from '@/components/forms/articles-multi-select'
 import {
   SHARE_SCOPE_TYPE,
   SHARE_SCOPE_LABEL,
   SHARE_SECTION,
   SHARE_SECTION_OPTIONS,
+  MAX_ARTICLES_PARTAGES,
   type CreateShareLinkResponse,
   type ShareLinkFilters,
 } from '@/types/partage'
@@ -84,8 +87,16 @@ export function PartageDialog({
   const [statut, setStatut] = useState('')
   const [dateDebut, setDateDebut] = useState('')
   const [dateFin, setDateFin] = useState('')
+  const [articleIds, setArticleIds] = useState<number[]>([])
+  const [categorie, setCategorie] = useState('')
+  const [typeStock, setTypeStock] = useState('')
 
   const [resultat, setResultat] = useState<CreateShareLinkResponse | null>(null)
+
+  // Le sélecteur doit pouvoir atteindre le plafond de 200 : on charge une page
+  // de cette taille plutôt que la taille par défaut de 20.
+  const { data: articlesPage } = useGetArticles(1, MAX_ARTICLES_PARTAGES)
+  const articles = useMemo(() => articlesPage?.data ?? [], [articlesPage])
 
   const scopeOptions = useMemo(() => {
     if (scopeType === SHARE_SCOPE_TYPE.Plateforme)
@@ -117,6 +128,9 @@ export function PartageDialog({
       statut: statut.trim() || null,
       dateDebut: dateDebut ? new Date(dateDebut).toISOString() : null,
       dateFin: dateFin ? new Date(dateFin).toISOString() : null,
+      articleIds: articleIds.length > 0 ? articleIds : null,
+      categorie: categorie.trim() || null,
+      typeStock: typeStock || null,
     }
     const filtersVides = Object.values(filters).every((v) => v == null)
 
@@ -300,6 +314,7 @@ export function PartageDialog({
                 <Input placeholder="Couleur" value={couleur} onChange={(e) => setCouleur(e.target.value)} />
                 <Input placeholder="Taille" value={taille} onChange={(e) => setTaille(e.target.value)} />
                 <Input placeholder="Statut (nom exact)" value={statut} onChange={(e) => setStatut(e.target.value)} />
+
                 <div className="grid gap-1">
                   <Label htmlFor="dateDebut" className="text-xs text-muted-foreground">Du</Label>
                   <Input id="dateDebut" type="date" value={dateDebut} onChange={(e) => setDateDebut(e.target.value)} />
@@ -308,6 +323,58 @@ export function PartageDialog({
                   <Label htmlFor="dateFin" className="text-xs text-muted-foreground">Au</Label>
                   <Input id="dateFin" type="date" value={dateFin} onChange={(e) => setDateFin(e.target.value)} />
                 </div>
+
+                {/* Ces trois filtres n'ont de sens que si la section Stock est
+                    exposée : les masquer évite de laisser croire qu'ils
+                    s'appliquent aux commandes ou aux importations. */}
+                {(sections & SHARE_SECTION.Stock) === SHARE_SECTION.Stock && (
+                  <>
+                    <div className="grid gap-1 sm:col-span-2">
+                      <Label htmlFor="filtreArticles" className="text-xs text-muted-foreground">
+                        Articles à partager (vide = tous les articles de la portée)
+                      </Label>
+                      <ArticlesMultiSelect
+                        value={articleIds}
+                        onChange={setArticleIds}
+                        articles={articles}
+                        maxSelections={MAX_ARTICLES_PARTAGES}
+                        placeholder="Tous les articles"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {articleIds.length > 0
+                          ? `${articleIds.length} article(s) sélectionné(s), en intersection avec la portée.`
+                          : `Jusqu'à ${MAX_ARTICLES_PARTAGES} articles.`}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-1">
+                      <Label htmlFor="filtreCategorie" className="text-xs text-muted-foreground">
+                        Catégorie (nom exact)
+                      </Label>
+                      <Input
+                        id="filtreCategorie"
+                        value={categorie}
+                        onChange={(e) => setCategorie(e.target.value)}
+                        placeholder="Tissus"
+                      />
+                    </div>
+
+                    <div className="grid gap-1">
+                      <Label className="text-xs text-muted-foreground">Type de stock</Label>
+                      <Select value={typeStock || 'TOUS'} onValueChange={(v) => setTypeStock(v === 'TOUS' ? '' : v)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="TOUS">Tous</SelectItem>
+                          <SelectItem value="Libre">Libre</SelectItem>
+                          <SelectItem value="Reserve">Réservé</SelectItem>
+                          <SelectItem value="Importe">Importé</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </div>
             </details>
 
