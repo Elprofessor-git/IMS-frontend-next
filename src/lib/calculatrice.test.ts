@@ -224,8 +224,19 @@ test('enchaînements réels', () => {
   assert.equal(valeur('250+250*15%'), 287.5)
 })
 
-test('référence OVITA : total planifié 4717, conso 0,9', () => {
-  // Cas réel du dossier : le reste en tissu vaut 12715,1 — pas 12711,5, qui
-  // correspondait au total 4721 erroné repris du classeur.
+test('dérive du flottant sur une soumission en tissu', () => {
+  // La chaîne 4717 est un bon cas de dérive : en flottant,
+  // 16960.4 - (4717*0.9) ressort 12715.100000000002 au lieu de 12715.1.
+  // Vergl fixe_bigint rend le résultat exact.
   assert.equal(valeur('16960,4-(4717*0,9)'), 12715.1)
+})
+
+test('référence OVITA : total planifié 4721, conso 0,9', () => {
+  // Cas réel du dossier, vérifié cellule par cellule dans le classeur.
+  // 4721 est le total que le classeur utilise LUI-MÊME pour le tissu
+  // (U4 -> MT UT 4248,9 -> J17), avec un surplus U5 = 127.
+  // La cellule « QT COUPE » (J4) vaut 4717 parce que le nombre de pièces de
+  // la 7e passe n'y est pas renseigné : c'est cette cellule-là qui est
+  // incomplète, pas 4721. Le moteur de coupe (backend, lot C1) retient 4721.
+  assert.equal(valeur('16960,4-(4721*0,9)'), 12711.5)
 })
