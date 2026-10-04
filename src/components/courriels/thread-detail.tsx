@@ -7,12 +7,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/empty-state'
 import { TaskSuggestionPanel } from '@/components/courriels/task-suggestion-panel'
-import { ReplyPanel } from '@/components/courriels/reply-panel'
+import { MessageComposer } from '@/components/courriels/message-composer'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGmailThread } from '@/hooks/use-gmail'
 import { rewriteInlineImageUrls, toApiUrl } from '@/lib/backend-url'
 import { cn } from '@/lib/utils'
-import type { GmailAttachment, GmailMessageDetail } from '@/types/gmail'
+import type { ComposeMode, GmailAttachment, GmailMessageDetail } from '@/types/gmail'
 
 /** Pièces jointes « classiques » : une image intégrée au corps n'en fait pas partie. */
 function humanSize(bytes: number): string {
@@ -102,11 +102,17 @@ function MessageBody({ message }: { message: GmailMessageDetail }) {
       </div>
       {showHtml ? (
         <div
+          data-testid="corps-message"
           className={cn(
             'prose prose-sm max-w-none break-words dark:prose-invert',
-            // Contenu de mail : on neutralise les styles externes qui pourraient
-            // déborder du panneau (largeurs fixes, marges).
-            '[&_table]:max-w-full [&_img]:max-w-full [&_pre]:overflow-x-auto',
+            // Contenu de mail : on neutralise ce que le mail impose. Sans « ! », un
+            // style EN LIGNE (« font-size:24px », « width:600px ») l'emporterait sur
+            // la classe : la typographie de l'application est donc réimposée à tous les
+            // descendants, et les largeurs fixes sontbornées au panneau.
+            // « font-size » en propriété arbitraire et non « text-… » : en v4,
+            // « text-[inherit] » désignerait une COULEUR, pas une taille.
+            '[&_*]:font-sans! [&_*]:[font-size:inherit]!',
+            '[&_table]:max-w-full! [&_img]:max-w-full! [&_pre]:overflow-x-auto',
           )}
           dangerouslySetInnerHTML={{ __html: rewriteInlineImageUrls(message.bodyHtml!) }}
         />
@@ -120,7 +126,7 @@ function MessageBody({ message }: { message: GmailMessageDetail }) {
 }
 
 function ConversationMessage({ message, aiAvailable }: { message: GmailMessageDetail; aiAvailable: boolean }) {
-  const [active, setActive] = useState<'message' | 'tache' | 'reponse'>('message')
+  const [active, setActive] = useState<'message' | 'tache'>('message')
 
   return (
     <article className="rounded-lg border">
@@ -163,19 +169,15 @@ function ConversationMessage({ message, aiAvailable }: { message: GmailMessageDe
       <AttachmentList attachments={message.attachments} />
 
       <div className="border-t px-4 py-2">
-        <Tabs value={active} onValueChange={(v) => setActive(v as typeof active)}>
-          <TabsList className="w-fit">
-            <TabsTrigger value="message">Lecture</TabsTrigger>
-            <TabsTrigger value="tache">Tâche</TabsTrigger>
-            <TabsTrigger value="reponse">Réponse</TabsTrigger>
-          </TabsList>
-          <TabsContent value="tache" className="mt-3">
-            <TaskSuggestionPanel message={message} aiAvailable={aiAvailable} />
-          </TabsContent>
-          <TabsContent value="reponse" className="mt-3">
-            <ReplyPanel messageId={message.id} aiAvailable={aiAvailable} />
-          </TabsContent>
-        </Tabs>
+          <Tabs value={active} onValueChange={(v) => setActive(v as typeof active)}>
+            <TabsList className="w-fit">
+              <TabsTrigger value="message">Lecture</TabsTrigger>
+              <TabsTrigger value="tache">Tâche</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tache" className="mt-3">
+              <TaskSuggestionPanel message={message} aiAvailable={aiAvailable} />
+            </TabsContent>
+          </Tabs>
       </div>
     </article>
   )
@@ -189,6 +191,8 @@ export function ThreadDetail({
   aiAvailable: boolean
 }) {
   const { data: thread, isLoading } = useGmailThread(gmailThreadId)
+  const [onglet, setOnglet] = useState<'messages' | 'composer'>('messages')
+  const [mode, setMode] = useState<ComposeMode>('Reply')
 
   if (!gmailThreadId) {
     return (
@@ -219,27 +223,44 @@ export function ThreadDetail({
     )
   }
 
+  // On répond au dernier message du fil : c'est lui qui porte la discussion en cours.
+  const dernierMessage = thread.messages[thread.messages.length - 1]
+
   return (
     <div className="flex h-full flex-col">
-      <header className="space-y-1 border-b p-4">
-        <h2 className="text-lg font-semibold leading-snug">
-          {thread.subject || '(sans objet)'}
-        </h2>
-        <p className="text-xs text-muted-foreground">
-          {thread.messages.length} message{thread.messages.length > 1 ? 's' : ''} · du plus ancien
-          au plus récent
-        </p>
+      <header className="space-y-3 border-b p-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold leading-snug">{thread.subject || '(sans objet)'}</h2>
+          <p className="text-xs text-muted-foreground">
+            {thread.messages.length} message{thread.messages.length > 1 ? 's' : ''} · du plus ancien
+            au plus récent
+          </p>
+        </div>
+        <Tabs value={onglet} onValueChange={(v) => setOnglet(v as typeof onglet)}>
+          <TabsList className="w-fit">
+            <TabsTrigger value="messages">Messages</TabsTrigger>
+            <TabsTrigger value="composer">Composer</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </header>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
-        {thread.messages.map((message) => (
-          <ConversationMessage
-            key={message.id}
-            message={message}
+      {onglet === 'messages' ? (
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+          {thread.messages.map((message) => (
+            <ConversationMessage key={message.id} message={message} aiAvailable={aiAvailable} />
+          ))}
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto p-4" data-testid="composeur-fil">
+          <MessageComposer
+            mode={mode}
+            replyToMessageId={dernierMessage.id}
             aiAvailable={aiAvailable}
+            onModeChange={setMode}
+            onSent={() => setOnglet('messages')}
           />
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

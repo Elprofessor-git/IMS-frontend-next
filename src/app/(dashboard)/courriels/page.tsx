@@ -9,15 +9,16 @@ import { ForbiddenState } from '@/components/shared/forbidden-state'
 import { PaginationBar } from '@/components/shared/pagination'
 import { PermissionGate } from '@/components/auth/permission-gate'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ConnectionPanel } from '@/components/courriels/connection-panel'
 import { ThreadList } from '@/components/courriels/thread-list'
 import { ThreadDetail } from '@/components/courriels/thread-detail'
-import { ComposeEmail } from '@/components/courriels/compose-email'
+import { MessageComposer } from '@/components/courriels/message-composer'
 import { useCanWrite } from '@/hooks/use-permissions'
 import { useGmailMessage, useGmailStatus, useGmailThreads, useUpdateThreadFlags } from '@/hooks/use-gmail'
-import type { GmailThreadListItem } from '@/types/gmail'
+import type { ComposeMode, GmailThreadListItem } from '@/types/gmail'
 
 const PAGE_SIZE = 25
 
@@ -43,6 +44,10 @@ function CourrielsContent() {
   const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
+  // Vue mobile : liste seule, ou détail seul. Sur grand écran les deux sont visibles
+  // (voir les classes de grille plus bas), cet état n'agit donc qu'en petit écran.
+  const [detailMobile, setDetailMobile] = useState(false)
+  const [nouveauMode] = useState<ComposeMode>('New')
   // Fil ouvert par lien profond : il est épinglé, car il n'est pas forcément dans la page
   // affichée (pagination, filtres). Sans cette épingle, la liste le fermerait dès son
   // chargement et le lien ne mènerait nulle part.
@@ -123,6 +128,9 @@ function CourrielsContent() {
     setPinnedThreadId(null)
     setSelectedThreadId(threadId)
     setComposing(false)
+    // En petit écran, sélectionner un fil ouvre son détail : les deux colonnes ne
+    // cohabitent pas sur un téléphone.
+    setDetailMobile(true)
   }
 
   const applyUnreadOnly = (value: boolean) => {
@@ -148,7 +156,7 @@ function CourrielsContent() {
           <ConnectionPanel />
 
           {connected && (
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+            <div className="grid gap-5 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
               <section className="overflow-hidden rounded-xl border bg-card">
                 <div className="space-y-3 border-b p-4">
                   <div className="flex flex-wrap items-end justify-between gap-3">
@@ -183,7 +191,11 @@ function CourrielsContent() {
                       variant={composing ? 'secondary' : 'default'}
                       size="sm"
                       className="w-full"
-                      onClick={() => setComposing((v) => !v)}
+                      onClick={() => {
+                        setComposing((v) => !v)
+                        setSelectedThreadId(null)
+                        setDetailMobile(false)
+                      }}
                     >
                       <Plus className="size-4" />
                       {composing ? 'Annuler la rédaction' : 'Nouveau message'}
@@ -200,16 +212,7 @@ function CourrielsContent() {
                   </p>
                 </div>
 
-                {composing && (
-                  <div className="border-b p-4">
-                    <ComposeEmail
-                      replyTo={selected}
-                      onSent={() => setComposing(false)}
-                    />
-                  </div>
-                )}
-
-                <div className="max-h-[32rem] overflow-y-auto">
+                <div className={cn('max-h-[32rem] overflow-y-auto', detailMobile && 'hidden lg:block')}>
                   <ThreadList
                     threads={data?.items ?? []}
                     selectedThreadId={selectedThreadId}
@@ -234,19 +237,40 @@ function CourrielsContent() {
                 </div>
               </section>
 
-              <section className="min-h-[32rem] overflow-hidden rounded-xl border bg-card">
-                <ThreadDetail gmailThreadId={selectedThreadId} aiAvailable={aiAvailable} />
-
-                {selected && threadActions.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2 border-t px-4 py-2">
-                    {threadActions.map((action) => (
-                      <ThreadActionButton
-                        key={action.key}
-                        action={action}
-                        gmailThreadId={selected.gmailThreadId}
-                      />
-                    ))}
+              <section
+                className={cn(
+                  'min-h-[32rem] overflow-hidden rounded-xl border bg-card',
+                  // En petit écran : une seule vue à la fois. Le composeur du nouveau
+                  // message prime sur le fil, sinon il faudrait faire défiler pour y accéder.
+                  !composing && !detailMobile && 'hidden lg:block',
+                )}
+              >
+                {composing ? (
+                  <div className="p-4" data-testid="composeur-nouveau">
+                    <MessageComposer
+                      mode={nouveauMode}
+                      aiAvailable={aiAvailable}
+                      availableModes={[]}
+                      onSent={() => setComposing(false)}
+                      onCancel={() => setComposing(false)}
+                    />
                   </div>
+                ) : (
+                  <>
+                    <ThreadDetail gmailThreadId={selectedThreadId} aiAvailable={aiAvailable} />
+
+                    {selected && threadActions.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 border-t px-4 py-2">
+                        {threadActions.map((action) => (
+                          <ThreadActionButton
+                            key={action.key}
+                            action={action}
+                            gmailThreadId={selected.gmailThreadId}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </section>
             </div>

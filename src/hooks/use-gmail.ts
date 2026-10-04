@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 import type {
   AttachmentMaintenanceReport,
+  ComposeMode,
+  ComposePrefill,
   CreateTaskFromEmail,
   EmailAiReply,
   EmailTaskSuggestion,
@@ -318,12 +320,21 @@ export function useGmailReplies(messageId: number | null) {
   })
 }
 
+/**
+ * Génère une proposition de l'assistance pour un message de l'IMSI.
+ * <para>
+ * Le mode est transmis tel quel : « Transférer » demande une note d'accompagnement,
+ * « Répondre » et « Répondre à tous » la même chose. Le fil n'est JAMAIS transmis
+ * implicitement — seule cette demande décide de ce que le modèle voit.
+ * </para>
+ */
 export function useGenerateReply(messageId: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (instruction?: string) =>
+    mutationFn: (variables?: { instruction?: string; mode?: ComposeMode }) =>
       apiClient.post<EmailAiReply>(`/api/gmail/messages/${messageId}/replies`, {
-        instruction: instruction ?? null,
+        instruction: variables?.instruction ?? null,
+        mode: variables?.mode ?? 'Reply',
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEY })
@@ -412,7 +423,15 @@ export function useRejectReply(messageId: number) {
 // est renvoyé tel quel pour remplacer le contenu de la zone de composition. Aucun
 // enregistrement n'est créé ni modifié.
 
-export type DraftEditAction = 'Rewrite' | 'Translate'
+/**
+ * Actions d'édition acceptées par l'endpoint d'édition IA.
+ * <para>
+ * « Generate » n'édite pas un texte : il en propose un à partir de la seule consigne, ce
+ * qui est indispensable à la création d'un message neuf, où la zone de rédaction est
+ * vide par définition.
+ * </para>
+ */
+export type DraftEditAction = 'Rewrite' | 'Translate' | 'Generate'
 export type TranslateLanguage = 'FR' | 'EN' | 'AR'
 
 export type EditDraftPayload = {
@@ -451,7 +470,22 @@ export type ComposeEmailPayload = {
   bodyText?: string | null
   bodyHtml?: string | null
   attachments?: ComposeAttachment[] | null
-  inReplyTo?: string | null
+  /**
+   * Mode de composition. Chaîne et non nombre : le serveur refuse une valeur inconnue,
+   * et un mode lisible dans le journal vaut mieux qu'un « 2 ».
+   */
+  mode?: ComposeMode
+  /**
+   * Message de référence, identifiant IMS. Hors mode « nouveau », il est obligatoire :
+   * le serveur en tire le fil et l'en-tête In-Reply-To, que le client n'a jamais le
+   * droit de fournir lui-même.
+   */
+  replyToMessageId?: number | null
+  /**
+   * Proposition de l'assistance à l'origine du texte. Renseigné, l'envoi referme cette
+   * trace en y copiant le texte réellement expédié ; absent, rien n'est écrit en base.
+   */
+  aiReplyId?: number | null
 }
 
 export type ComposeEmailResult = {
@@ -459,6 +493,29 @@ export type ComposeEmailResult = {
   gmailThreadId: string
   attachmentCount: number
   totalBytes: number
+}
+
+/**
+ * Préremplissage du composeur, calculé par le serveur.
+ * <para>
+ * Le client ne lit ni les participants ni les en-têtes d'objet : la décision du serveur
+ * ne peut pas dépendre de ce que le navigateur a su lire. L'appel est sans danger et
+ * peut donc être répété.
+ * </para>
+ */
+export function useComposePrefill(messageId: number | null, mode: ComposeMode) {
+  return useQuery<ComposePrefill>({
+    queryKey: [...KEY, 'compose-prefill', messageId, mode],
+    queryFn: () =>
+      apiClient.get<ComposePrefill>(
+        `/api/gmail/compose/prefill?messageId=${messageId}&mode=${mode}`,
+      ),
+    enabled: messageId != null && messageId > 0 && mode !== 'New',
+    // Un nouveau fil de discussion ne doit pas réutiliser le préremplissage précédent :
+    // c'est ce qui ferait apparaître la citation d'un autre message.
+    staleTime: 0,
+    gcTime: 0,
+  })
 }
 
 export function useComposeEmail() {

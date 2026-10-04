@@ -95,6 +95,46 @@ export type GmailThreadDetail = {
   messages: GmailMessageDetail[]
 }
 
+/**
+ * Modes de composition. Les quatre passent par le MÊME composant et la MÊME barre
+ * d'outils : aucun mode ne possède d'action qui lui soit propre.
+ * <para>
+ * Les valeurs sont les noms exacts attendus par le serveur, qui les refuse s'il ne
+ * reconnaît pas le mode — une faute de frappe ne doit pas transformer une réponse en
+ * message détaché du fil.
+ * </para>
+ */
+export type ComposeMode = 'New' | 'Reply' | 'ReplyAll' | 'Forward'
+
+export const COMPOSE_MODES: readonly ComposeMode[] = ['New', 'Reply', 'ReplyAll', 'Forward']
+
+/** Libellés d'interface, dans l'ordre d'affichage. */
+export const COMPOSE_MODE_LABELS: Record<ComposeMode, string> = {
+  New: 'Nouveau message',
+  Reply: 'Répondre',
+  ReplyAll: 'Répondre à tous',
+  Forward: 'Transférer',
+}
+
+/**
+ * Préremplissage calculé par le serveur.
+ * <para>
+ * `bodyText` est la zone de rédaction, VIDE : la citation est renvoyée à part dans
+ * `quotedText` et n'entre jamais dans le champ modifiable. Sinon « Reformuler » ou
+ * « Traduire » réécriraient l'adversaire au lieu du message.
+ * </para>
+ */
+export type ComposePrefill = {
+  mode: ComposeMode
+  replyToMessageId: number
+  to: string[]
+  cc: string[]
+  subject: string
+  bodyText: string
+  quotedText: string
+  aiReplyId?: number | null
+}
+
 /** Langues de traduction autorisées par l'endpoint d'édition IA (liste fermée). */
 export const TRANSLATE_LANGUAGES = [
   { code: 'FR', label: 'Français' },
@@ -184,6 +224,14 @@ export type EmailAiReply = {
   generatedAt: string
   sentAt?: string | null
   gmailDraftId?: string | null
+  /** Objet réellement parti, renseigné seulement après un envoi réussi. */
+  sentSubject?: string | null
+  /**
+   * Texte réellement parti. DistINCT de `body` : entre la génération et l'envoi, le
+   * texte a été relu, corrigé, reformulé ou traduit. C'est cette version qu'il faut
+   * garder pour vérifier ce qui est réellement arrivé au destinataire.
+   */
+  sentBody?: string | null
 }
 
 /** Libellés + couleurs des statuts de brouillon de réponse. */
