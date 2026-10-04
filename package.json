@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:courriels": "playwright test e2e/lot-b-composeur.spec.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
