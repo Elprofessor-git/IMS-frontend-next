@@ -14,4 +14,10 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   expect: { timeout: 15_000 },
+  webServer: {
+    command: 'pnpm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: true,
+    timeout: 120_000,
+  },
 })
