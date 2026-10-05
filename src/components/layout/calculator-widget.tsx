@@ -267,6 +267,7 @@ export function CalculatorWidget() {
       {isOpen && (
         <div
           ref={panelRef}
+          data-calculator-panel=""
           className="fixed z-50 w-[calc(100vw-2rem)] max-w-xs overflow-hidden rounded-xl border bg-card shadow-2xl sm:max-w-sm"
           style={{
             left: `${panelPos.x}px`,
@@ -274,10 +275,13 @@ export function CalculatorWidget() {
             touchAction: 'none',
           }}
           onPointerDown={(e) => {
-            // Only drag from handle
-            if ((e.target as HTMLElement).closest('[data-drag-handle]')) {
-              onPointerDown('panel', e)
-            }
+            // Le panneau ne se deplace que par sa barre de titre. Le bouton de fermeture
+            // vit DANS cette barre : sans cette exclusion, le `setPointerCapture` du
+            // panneau rerouterait le `click` vers le panneau et la fermeture ne
+            // fonctionnerait plus.
+            const cible = e.target as HTMLElement
+            if (!cible.closest('[data-drag-handle]') || cible.closest('button')) return
+            onPointerDown('panel', e)
           }}
           onPointerMove={onPointerMove}
           onPointerUp={(e) => onPointerUp(e, 'panel')}
