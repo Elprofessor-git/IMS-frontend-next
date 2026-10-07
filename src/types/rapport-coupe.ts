@@ -39,7 +39,7 @@ export type RapportCoupeTissu = {
   laize: number | null
   metrageAnnonce: number
   quantiteCoupee: number
-  consoReelle: number
+  consoNominale: number
   metrageReelle: number
   stockRestant: number
 }

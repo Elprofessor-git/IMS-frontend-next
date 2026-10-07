@@ -167,7 +167,7 @@ export function RapportCoupeSection({ commandeId }: { commandeId: number }) {
                   <TableCell className="text-right font-mono">{formatM(t.laize)}</TableCell>
                   <TableCell className="text-right font-mono">{formatM(t.metrageAnnonce)}</TableCell>
                   <TableCell className="text-right font-mono">{t.quantiteCoupee}</TableCell>
-                  <TableCell className="text-right font-mono">{formatM(t.consoReelle)}</TableCell>
+                  <TableCell className="text-right font-mono">{formatM(t.consoNominale)}</TableCell>
                   <TableCell className="text-right font-mono">{formatM(t.metrageReelle)}</TableCell>
                   <TableCell className="text-right">
                     <span className={`font-mono ${t.stockRestant < 0 ? 'font-semibold text-red-600' : ''}`}>
