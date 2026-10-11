@@ -19,7 +19,17 @@ type Taille = { id: number; index: number; libelle: string; quantiteDemandee: nu
 type Plan = { id: number; index: number; libelle: string | null; plis: number; matelasId: null; matelasNumero: null; verrouille: boolean; occurrences: { taille: string; occurrences: number }[] }
 type Matiere = { id: number; designation: string; laize: number; consoClient: number; consoReelle: number | null; ecartConso: number | null; retraitPourcentage: number; metresRecus: number; notes: null; utilises: number; retrait: number; stockRestant: number; alerte: boolean }
 
-type Etat = { tailles: Taille[]; plans: Plan[]; matieres: Matiere[]; prochainPlan: number; prochainMatiere: number }
+type Etat = {
+  tailles: Taille[]
+  plans: Plan[]
+  matieres: Matiere[]
+  matelasRattaches: MatelasOrphelin[]
+  matelasOrphelins: MatelasOrphelin[]
+  prochainPlan: number
+  prochainMatiere: number
+}
+
+type MatelasOrphelin = { matelasId: number; numeroMatelas: string; dateMatelas: string; piecePliage: number; planifie: number; coupeReelle: number }
 
 function etatInitial(): Etat {
   return {
@@ -38,6 +48,10 @@ function etatInitial(): Etat {
         id: 20, designation: 'Tissu jean', laize: 150, consoClient: 1, consoReelle: null, ecartConso: null,
         retraitPourcentage: 0, metresRecus: 5, notes: null, utilises: 10, retrait: 0, stockRestant: -5, alerte: true,
       },
+    ],
+    matelasRattaches: [],
+    matelasOrphelins: [
+      { matelasId: 30, numeroMatelas: 'MT-7', dateMatelas: '2026-09-01T12:00:00Z', piecePliage: 60, planifie: 48, coupeReelle: 0 },
     ],
     prochainPlan: 11,
     prochainMatiere: 21,
@@ -130,6 +144,40 @@ async function ouvrir(page: Page, etat: Etat, verrouille = false) {
     if (chemin === '/api/OrdreCoupe/1/Preremplir') {
       return json(ordreComplet(etat, verrouille))
     }
+    if (chemin === '/api/OrdreCoupe/1/matelas-orphelins' || chemin === '/api/OrdreCoupe/commande/1/matelas-orphelins') {
+      return json(etat.matelasOrphelins)
+    }
+    if (chemin === '/api/OrdreCoupe/1/matelas' && route.request().method() === 'GET') {
+      return json(etat.matelasRattaches)
+    }
+    if (chemin === '/api/OrdreCoupe/1/matelas' && route.request().method() === 'POST') {
+      const corps = route.request().postDataJSON() as { matelasId: number }
+      const idx = etat.matelasOrphelins.findIndex((m) => m.matelasId === corps.matelasId)
+      if (idx >= 0) etat.matelasRattaches.push(etat.matelasOrphelins.splice(idx, 1)[0])
+      return json({ message: 'Matelas rattaché à l\'ordre de coupe' })
+    }
+    const detache = chemin.match(/^\/api\/OrdreCoupe\/1\/matelas\/(\d+)$/)
+    if (detache && route.request().method() === 'DELETE') {
+      const idx = etat.matelasRattaches.findIndex((m) => m.matelasId === Number(detache[1]))
+      if (idx >= 0) etat.matelasOrphelins.push(etat.matelasRattaches.splice(idx, 1)[0])
+      return json({ message: 'Matelas détaché de l\'ordre de coupe' })
+    }
+    if (chemin === '/api/OrdreCoupe/1/Export') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers: { 'Content-Disposition': 'attachment; filename="OrdreDeCoupe_CMD-001.xlsx"' },
+        body: Buffer.from('PK\u0003\u0004fake-xlsx'),
+      })
+    }
+    if (chemin === '/api/OrdreCoupe/1/ExportPdf') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        headers: { 'Content-Disposition': 'attachment; filename="OrdreDeCoupe_CMD-001.pdf"' },
+        body: Buffer.from('%PDF-1.4 fake'),
+      })
+    }
     return json([])
   })
   await page.goto('/coupe/1/ordre-de-coupe', { waitUntil: 'domcontentloaded' })
@@ -188,4 +236,35 @@ test('un ordre figé après coupe bloque la saisie de chaque cellule', async ({ 
   await expect(page.getByRole('button', { name: /Ajouter un plan/ })).toBeDisabled()
   await expect(page.getByRole('button', { name: /Ajouter la matière/ })).toBeDisabled()
   await expect(page.getByLabel('Désignation Tissu jean')).toBeDisabled()
+})
+
+test('les boutons Exporter (Excel) et Imprimer (PDF) téléchargent les exports de l\'ordre', async ({ page }) => {
+  await ouvrir(page, etatInitial())
+
+  const excelAtelecharger = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Exporter \(Excel\)/ }).click()
+  const excel = await excelAtelecharger
+  await expect.poll(() => excel.suggestedFilename()).toBe('OrdreDeCoupe_CMD-001.xlsx')
+
+  const pdfATelecharger = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Imprimer \(PDF\)/ }).click()
+  const pdf = await pdfATelecharger
+  await expect.poll(() => pdf.suggestedFilename()).toBe('OrdreDeCoupe_CMD-001.pdf')
+})
+
+test('le dialogue Matelas liste les orphelins et permet de rattacher puis détacher', async ({ page }) => {
+  await ouvrir(page, etatInitial())
+
+  await page.getByRole('button', { name: 'Matelas', exact: true }).click()
+
+  await expect(page.getByText('Matelas orphelins de la commande (1)')).toBeVisible()
+  await expect(page.getByText('Rattachés à cet ordre (0)')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Rattacher le matelas MT-7' }).click()
+  await expect(page.getByText('Rattachés à cet ordre (1)')).toBeVisible()
+  await expect(page.getByText('Matelas orphelins de la commande (0)')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Détacher le matelas MT-7' }).click()
+  await expect(page.getByText('Rattachés à cet ordre (0)')).toBeVisible()
+  await expect(page.getByText('Matelas orphelins de la commande (1)')).toBeVisible()
 })
