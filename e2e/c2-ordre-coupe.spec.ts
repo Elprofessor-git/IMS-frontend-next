@@ -56,7 +56,7 @@ function restesApresPlan(etat: Etat, i: number): { taille: string; valeur: numbe
   })
 }
 
-function ordreComplet(etat: Etat) {
+function ordreComplet(etat: Etat, verrouille = false) {
   let totalPlanifie = 0
   etat.plans.forEach((p) => {
     totalPlanifie += p.plis * p.occurrences.reduce((s, o) => s + o.occurrences, 0)
@@ -77,7 +77,7 @@ function ordreComplet(etat: Etat) {
     notes: null,
     dateCreation: new Date().toISOString(),
     dateMiseAJour: null,
-    verrouille: false,
+    verrouille,
     totalCommande,
     totalPlanifie,
     surplus: Math.max(0, ecart),
@@ -89,7 +89,7 @@ function ordreComplet(etat: Etat) {
   }
 }
 
-async function ouvrir(page: Page, etat: Etat) {
+async function ouvrir(page: Page, etat: Etat, verrouille = false) {
   await page.context().addCookies([{ name: 'sgt_token', value: JETON, url: 'http://localhost:3000' }])
   await page.route('**/api/**', async (route: Route) => {
     const chemin = new URL(route.request().url()).pathname.replace(/^\/api\/proxy/, '')
@@ -106,11 +106,11 @@ async function ouvrir(page: Page, etat: Etat) {
       return json([{ id: 1, nom: 'Atelier interne', typeChaine: 'Confection', estSousTraitant: false, estActif: true, nombreEnvois: 0, nombreExports: 0 }])
     }
     if (chemin === '/api/OrdreCoupe/commande/1') {
-      const o = ordreComplet(etat)
-      return json([{ id: o.id, commandeId: 1, modele: o.modele, couleur: o.couleur, chaineProductionNom: null, nbTailles: o.tailles.length, nbPlans: o.plans.length, nbMatieres: o.matieres.length, totalCommande: o.totalCommande, totalPlanifie: o.totalPlanifie, alerteManque: o.alerteManque, verrouille: false, dateCreation: o.dateCreation }])
+      const o = ordreComplet(etat, verrouille)
+      return json([{ id: o.id, commandeId: 1, modele: o.modele, couleur: o.couleur, chaineProductionNom: null, nbTailles: o.tailles.length, nbPlans: o.plans.length, nbMatieres: o.matieres.length, totalCommande: o.totalCommande, totalPlanifie: o.totalPlanifie, alerteManque: o.alerteManque, verrouille, dateCreation: o.dateCreation }])
     }
     if (chemin === '/api/OrdreCoupe/1') {
-      return json(ordreComplet(etat))
+      return json(ordreComplet(etat, verrouille))
     }
     if (chemin === '/api/OrdreCoupe/1/plans' && route.request().method() === 'POST') {
       const corps = route.request().postDataJSON() as { plis: number; occurrences: { taille: string; occurrences: number }[] }
@@ -128,7 +128,7 @@ async function ouvrir(page: Page, etat: Etat) {
       return json({ message: 'Plan mis à jour' })
     }
     if (chemin === '/api/OrdreCoupe/1/Preremplir') {
-      return json(ordreComplet(etat))
+      return json(ordreComplet(etat, verrouille))
     }
     return json([])
   })
@@ -174,4 +174,18 @@ test('l\'alerte tissu apparaît quand le stock restant est négatif', async ({ p
   const stock = ligneMatiere.locator('td.text-red-600')
   await expect(stock).toContainText('-5')
   await expect(stock.locator('svg')).toBeVisible()
+})
+
+test('un ordre figé après coupe bloque la saisie de chaque cellule', async ({ page }) => {
+  await ouvrir(page, etatInitial(), true)
+
+  await expect(page.getByText(/figé après coupe/)).toBeVisible()
+  await expect(page.getByLabel('Libellé de la taille M')).toBeDisabled()
+  await expect(page.getByLabel('Quantité demandée M')).toBeDisabled()
+  await expect(page.getByLabel('Occurrences M plan 1')).toBeDisabled()
+  await expect(page.getByRole('button', { name: /Enregistrer l'en-tête/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /Préremplir/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /Ajouter un plan/ })).toBeDisabled()
+  await expect(page.getByRole('button', { name: /Ajouter la matière/ })).toBeDisabled()
+  await expect(page.getByLabel('Désignation Tissu jean')).toBeDisabled()
 })
