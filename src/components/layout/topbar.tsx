@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/use-auth'
 import { MobileSidebar } from '@/components/layout/sidebar'
 import { NotificationBell } from '@/components/layout/notification-bell'
+import { DiscussionBell } from '@/components/layout/discussion-bell'
 
 export function Topbar() {
   const router = useRouter()
@@ -43,6 +44,7 @@ export function Topbar() {
 
       {/* Zone droite : notifications + compte utilisateur + déconnexion */}
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <DiscussionBell />
         <NotificationBell />
         <Link
           href="/mon-compte"

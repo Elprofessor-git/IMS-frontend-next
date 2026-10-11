@@ -51,3 +51,23 @@ export function useCanAssignerTaches(): boolean {
   if (!data || data.length === 0) return false
   return data[0].peutAssignerTaches ?? false
 }
+
+/**
+ * Droit d'utiliser la messagerie interne (module Discussion). Fermé par défaut
+ * tant que la réponse n'est pas chargée : on ne sonde pas /sync sans le drapeau.
+ */
+export function useCanUtiliserDiscussion(): boolean {
+  const { data } = useMyPermissions()
+  if (!data || data.length === 0) return false
+  return data[0].peutUtiliserDiscussion ?? false
+}
+
+/**
+ * Modération des canaux PUBLICS. Fermé par défaut : n'ouvre que la création d'un
+ * canal public, jamais l'accès à la page (régi par le module « discussion »).
+ */
+export function useCanGererDiscussion(): boolean {
+  const { data } = useMyPermissions()
+  if (!data || data.length === 0) return false
+  return data[0].peutGererDiscussion ?? false
+}

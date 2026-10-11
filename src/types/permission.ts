@@ -13,4 +13,15 @@ export type PermissionEntry = {
    * lecture pour rester tolérant à un backend plus ancien.
    */
   peutAssignerTaches?: boolean
+  /**
+   * Module Discussion (E1) : droit d'utiliser la messagerie interne. Également
+   * exposé comme module « discussion » (canAccess) ; la capacité transversale est
+   * reprise sur chaque entrée pour les hooks dédiés.
+   */
+  peutUtiliserDiscussion?: boolean
+  /**
+   * Module Discussion (E1) : modération des canaux PUBLICS uniquement (création,
+   * ajout de membres). Ne donne aucun droit sur les groupes ni les messages d'autrui.
+   */
+  peutGererDiscussion?: boolean
 }
