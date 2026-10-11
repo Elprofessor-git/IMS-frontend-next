@@ -4,11 +4,12 @@ import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks, Paperclip, Scissors, Boxes } from 'lucide-react'
+import { Plus, Trash2, AlertTriangle, CheckCircle2, Info, Clock, LoaderCircle, CheckCheck, XCircle, Layers, ListChecks, Paperclip, Scissors, Boxes, MessagesSquare } from 'lucide-react'
 import { DocumentSection } from '@/components/documents/document-section'
 import { RapportCoupeSection } from '@/components/rapport-coupe/rapport-coupe-section'
 import { FournituresSection } from '@/components/fournitures/fournitures-section'
 import { OrdresFabricationSection } from '@/components/ordres-fabrication/ordres-fabrication-section'
+import { DiscussionContextuelle } from '@/components/discussion/discussion-contextuelle'
 import { useGetOrdresFabrication } from '@/hooks/use-ordres-fabrication'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -538,6 +539,10 @@ export default function CommandeDetailPage({
               Fournitures
             </TabsTrigger>
           )}
+          <TabsTrigger value="discussion">
+            <MessagesSquare className="size-4" />
+            Discussion
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}
@@ -1184,6 +1189,15 @@ export default function CommandeDetailPage({
         {/* ── Onglet Fournitures ── */}
         <TabsContent value="fournitures">
           <FournituresSection commandeId={commandeId} />
+        </TabsContent>
+
+        {/* ── Onglet Discussion (E3) ── */}
+        <TabsContent value="discussion">
+          <DiscussionContextuelle
+            segment="commande"
+            objetId={commandeId}
+            className="h-[70vh] min-h-[28rem]"
+          />
         </TabsContent>
       </Tabs>
 

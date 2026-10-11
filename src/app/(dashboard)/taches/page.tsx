@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react'
-import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap, Clock, LoaderCircle, Layers, UserCheck, Lock } from 'lucide-react'
+import { Plus, Play, AlertTriangle, RotateCcw, CheckCircle, XCircle, BarChart3, Zap, Clock, LoaderCircle, Layers, UserCheck, Lock, MessagesSquare } from 'lucide-react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ import { PageHeader } from '@/components/shared/page-header'
 import { cn } from '@/lib/utils'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
+import { DiscussionContextuelle } from '@/components/discussion/discussion-contextuelle'
 import {
   useGetTaches,
   useGetTachesDashboard,
@@ -584,7 +585,25 @@ function AssignerDialog({ tache, onClose }: { tache: TacheProduction; onClose: (
 
 // ── Tache Card ─────────────────────────────────────────────────────────────────
 
-type DialogType = 'commencer' | 'avancement' | 'bloquer' | 'terminer' | 'assigner'
+type DialogType = 'commencer' | 'avancement' | 'bloquer' | 'terminer' | 'assigner' | 'discussion'
+
+function DiscussionTacheDialog({ tache, onClose }: { tache: TacheProduction; onClose: () => void }) {
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MessagesSquare className="size-4" /> Discussion — {tache.titre}
+          </DialogTitle>
+        </DialogHeader>
+        <DiscussionContextuelle segment="tache" objetId={tache.id} className="h-[60vh]" />
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Fermer</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function TacheCard({
   tache,
@@ -764,6 +783,17 @@ function TacheCard({
           </div>
         </PermissionGate>
       )}
+
+      {/* Discussion rattachée à la tâche (E3) — lecture via module `taches` */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 text-xs text-muted-foreground"
+        data-testid={`discussion-tache-${tache.id}`}
+        onClick={() => onOpenDialog('discussion', tache)}
+      >
+        <MessagesSquare className="size-3" /> Discussion
+      </Button>
     </div>
   )
 }
@@ -1107,6 +1137,13 @@ export default function TachesPage() {
       )}
       {activeDialog?.type === 'assigner' && (
         <AssignerDialog
+          key={activeDialog.tache.id}
+          tache={activeDialog.tache}
+          onClose={handleCloseDialog}
+        />
+      )}
+      {activeDialog?.type === 'discussion' && (
+        <DiscussionTacheDialog
           key={activeDialog.tache.id}
           tache={activeDialog.tache}
           onClose={handleCloseDialog}

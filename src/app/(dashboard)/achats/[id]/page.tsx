@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck, AlertTriangle, Wrench } from 'lucide-react'
+import { Plus, Info, ListOrdered, FileText, Pencil, Trash2, PackageCheck, AlertTriangle, Wrench, MessagesSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -41,6 +41,7 @@ import {
 } from '@/components/forms/type-paiement-select'
 import { DestinationScopeFields } from '@/components/forms/destination-scope'
 import { DocumentSection } from '@/components/documents/document-section'
+import { DiscussionContextuelle } from '@/components/discussion/discussion-contextuelle'
 import {
   useGetAchat,
   useUpdateAchat,
@@ -819,6 +820,10 @@ export default function AchatDetailPage({
             <FileText className="size-4" />
             Documents
           </TabsTrigger>
+          <TabsTrigger value="discussion">
+            <MessagesSquare className="size-4" />
+            Discussion
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Onglet Informations ── */}
@@ -1162,6 +1167,15 @@ export default function AchatDetailPage({
         {/* ── Onglet Documents ── */}
         <TabsContent value="documents">
           <DocumentSection scope="achat" parentId={achatId} />
+        </TabsContent>
+
+        {/* ── Onglet Discussion (E3) ── */}
+        <TabsContent value="discussion">
+          <DiscussionContextuelle
+            segment="achat"
+            objetId={achatId}
+            className="h-[70vh] min-h-[28rem]"
+          />
         </TabsContent>
       </Tabs>
 

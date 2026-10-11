@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/empty-state'
 import { Composer } from '@/components/discussion/composer'
+import { CarteReference } from '@/components/discussion/carte-reference'
 import {
   fusionnerMessages,
   useDiscussionFlux,
@@ -145,6 +146,14 @@ function LigneMessage({
           </div>
         )}
 
+        {!edition && (message.references?.length ?? 0) > 0 && (
+          <div className={cn('mt-1.5 flex flex-col gap-1.5', estMoi && 'items-end')}>
+            {message.references!.map((reference) => (
+              <CarteReference key={reference.reference} reference={reference} />
+            ))}
+          </div>
+        )}
+
         {estMoi && !edition && !enCours && (
           <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
             <button
@@ -188,7 +197,13 @@ export function ConversationView({
   moiNom: string
   onRetour?: () => void
 }) {
-  const historyQuery = useDiscussionHistory(conversation.id)
+  // Conversation contextuelle : /sync l'exclut (l'accès suit le module de l'objet),
+  // l'historique est donc repollé tant que la fiche est ouverte. Les conversations
+  // libres restent poussées par le polling global.
+  const historyQuery = useDiscussionHistory(
+    conversation.id,
+    conversation.type === 'Contexte' ? 5_000 : false,
+  )
   const flux = useDiscussionFlux(conversation.id)
   const anterieurs = useMessagesAnterieurs()
   const { mutate: marquerLu } = useMarquerLu(conversation.id)

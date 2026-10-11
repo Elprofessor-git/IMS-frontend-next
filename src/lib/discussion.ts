@@ -1,4 +1,4 @@
-import type { ConversationDiscussion } from '@/types/discussion'
+import type { ConversationDiscussion, ReferenceDiscussion } from '@/types/discussion'
 
 /** Initiales (max 2) pour l'avatar d'une conversation ou d'un message. */
 export function initiales(nom: string): string {
@@ -24,7 +24,26 @@ export function nomConversation(
     const autre = conversation.membres.find((m) => m.userId !== moiUserId)
     return autre?.nomAffichage ?? 'Conversation privée'
   }
+  if (conversation.type === 'Contexte') return 'Discussion rattachée'
   return conversation.type === 'Canal' ? 'Canal sans nom' : 'Groupe sans nom'
+}
+
+/**
+ * Route de la fiche d'un objet référencé (#CMD-…). Null quand l'objet n'a pas de
+ * fiche dédiée (un OF se consulte depuis sa commande) : la carte reste alors
+ * purement informative, jamais un lien mort.
+ */
+export function lienReference(reference: ReferenceDiscussion): string | null {
+  switch (reference.type) {
+    case 'Commande':
+      return `/commandes/${reference.id}`
+    case 'Achat':
+      return `/achats/${reference.id}`
+    case 'TacheProduction':
+      return `/taches?taskId=${reference.id}`
+    default:
+      return null
+  }
 }
 
 /** Ligne secondaire de la liste : nature de la conversation et participants. */
@@ -54,6 +73,30 @@ export function heureCourte(iso: string | null): string {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+/** Date courte (jour/mois/année) d'un objet référencé, ou chaîne vide. */
+export function dateObjet(iso: string | null): string {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+/** Montant + devise d'une carte de référence, ou null si le lecteur n'y a pas droit. */
+export function montantReference(
+  reference: ReferenceDiscussion,
+): string | null {
+  if (reference.montant == null) return null
+  const valeur = reference.montant.toLocaleString('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })
+  return reference.devise ? `${valeur} ${reference.devise}` : valeur
 }
 
 /** Horodatage complet d'un message. */

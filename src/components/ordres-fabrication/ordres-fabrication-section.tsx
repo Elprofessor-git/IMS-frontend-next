@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Factory, Plus, Trash2, Pencil, Boxes, Tags, Save, Layers } from 'lucide-react'
+import { Factory, Plus, Trash2, Pencil, Boxes, Tags, Save, Layers, MessagesSquare } from 'lucide-react'
 import {
   useGetOrdresFabrication,
   useGetOrdreFabrication,
@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/select'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { PermissionGate } from '@/components/auth/permission-gate'
+import { DiscussionContextuelle } from '@/components/discussion/discussion-contextuelle'
 import {
   Dialog,
   DialogContent,
@@ -247,6 +248,9 @@ function DetailDialog({
   onClose: () => void
 }) {
   const { data: detail } = useGetOrdreFabrication(ordreId, ordreId > 0)
+  // La discussion de l'OF est ouverte À LA DEMANDE : afficher ou éditer l'OF ne doit
+  // pas créer une conversation vide à chaque coup d'œil.
+  const [discussion, setDiscussion] = useState(false)
 
   if (!detail) {
     return (
@@ -279,6 +283,21 @@ function DetailDialog({
           <RepartitionEditor detail={detail} />
           <MatelasCard detail={detail} />
           <EtiquettesCard commandeId={commandeId} detail={detail} />
+
+          <div className="space-y-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setDiscussion((v) => !v)}
+            >
+              <MessagesSquare className="size-3.5" />
+              {discussion ? 'Masquer la discussion' : 'Afficher la discussion'}
+            </Button>
+            {discussion && (
+              <DiscussionContextuelle segment="of" objetId={detail.id} className="h-80" />
+            )}
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Fermer</Button>

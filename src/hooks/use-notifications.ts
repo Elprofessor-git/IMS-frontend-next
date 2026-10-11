@@ -79,5 +79,10 @@ export function getNotificationHref(notification: NotificationItem): string {
   if (notification.gmailMessageId != null) {
     return `/courriels?messageId=${notification.gmailMessageId}`
   }
+  // Mention/réponse dans une discussion : la notification ne porte que l'id du message
+  // (jamais la conversation), on route donc vers la page Discussion globale.
+  if (notification.messageDiscussionId != null) {
+    return '/discussion'
+  }
   return '/planning'
 }

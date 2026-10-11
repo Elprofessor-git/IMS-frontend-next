@@ -9,6 +9,8 @@ import {
   Inbox,
   ListChecks,
   Mail,
+  MessageSquareReply,
+  MessagesSquare,
   UserMinus,
   type LucideIcon,
 } from 'lucide-react'
@@ -32,6 +34,8 @@ const ICONES: Record<NotificationType, { icon: LucideIcon; libelle: string }> = 
   TacheAssignee: { icon: ListChecks, libelle: 'Tâche assignée' },
   TacheDesassignee: { icon: UserMinus, libelle: 'Tâche retirée' },
   TacheDepuisEmail: { icon: Mail, libelle: 'Tâche issue d’un email' },
+  MentionDiscussion: { icon: MessagesSquare, libelle: 'Mention dans une discussion' },
+  ReponseDiscussion: { icon: MessageSquareReply, libelle: 'Réponse à une discussion' },
 }
 
 function NotificationRow({

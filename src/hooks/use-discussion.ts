@@ -15,6 +15,8 @@ import type {
   ConversationDiscussion,
   CreerConversationPayload,
   MessageDiscussion,
+  ResultatReference,
+  SegmentContexte,
   SyncDiscussion,
   UtilisateurDiscussion,
 } from '@/types/discussion'
@@ -207,8 +209,18 @@ export function useDiscussionFlux(conversationId: number | null): MessageDiscuss
 
 // ── Historique paginé ───────────────────────────────────────────────────────
 
-/** Page la plus récente (30 messages) d'une conversation. */
-export function useDiscussionHistory(conversationId: number | null) {
+/**
+ * Page la plus récente (30 messages) d'une conversation.
+ *
+ * `refetchInterval` est requis pour les conversations CONTEXTUELLES (E3) : elles
+ * sont volontairement exclues de /sync (l'accès suit le module de l'objet, pas
+ * l'appartenance), donc l'historique est leur seul transport — on le repolle tant
+ * que la fiche est ouverte. Les conversations libres, elles, sont poussées par /sync.
+ */
+export function useDiscussionHistory(
+  conversationId: number | null,
+  refetchInterval: number | false = false,
+) {
   return useQuery<MessageDiscussion[]>({
     queryKey: [...KEY, 'messages', conversationId],
     queryFn: () =>
@@ -216,6 +228,52 @@ export function useDiscussionHistory(conversationId: number | null) {
         `${DISCUSSION_ROUTE}/${conversationId}/messages`,
       ),
     enabled: conversationId != null,
+    refetchInterval,
+  })
+}
+
+// ── Conversations contextuelles (E3) ────────────────────────────────────────
+
+/**
+ * Ouvre (ou crée) la discussion rattachée à un objet métier. L'endpoint est
+ * idempotent : le second appel renvoie la même conversation. POST volontaire malgré
+ * la sémantique de lecture — c'est une création à la demande —, et la requête est
+ * mise en cache par clé pour ne pas re-créer à chaque rendu.
+ */
+export function useDiscussionContexte(
+  segment: SegmentContexte,
+  objetId: number | null,
+  enabled = true,
+) {
+  return useQuery<ConversationDiscussion>({
+    queryKey: [...KEY, 'contexte', segment, objetId],
+    queryFn: () =>
+      apiClient.post<ConversationDiscussion>(
+        `${DISCUSSION_ROUTE}/contexte/${segment}/${objetId}`,
+      ),
+    enabled: enabled && objetId != null && objetId > 0,
+    staleTime: Infinity,
+    retry: false,
+  })
+}
+
+// ── Autocomplétion des références (E3) ──────────────────────────────────────
+
+/**
+ * Suggestions de références pour un fragment saisi après « # ». Ne renvoie que des
+ * objets ACCESSIBLES à l'utilisateur : l'autocomplétion ne révèle jamais l'existence
+ * d'un objet hors de ses permissions.
+ */
+export function useReferencesAutocomplete(terme: string, enabled: boolean) {
+  const q = terme.trim().replace(/^#/, '')
+  return useQuery<ResultatReference[]>({
+    queryKey: [...KEY, 'references', q],
+    queryFn: () =>
+      apiClient.get<ResultatReference[]>(
+        `${DISCUSSION_ROUTE}/references?q=${encodeURIComponent(q)}`,
+      ),
+    enabled: enabled && q.length > 0,
+    staleTime: 15_000,
   })
 }
 

@@ -5,8 +5,22 @@
  * le proxy renvoie, jamais à une version réécrite à la main.
  */
 
-/** Type d'une conversation, transmis EN CHAÎNE par le backend. */
-export type TypeConversation = 'Direct' | 'Groupe' | 'Canal'
+/**
+ * Type d'une conversation, transmis EN CHAÎNE par le backend. « Contexte » (E3)
+ * désigne une conversation rattachée à un objet métier : son accès suit le module
+ * de l'objet, pas l'appartenance, et son nom est le libellé de l'objet.
+ */
+export type TypeConversation = 'Direct' | 'Groupe' | 'Canal' | 'Contexte'
+
+/** Nature de l'objet auquel une discussion contextuelle (E3) est rattachée. */
+export type TypeContexte =
+  | 'Commande'
+  | 'OrdreFabrication'
+  | 'TacheProduction'
+  | 'Achat'
+
+/** Segment d'URL du contexte : commande | of | tache | achat. */
+export type SegmentContexte = 'commande' | 'of' | 'tache' | 'achat'
 
 /** Appartenance d'un utilisateur à une conversation. */
 export type MembreDiscussion = {
@@ -35,6 +49,33 @@ export type ConversationDiscussion = {
   membres: MembreDiscussion[]
 }
 
+/**
+ * Carte d'une référence métier (#CMD-123, #OF-…, #TAC-…, #ACH-…), calculée CÔTÉ
+ * SERVEUR pour le LECTEUR (E3). Un objet hors de ses permissions n'a AUCUNE carte ;
+ * `montant`, `devise` et `tiers` restent null sans droit d'écriture sur le module —
+ * le backend ne les émet jamais, même masqués.
+ */
+export type ReferenceDiscussion = {
+  type: TypeContexte
+  /** Jeton canonique inséré dans le texte, ex. « CMD-123 ». */
+  reference: string
+  id: number
+  libelle: string
+  statut: string | null
+  date: string | null
+  montant: number | null
+  devise: string | null
+  tiers: string | null
+}
+
+/** Entrée d'autocomplétion d'une référence : uniquement des objets accessibles. */
+export type ResultatReference = {
+  type: TypeContexte
+  reference: string
+  id: number
+  libelle: string
+}
+
 /** Un message de discussion : texte BRUT, jamais du HTML. */
 export type MessageDiscussion = {
   id: number
@@ -48,6 +89,8 @@ export type MessageDiscussion = {
   reponseAId: number | null
   /** Curseur de synchronisation, renouvelé par trigger à chaque écriture. */
   revision: number
+  /** Cartes des références du message, calculées pour MOI (E3). */
+  references?: ReferenceDiscussion[]
 }
 
 /** Entrée de l'annuaire Discussion (comptes actifs ET internes, sans moi). */

@@ -8,6 +8,8 @@ export type NotificationType =
   | 'TacheAssignee'
   | 'TacheDesassignee'
   | 'TacheDepuisEmail'
+  | 'MentionDiscussion'
+  | 'ReponseDiscussion'
 
 export type NotificationItem = {
   id: number
@@ -21,6 +23,9 @@ export type NotificationItem = {
   // ressource (une notification ne contourne aucune permission).
   tacheProductionId: number | null
   gmailMessageId: number | null
+  // Mention/réponse dans une discussion (E1/E3). Cible le message ; la cloche ne
+  // connaît pas la conversation, elle route donc vers la page Discussion globale.
+  messageDiscussionId: number | null
 }
 
 // Forme RÉELLE de GET /api/Notification/me : { notifications, countNonLivrees }.
