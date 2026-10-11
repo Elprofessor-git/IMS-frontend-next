@@ -914,6 +914,7 @@ function MatieresTable({ ordreId, verrouille }: { ordreId: number; verrouille: b
             <Input
               id="mat-designation"
               value={designation}
+              disabled={verrouille}
               className="h-9 w-44"
               onChange={(e) => setDesignation(e.target.value)}
             />
@@ -925,6 +926,7 @@ function MatieresTable({ ordreId, verrouille }: { ordreId: number; verrouille: b
               type="number"
               step="0.01"
               value={consoClient}
+              disabled={verrouille}
               className="h-9 w-28"
               onChange={(e) => setConsoClient(e.target.value)}
             />
@@ -936,11 +938,16 @@ function MatieresTable({ ordreId, verrouille }: { ordreId: number; verrouille: b
               type="number"
               step="0.1"
               value={metresRecus}
+              disabled={verrouille}
               className="h-9 w-28"
               onChange={(e) => setMetresRecus(e.target.value)}
             />
           </div>
-          <Button onClick={ajouterMatiere} disabled={!valide || ajouter.isPending} className="h-9">
+          <Button
+            onClick={ajouterMatiere}
+            disabled={verrouille || !valide || ajouter.isPending}
+            className="h-9"
+          >
             <Plus className="size-4" /> Ajouter la matière
           </Button>
         </div>
