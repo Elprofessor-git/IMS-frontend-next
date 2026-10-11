@@ -235,6 +235,18 @@ async function installer(page: Page, options: Options = {}) {
   return { contextesOuverts, envois }
 }
 
+/**
+ * Navigue vers la page Tâches et attend que la session soit hydratée.
+ *
+ * Sans cette attente, un clic effectué juste après `goto` peut être annulé : la
+ * résolution de `useAuth()` fait remonter la topbar (nom « Meme Moi »), ce qui
+ * remet à zéro l'état local des panneaux (cloche notif., dialogue Discussion).
+ */
+async function ouvrirTaches(page: Page) {
+  await page.goto('/taches', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('header').getByText('Meme Moi')).toBeVisible({ timeout: 15_000 })
+}
+
 test.describe('LOT 20 — Discussion contextuelle (E3)', () => {
   test.beforeEach(async ({ page }) => {
     page.on('pageerror', (e) => console.error('ERREUR DE RENDU :', e.message))
@@ -246,7 +258,7 @@ test.describe('LOT 20 — Discussion contextuelle (E3)', () => {
         message({ id: 1, contenu: 'Peux-tu confirmer les tailles ?', auteurUserId: AUTRE, auteurNom: 'Collegue Test' }),
       ],
     })
-    await page.goto('/taches', { waitUntil: 'domcontentloaded' })
+    await ouvrirTaches(page)
 
     // À LA DEMANDE : consulter la fiche ne crée aucune conversation.
     await expect(page.getByTestId('discussion-tache-7')).toBeVisible()
@@ -285,7 +297,7 @@ test.describe('LOT 20 — Discussion contextuelle (E3)', () => {
         }),
       ],
     })
-    await page.goto('/taches', { waitUntil: 'domcontentloaded' })
+    await ouvrirTaches(page)
     await page.getByTestId('discussion-tache-7').click()
 
     const carte = page.getByTestId('reference-CMD-123')
@@ -296,7 +308,7 @@ test.describe('LOT 20 — Discussion contextuelle (E3)', () => {
 
   test('sans le droit du module, la discussion de l’objet est annoncée (403)', async ({ page }) => {
     await installer(page, { contexteInterdit: true })
-    await page.goto('/taches', { waitUntil: 'domcontentloaded' })
+    await ouvrirTaches(page)
     await page.getByTestId('discussion-tache-7').click()
 
     await expect(page.getByText('Discussion non accessible')).toBeVisible({ timeout: 15_000 })
@@ -318,7 +330,7 @@ test.describe('LOT 20 — Discussion contextuelle (E3)', () => {
         },
       ],
     })
-    await page.goto('/taches', { waitUntil: 'domcontentloaded' })
+    await ouvrirTaches(page)
 
     await page.getByRole('button', { name: 'Notifications' }).click()
     const ligne = page.getByText('Collegue Test vous a mentionné dans une discussion')
