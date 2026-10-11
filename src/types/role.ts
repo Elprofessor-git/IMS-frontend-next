@@ -44,6 +44,11 @@ export type Role = {
   peutVoirCourriels: boolean
   peutGererCourriels: boolean
   peutPartagerLiens: boolean
+  // Module Discussion (E1) — capacités transversales.
+  // Présentes côté type ET côté écran : sans elles, un enregistrement de rôle
+  // depuis l'UI révoquerait silencieusement l'accès au module (PUT = remplacement).
+  peutUtiliserDiscussion: boolean
+  peutGererDiscussion: boolean
 }
 
 export type CreateRolePayload = Omit<Role, 'id' | 'estActif'>

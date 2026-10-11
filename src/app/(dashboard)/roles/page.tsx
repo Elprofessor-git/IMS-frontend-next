@@ -77,6 +77,8 @@ const roleSchema = z.object({
   peutVoirCourriels: z.boolean(),
   peutGererCourriels: z.boolean(),
   peutPartagerLiens: z.boolean(),
+  peutUtiliserDiscussion: z.boolean(),
+  peutGererDiscussion: z.boolean(),
 })
 type RoleSchema = z.infer<typeof roleSchema>
 
@@ -151,6 +153,21 @@ const PERM_TRANSVERSE = [
 ] as const
 
 /**
+ * Module Discussion (E1). Capacités transversales : elles ne portent pas sur
+ * l'accès à un module métier mais sur l'usage de la messagerie interne.
+ */
+const PERM_DISCUSSION = [
+  {
+    key: 'peutUtiliserDiscussion',
+    label: 'Utiliser la Discussion (accéder à ses conversations)',
+  },
+  {
+    key: 'peutGererDiscussion',
+    label: 'Gérer les canaux publics de la Discussion (modération)',
+  },
+] as const
+
+/**
  * Garde-fou d'exhaustivité.
  *
  * Toute permission booléenne de `Role` doit être proposée par l'écran Rôles.
@@ -177,6 +194,7 @@ type _ToutesPermissionsExposees = AssertNever<
     | (typeof PERM_LECTURE)[number]['key']
     | (typeof PERM_PORTEE)[number]['key']
     | (typeof PERM_TRANSVERSE)[number]['key']
+    | (typeof PERM_DISCUSSION)[number]['key']
     | PermAdminKey
     | 'estActif'
   >
@@ -226,6 +244,8 @@ const DEFAULT_VALUES: RoleSchema = {
   peutVoirCourriels: false,
   peutGererCourriels: false,
   peutPartagerLiens: false,
+  peutUtiliserDiscussion: false,
+  peutGererDiscussion: false,
 }
 
 function roleToSchema(r: Role): RoleSchema {
@@ -273,6 +293,8 @@ function roleToSchema(r: Role): RoleSchema {
     peutVoirCourriels: r.peutVoirCourriels,
     peutGererCourriels: r.peutGererCourriels,
     peutPartagerLiens: r.peutPartagerLiens,
+    peutUtiliserDiscussion: r.peutUtiliserDiscussion,
+    peutGererDiscussion: r.peutGererDiscussion,
   }
 }
 
@@ -421,6 +443,28 @@ function RoleDialog({
                 </p>
                 <div className="grid grid-cols-1 gap-2">
                   {PERM_TRANSVERSE.map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={key}
+                        checked={watch(key)}
+                        onCheckedChange={(v) => setValue(key, !!v)}
+                      />
+                      <Label htmlFor={key} className="font-normal cursor-pointer">
+                        {label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Discussion</p>
+                <p className="text-xs text-muted-foreground">
+                  Messagerie interne (type Slack). « Gérer les canaux publics » n'ouvre jamais
+                  les messages privés ni les groupes privés d'autrui : l'appartenance prime.
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {PERM_DISCUSSION.map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-2">
                       <Checkbox
                         id={key}
