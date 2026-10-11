@@ -4,12 +4,15 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   AlertTriangle,
   ClipboardList,
+  FileDown,
   Layers2,
+  Link2,
   Lock,
   Plus,
   RefreshCw,
   Save,
   TriangleAlert,
+  Unlink,
 } from 'lucide-react'
 import {
   useGetOrdreCoupe,
@@ -26,8 +29,14 @@ import {
   useAjouterMatiere,
   useModifierMatiere,
   useSupprimerMatiere,
+  useGetMatelasOrphelins,
+  useGetMatelasRattaches,
+  useAttacherMatelas,
+  useDetacherMatelas,
 } from '@/hooks/use-ordre-coupe'
 import { useGetChainesProduction } from '@/hooks/use-production'
+import { downloadViaProxy } from '@/lib/download'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -63,6 +72,11 @@ import type { OrdreCoupePlan } from '@/types/ordre-coupe'
 function fmt(v: number | null | undefined) {
   if (v == null) return '—'
   return Number(v).toLocaleString('fr-FR', { maximumFractionDigits: 2 })
+}
+
+function fmtDate(iso: string) {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('fr-FR')
 }
 
 function CelluleNombre({
@@ -328,6 +342,8 @@ function FeuilleOrdre({ ordreId }: { ordreId: number }) {
     notes: '',
   })
   const [nouvelleTaille, setNouvelleTaille] = useState('')
+  const [matelasOuvert, setMatelasOuvert] = useState(false)
+  const [exportEnCours, setExportEnCours] = useState<'xlsx' | 'pdf' | null>(null)
 
   useEffect(() => {
     if (!ordre) return
@@ -391,6 +407,18 @@ function FeuilleOrdre({ ordreId }: { ordreId: number }) {
     majPlan(plan, { occurrences })
   }
 
+  const telecharger = (format: 'xlsx' | 'pdf') => {
+    setExportEnCours(format)
+    const numero = ordre.numeroCommande.replace(/[^\w\-]+/g, '_')
+    downloadViaProxy(
+      `/api/proxy/api/OrdreCoupe/${ordreId}/Export${format === 'pdf' ? 'Pdf' : ''}`,
+      format === 'pdf' ? `OrdreDeCoupe_${numero}.pdf` : `OrdreDeCoupe_${numero}.xlsx`,
+    )
+      .then(() => toast.success('Ordre de coupe téléchargé'))
+      .catch((e: Error) => toast.error(e.message ?? 'Téléchargement impossible'))
+      .finally(() => setExportEnCours(null))
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -407,12 +435,42 @@ function FeuilleOrdre({ ordreId }: { ordreId: number }) {
               size="sm"
               variant="outline"
               className="ml-auto"
+              onClick={() => setMatelasOuvert(true)}
+              disabled={verrouille}
+            >
+              <Link2 className="size-3.5" /> Matelas
+            </Button>
+          </PermissionGate>
+          <PermissionGate module="coupe" mode="write" fallback={null}>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => preremplir.mutate()}
               disabled={verrouille || preremplir.isPending}
             >
               <RefreshCw className="size-3.5" /> Préremplir
             </Button>
           </PermissionGate>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => telecharger('xlsx')}
+              disabled={exportEnCours !== null}
+            >
+              <FileDown className="size-3.5" />
+              {exportEnCours === 'xlsx' ? 'Génération…' : 'Exporter (Excel)'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => telecharger('pdf')}
+              disabled={exportEnCours !== null}
+            >
+              <ClipboardList className="size-3.5" />
+              {exportEnCours === 'pdf' ? 'Génération…' : 'Imprimer (PDF)'}
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -694,7 +752,156 @@ function FeuilleOrdre({ ordreId }: { ordreId: number }) {
 
         <MatieresTable ordreId={ordreId} verrouille={verrouille} />
       </CardContent>
+      <DialogMatelasRattachement
+        ordreId={ordreId}
+        commandeId={ordre.commandeId}
+        verrouille={verrouille}
+        open={matelasOuvert}
+        onOpenChange={setMatelasOuvert}
+      />
     </Card>
+  )
+}
+
+function DialogMatelasRattachement({
+  ordreId,
+  commandeId,
+  verrouille,
+  open,
+  onOpenChange,
+}: {
+  ordreId: number
+  commandeId: number
+  verrouille: boolean
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const { data: rattaches, isLoading: chargeRattaches } = useGetMatelasRattaches(ordreId)
+  const { data: orphelins, isLoading: chargeOrphelins } = useGetMatelasOrphelins(commandeId)
+  const attacher = useAttacherMatelas(ordreId)
+  const detacher = useDetacherMatelas(ordreId)
+
+  const operationEnCours = attacher.isPending || detacher.isPending
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Matelas — rattachement à l&apos;ordre de coupe</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Rattachés à cet ordre ({rattaches?.length ?? 0})</h3>
+            {operationEnCours && (
+              <p className="text-xs text-muted-foreground">Une opération sur les matelas est en cours…</p>
+            )}
+            <div className="overflow-x-auto rounded-md border">
+              {chargeRattaches ? (
+                <Skeleton className="h-24 w-full" />
+              ) : !rattaches || rattaches.length === 0 ? (
+                <div className="rounded-md border px-4 py-4 text-center text-sm text-muted-foreground">
+                  Aucun matelas rattaché.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>N° matelas</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Pièces pliage</TableHead>
+                      <TableHead className="text-right">Planifié</TableHead>
+                      <TableHead className="text-right">Coupé réel</TableHead>
+                      {!verrouille && <TableHead className="text-right">Action</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rattaches.map((m) => (
+                        <TableRow key={m.matelasId}>
+                          <TableCell className="font-medium">{m.numeroMatelas}</TableCell>
+                          <TableCell>{fmtDate(m.dateMatelas)}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(m.piecePliage)}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(m.planifie)}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(m.coupeReelle)}</TableCell>
+                          {!verrouille && (
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                aria-label={`Détacher le matelas ${m.numeroMatelas}`}
+                                disabled={attacher.isPending || detacher.isPending}
+                                onClick={() => detacher.mutate(m.matelasId)}
+                              >
+                                <Unlink className="size-3.5" /> Détacher
+                              </Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">Matelas orphelins de la commande ({orphelins?.length ?? 0})</h3>
+            <p className="text-xs text-muted-foreground">
+              Les matelas non rattachés d&apos;une commande sont disponibles ici. Un matelas est
+              rattaché automatiquement lorsqu&apos;un plan de cet ordre le référence.
+            </p>
+            <div className="overflow-x-auto rounded-md border">
+              {chargeOrphelins ? (
+                <Skeleton className="h-24 w-full" />
+              ) : !orphelins || orphelins.length === 0 ? (
+                <div className="rounded-md border px-4 py-4 text-center text-sm text-muted-foreground">
+                  Aucun matelas orphelin.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>N° matelas</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead className="text-right">Pièces pliage</TableHead>
+                      <TableHead className="text-right">Planifié</TableHead>
+                      <TableHead className="text-right">Coupé réel</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orphelins.map((m) => (
+                      <TableRow key={m.matelasId}>
+                        <TableCell className="font-medium">{m.numeroMatelas}</TableCell>
+                        <TableCell>{fmtDate(m.dateMatelas)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(m.piecePliage)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(m.planifie)}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(m.coupeReelle)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Rattacher le matelas ${m.numeroMatelas}`}
+                            disabled={attacher.isPending || detacher.isPending}
+                            onClick={() => attacher.mutate(m.matelasId)}
+                          >
+                            <Link2 className="size-3.5" /> Rattacher
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Fermer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

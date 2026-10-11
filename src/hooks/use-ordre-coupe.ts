@@ -7,6 +7,8 @@ import type { ApiError } from '@/types'
 import type {
   OrdreCoupe,
   OrdreCoupeListe,
+  MatelasOrphelin,
+  MatelasRattache,
   CreerOrdreCoupePayload,
   ModifierOrdreCoupePayload,
   CreerTaillePayload,
@@ -172,5 +174,51 @@ export function useSupprimerMatiere(ordreId: number) {
       toast.success('Matière supprimée')
     },
     onError: (err: ApiError) => toast.error(err.message ?? 'Impossible de supprimer la matière'),
+  })
+}
+
+// ── Rattachement des matelas (C3) ─────────────────────────────────────────────
+
+export function useGetMatelasOrphelins(commandeId: number) {
+  return useQuery<MatelasOrphelin[]>({
+    queryKey: [...KEY, 'orphelins', commandeId],
+    queryFn: () => apiClient.get<MatelasOrphelin[]>(`/api/OrdreCoupe/commande/${commandeId}/matelas-orphelins`),
+    enabled: commandeId > 0,
+  })
+}
+
+export function useGetMatelasRattaches(ordreId: number) {
+  return useQuery<MatelasRattache[]>({
+    queryKey: [...KEY, ordreId, 'matelas'],
+    queryFn: () => apiClient.get<MatelasRattache[]>(`/api/OrdreCoupe/${ordreId}/matelas`),
+    enabled: ordreId > 0,
+  })
+}
+
+export function useAttacherMatelas(ordreId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (matelasId: number) =>
+      apiClient.post<{ message: string }>(`/api/OrdreCoupe/${ordreId}/matelas`, { matelasId }),
+    onSuccess: (data) => {
+      invalider(qc, ordreId)
+      qc.invalidateQueries({ queryKey: [...KEY, 'orphelins'] })
+      toast.success(data.message || 'Matelas rattaché à l\'ordre de coupe')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Rattachement refusé'),
+  })
+}
+
+export function useDetacherMatelas(ordreId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (matelasId: number) =>
+      apiClient.del<{ message: string }>(`/api/OrdreCoupe/${ordreId}/matelas/${matelasId}`),
+    onSuccess: (data) => {
+      invalider(qc, ordreId)
+      qc.invalidateQueries({ queryKey: [...KEY, 'orphelins'] })
+      toast.success(data.message || 'Matelas détaché de l\'ordre de coupe')
+    },
+    onError: (err: ApiError) => toast.error(err.message ?? 'Détachement refusé'),
   })
 }

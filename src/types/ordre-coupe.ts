@@ -11,6 +11,7 @@ export interface OrdreCoupeListe {
   nbTailles: number
   nbPlans: number
   nbMatieres: number
+  nbMatelas: number
   totalCommande: number
   totalPlanifie: number
   alerteManque: boolean
@@ -86,6 +87,8 @@ export interface OrdreCoupe {
   surplus: number
   manque: number
   alerteManque: boolean
+  totalCoupeReelle: number
+  nbMatelas: number
   tailles: OrdreCoupeTaille[]
   plans: OrdreCoupePlan[]
   matieres: OrdreCoupeMatiere[]
@@ -139,3 +142,16 @@ export interface CreerMatierePayload {
 }
 
 export type ModifierMatierePayload = CreerMatierePayload
+
+// ── Rattachement des matelas (C3) ──────────────────────────────────────────────
+
+export interface MatelasOrphelin {
+  matelasId: number
+  numeroMatelas: string
+  dateMatelas: string
+  piecePliage: number
+  planifie: number
+  coupeReelle: number
+}
+
+export type MatelasRattache = MatelasOrphelin
