@@ -96,8 +96,9 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 px-4">
-      <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
+    <div className="flex min-h-screen flex-col bg-muted/40 px-4">
+      <div className="flex flex-1 items-center justify-center">
+        <div className="w-full max-w-sm rounded-xl border bg-card p-8 shadow-sm">
         <div className="mb-6 flex flex-col items-center text-center">
           <span className="mb-3 grid size-12 place-items-center rounded-xl bg-header text-header-foreground shadow-md">
             <Shirt className="size-6" />
@@ -160,7 +161,26 @@ function LoginForm() {
             {isSubmitting ? 'Connexion…' : 'Se connecter'}
           </Button>
         </form>
+        </div>
       </div>
+
+      <footer className="py-4 text-center text-xs text-muted-foreground">
+        <Link
+          href="/confidentialite"
+          className="underline underline-offset-4 hover:text-foreground"
+        >
+          Règles de confidentialité
+        </Link>
+        <span aria-hidden="true" className="mx-2">
+          ·
+        </span>
+        <Link
+          href="/conditions"
+          className="underline underline-offset-4 hover:text-foreground"
+        >
+          Conditions d&apos;utilisation
+        </Link>
+      </footer>
     </div>
   )
 }

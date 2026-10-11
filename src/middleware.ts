@@ -19,12 +19,17 @@ export function middleware(request: NextRequest) {
   // /login?reason=unauthenticated et le formulaire est inatteignable.
   // /partage : cible des liens de partage lecture seule, accessible sans session.
   // Le token voyage dans le FRAGMENT d'URL (#), jamais envoyé au serveur.
+  // /a-propos, /confidentialite, /conditions : pages publiques (exigence Google OAuth
+  // ? Branding). Correspondance EXACTE uniquement : /confidentialite/x reste protégé.
   if (
     pathname.startsWith('/login') ||
     pathname.startsWith('/reset-password') ||
     pathname.startsWith('/mot-de-passe-oublie') ||
     pathname === '/partage' ||
-    pathname.startsWith('/partage/')
+    pathname.startsWith('/partage/') ||
+    pathname === '/a-propos' ||
+    pathname === '/confidentialite' ||
+    pathname === '/conditions'
   )
     return NextResponse.next()
 
