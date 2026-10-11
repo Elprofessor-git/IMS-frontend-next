@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { MessagesSquare } from 'lucide-react'
 import { useCanUtiliserDiscussion } from '@/hooks/use-permissions'
 import { useDiscussionNonLus, useDiscussionSync } from '@/hooks/use-discussion'
+import { useDiscussionHub } from '@/hooks/use-discussion-hub'
 
 /**
  * Accès rapide à la Discussion depuis la topbar, avec le total des non-lus.
@@ -15,6 +16,9 @@ import { useDiscussionNonLus, useDiscussionSync } from '@/hooks/use-discussion'
 export function DiscussionBell() {
   const peutUtiliser = useCanUtiliserDiscussion()
   useDiscussionSync()
+  // Temps réel opt-in : sans NEXT_PUBLIC_DISCUSSION_HUB_URL, ce hook ne fait rien et
+  // le polling de useDiscussionSync reste le seul transport.
+  useDiscussionHub(peutUtiliser)
   const nonLus = useDiscussionNonLus()
 
   // Sans le drapeau, aucune trace du module dans l'interface.
