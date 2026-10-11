@@ -460,8 +460,8 @@ function RoleDialog({
               <div className="space-y-3">
                 <p className="text-sm font-medium">Discussion</p>
                 <p className="text-xs text-muted-foreground">
-                  Messagerie interne (type Slack). « Gérer les canaux publics » n'ouvre jamais
-                  les messages privés ni les groupes privés d'autrui : l'appartenance prime.
+                  Messagerie interne (type Slack). « Gérer les canaux publics » n&apos;ouvre jamais
+                  les messages privés ni les groupes privés d&apos;autrui : l&apos;appartenance prime.
                 </p>
                 <div className="grid grid-cols-1 gap-2">
                   {PERM_DISCUSSION.map(({ key, label }) => (
