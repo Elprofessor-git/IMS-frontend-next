@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Layers } from 'lucide-react'
+import { Layers, Scissors } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/shared/page-header'
@@ -29,9 +29,16 @@ export default function CoupeCommandePage() {
           title="Module Coupe"
           description="Ordre de coupe de la commande : planifier les matelas, puis saisir la coupe de chaque matelas."
         />
-        <Button variant="ghost" size="sm" asChild className="mt-6">
-          <Link href="/coupe">Tableau de bord Coupe</Link>
-        </Button>
+        <div className="mt-6 flex gap-2">
+          <Button variant="default" size="sm" asChild>
+            <Link href={`/coupe/${commandeId}/ordre-de-coupe`}>
+              <Scissors className="size-4" /> Feuille d&apos;ordre de coupe
+            </Link>
+          </Button>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/coupe">Tableau de bord Coupe</Link>
+          </Button>
+        </div>
       </div>
       <PermissionGate module="coupe" mode="read" fallback={<ForbiddenState moduleLabel="coupe" />}>
         <Tabs value={tab} onValueChange={setTab} className="max-w-6xl">
